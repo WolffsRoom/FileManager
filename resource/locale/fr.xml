@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<stringset>
+  <string src="File Manager" id="msg_app_title" />
+  <string src="This folder is empty" id="msg_empty_folder" />
+  <string src="Memory Card" id="msg_dev_ux0" />
+  <string src="System Memory" id="msg_dev_ur0" />
+  <string src="USB Storage" id="msg_dev_uma0" />
+  <string src="Internal Storage" id="msg_dev_imc0" />
+  <string src="Add-on Memory" id="msg_dev_xmc0" />
+  <string src="Game Card" id="msg_dev_gro0" />
+  <string src="Game Card (Writable)" id="msg_dev_grw0" />
+  <string src="System Partition" id="msg_dev_system" />
+  <string src="S&#xE9;l&#xE9;ctionner tout" id="msg_opt_select" />
+  <string src="D&#xE9;s&#xE9;l&#xE9;ctionner tout" id="msg_opt_clear_selection" />
+  <string src="Copier" id="msg_opt_copy" />
+  <string src="D&#xE9;placer" id="msg_opt_move" />
+  <string src="Coller" id="msg_opt_paste" />
+  <string src="Supprimer" id="msg_opt_delete" />
+  <string src="Renommer" id="msg_opt_rename" />
+  <string src="Nouveau dossier" id="msg_opt_new_folder" />
+  <string src="Propri&#xE9;t&#xE9;s" id="msg_opt_info" />
+  <string src="Decrypt" id="msg_decrypt" />
+  <string src="Undo" id="msg_undo" />
+  <string src="Delete" id="msg_confirm_delete_title" />
+  <string src="Delete the selected items? This cannot be undone." id="msg_confirm_delete" />
+  <string src="Delete:&#10;%s&#10;&#10;This cannot be undone." id="msg_confirm_delete_item" />
+  <string src="Veuillez patienter..." id="msg_wait" />
+  <string src="Copie en cours..." id="msg_copying" />
+  <string src="D&#xE9;placement en cours..." id="msg_moving" />
+  <string src="Moving file: %s" id="msg_moving_file" />
+  <string src="Copying file: %s" id="msg_copying_file" />
+  <string src="Undoing..." id="msg_undoing" />
+  <string src="Suppression en cours..." id="msg_deleting" />
+  <string src="Renommer" id="msg_rename_title" />
+  <string src="Nouveau dossier" id="msg_new_folder_title" />
+  <string src="Propri&#xE9;t&#xE9;s" id="msg_info_title" />
+  <string src="Location" id="msg_info_location" />
+  <string src="Taille" id="msg_info_size" />
+  <string src="Free" id="msg_info_free" />
+  <string src="Dossier" id="msg_info_folders" />
+  <string src="Fichier" id="msg_info_files" />
+  <string src="free" id="msg_free_suffix" />
+  <string src="Settings" id="msg_opt_settings" />
+  <string src="View" id="msg_section_view" />
+  <string src="Theme" id="msg_section_theme" />
+  <string src="List" id="msg_view_list" />
+  <string src="Two Columns" id="msg_view_two_columns" />
+  <string src="Default" id="msg_theme_default" />
+  <string src="Midnight" id="msg_theme_midnight" />
+  <string src="Graphite" id="msg_theme_graphite" />
+  <string src="Ocean" id="msg_theme_ocean" />
+  <string src="Purple" id="msg_theme_purple" />
+  <string src="Emerald" id="msg_theme_emerald" />
+  <string src="Wine" id="msg_theme_wine" />
+  <string src="Pink" id="msg_theme_pink" />
+  <string src="Custom Image" id="msg_theme_custom" />
+  <string src="This file could not be previewed" id="msg_preview_error" />
+  <string src="System Partitions" id="msg_system_partitions" />
+  <string src="Applications" id="msg_shortcut_apps" />
+  <string src="App Data" id="msg_shortcut_data" />
+  <string src="Plugins" id="msg_shortcut_plugins" />
+  <string src="%s of %s free" id="msg_free_of" />
+  <string src="Plus" id="msg_opt_more" />
+  <string src="Favorite" id="msg_opt_add_shortcut" />
+  <string src="Remove Shortcut" id="msg_opt_remove_shortcut" />
+  <string src="FTP Server" id="msg_ftp_server" />
+  <string src="Connect an FTP client to the address above." id="msg_ftp_running" />
+  <string src="Stop" id="msg_ftp_stop" />
+  <string src="Connect to Wi-Fi in Settings first." id="msg_ftp_no_network" />
+  <string src="IP: %s     Port: %s" id="msg_ftp_address" />
+  <string src="Waiting for a connection..." id="msg_ftp_waiting" />
+  <string src="Ready" id="msg_ftp_ready" />
+  <string src="Sending: %s" id="msg_ftp_sending" />
+  <string src="Receiving: %s" id="msg_ftp_receiving" />
+  <string src="Deleting: %s" id="msg_ftp_deleting" />
+  <string src="Listing files..." id="msg_ftp_listing" />
+  <string src="Folder: %s" id="msg_ftp_folder" />
+  <string src="Creating folder: %s" id="msg_ftp_mkdir" />
+  <string src="Removing folder: %s" id="msg_ftp_rmdir" />
+  <string src="Renaming: %s" id="msg_ftp_rename" />
+  <string src="%s of %s" id="msg_ftp_progress_of" />
+  <string src="%s received" id="msg_ftp_received" />
+  <string src="OK" id="msg_ok" />
+  <string src="Annuler" id="msg_cancel" />
+  <string src="S&#xE9;l&#xE9;ctionner tout" id="msg_select_all" />
+  <string src="Installation en cours..." id="msg_install_title" />
+  <string src="Voulez-vous vraiment installer ce paquet?" id="msg_install_confirm" />
+  <string src="Installation en cours..." id="msg_installing" />
+  <string src="Installed (%s). It is now on the home screen." id="msg_install_done" />
+  <string src="Themes" id="msg_set_themes" />
+  <string src="File name size" id="msg_set_font_size" />
+  <string src="Small" id="msg_font_small" />
+  <string src="Normal" id="msg_font_normal" />
+  <string src="Large" id="msg_font_large" />
+  <string src="Decrypt automatically" id="msg_set_auto_decrypt" />
+  <string src="Disabled" id="msg_disabled" />
+  <string src="Enabled" id="msg_enabled" />
+  <string src="Langue" id="msg_set_language" />
+  <string src="Bouton SELECT" id="msg_set_select" />
+  <string src="Shortcuts" id="msg_set_shortcuts" />
+  <string src="Controls" id="msg_set_commands" />
+  <string src="System Language" id="msg_lang_system" />
+  <string src="Portugu&#xEA;s (Brasil)" id="msg_lang_ptbr" />
+  <string src="English" id="msg_lang_en" />
+  <string src="Espa&#xF1;ol" id="msg_lang_es" />
+  <string src="Fran&#xE7;ais" id="msg_lang_fr" />
+  <string src="Deutsch" id="msg_lang_de" />
+  <string src="QR" id="msg_qr_code" />
+  <string src="Scan de code QR..." id="msg_qr_scanning" />
+  <string src="The rear camera could not be opened." id="msg_qr_camera_error" />
+  <string src="QR Code Result" id="msg_qr_result" />
+  <string src="Open this QR link?" id="msg_qr_open_title" />
+  <string src="Yes" id="msg_btn_cross" />
+  <string src="Back" id="msg_btn_circle" />
+  <string src="Triangle" id="msg_btn_triangle" />
+  <string src="Square" id="msg_btn_square" />
+  <string src="SELECT" id="msg_btn_select" />
+  <string src="START" id="msg_btn_start" />
+  <string src="L Button" id="msg_btn_l" />
+  <string src="R Button" id="msg_btn_r" />
+  <string src="Left" id="msg_btn_left" />
+  <string src="Right" id="msg_btn_right" />
+  <string src="Touch and hold" id="msg_btn_hold" />
+  <string src="Open" id="msg_cmd_open" />
+  <string src="Back" id="msg_cmd_back" />
+  <string src="Plus" id="msg_cmd_options" />
+  <string src="S&#xE9;l&#xE9;ctionner tout" id="msg_cmd_mark" />
+  <string src="FTP or QR code" id="msg_cmd_select" />
+  <string src="Rechercher" id="msg_cmd_settings" />
+  <string src="Go to the first item" id="msg_cmd_first" />
+  <string src="Go to the last item" id="msg_cmd_last" />
+  <string src="Previous folder" id="msg_cmd_parent" />
+  <string src="Open folder" id="msg_cmd_enter" />
+  <string src="Downloads" id="msg_shortcut_downloads" />
+  <string src="Pictures" id="msg_shortcut_pictures" />
+  <string src="Music" id="msg_shortcut_music" />
+  <string src="PSP" id="msg_shortcut_psp" />
+  <string src="Do you want to install this content?" id="msg_install_question" />
+  <string src="Installation en cours..." id="msg_install_button" />
+  <string src="Version" id="msg_info_version" />
+  <string src="Title ID" id="msg_info_titleid" />
+  <string src="Dimensions" id="msg_info_dimensions" />
+  <string src="Client connected: %s" id="msg_ftp_client" />
+  <string src="Trash" id="msg_shortcut_trash" />
+  <string src="About" id="msg_set_about" />
+  <string src="File Manager 0.30 Beta&#10;&#10;Made by Wolff, File Manager is a file explorer for the PS Vita that brings together what VitaShell and FileManager Vita (FMVita, a fork of VitaShell) can do, in the system&#x27;s own interface: the same menus, sounds and transitions as Sony&#x27;s apps.&#10;&#10;Built with: ScePaf, the system UI framework (reverse engineering by GrapheneCt); NetStream and BetterHomebrewBrowser as references; VitaShell by TheFloW; ftpvita by xerpi; libarchive, libpng, zlib and libmad. Icons: Icons8.&#10;&#10;Licensed under GPLv3." id="msg_about_text" />
+  <string src="Wi-Fi is off" id="msg_wifi_off_title" />
+  <string src="Vous devez activer le Wi-Fi pour utiliser cette fonction." id="msg_wifi_off" />
+  <string src="Open settings" id="msg_network_settings" />
+  <string src="Success! Sent: %s" id="msg_ftp_sent" />
+  <string src="Success! Received: %s" id="msg_ftp_received_ok" />
+  <string src="Success! Deleted: %s" id="msg_ftp_deleted" />
+  <string src="Saves" id="msg_shortcut_saves" />
+  <string src="&#xC9;diter la ligne" id="msg_text_edit_line" />
+  <string src="Inserer une ligne vide" id="msg_text_insert_line" />
+  <string src="Supprimer" id="msg_text_delete_line" />
+  <string src="Save" id="msg_text_save" />
+  <string src="Discard" id="msg_text_discard" />
+  <string src="Saved." id="msg_text_saved" />
+  <string src="Unsaved changes" id="msg_text_unsaved_title" />
+  <string src="Save the changes to this file before leaving?" id="msg_text_unsaved" />
+  <string src="This file is larger than 2 MB and opens read-only." id="msg_text_too_big" />
+  <string src="Installation complete!" id="msg_install_done_title" />
+  <string src="&quot;%s&quot; was installed. It is now on the home screen." id="msg_install_done_text" />
+  <string src="Run" id="msg_install_run" />
+  <string src="Titre" id="msg_music_title" />
+  <string src="Back" id="msg_music_prev" />
+  <string src="Next" id="msg_music_next" />
+  <string src="Open" id="msg_music_play" />
+  <string src="Pause" id="msg_music_pause" />
+  <string src="Trier par" id="msg_sort" />
+  <string src="Date" id="msg_sort_date" />
+  <string src="Nom" id="msg_sort_name" />
+  <string src="Type" id="msg_sort_type" />
+  <string src="Mirror" id="msg_preview_mirror" />
+  <string src="Flip vertically" id="msg_preview_invert" />
+  <string src="Listen in background" id="msg_music_background" />
+  <string src="Exporter vers media PsVita" id="msg_music_export" />
+  <string src="Music exported successfully." id="msg_music_export_done" />
+  <string src="Open in Music" id="msg_music_open_native" />
+  <string src="Unknown artist" id="msg_music_unknown_artist" />
+  <string src="Ouvrir ce lien du code QR ?" id="msg_qr_open_title" />
+</stringset>

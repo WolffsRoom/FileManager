@@ -22,6 +22,7 @@
 #include "info_menu.h"
 #include "notice_menu.h"
 #include "music_menu.h"
+#include "qr_menu.h"
 #include "core/music.h"
 #include "core/install.h"
 #include "core/bubble.h"
@@ -191,7 +192,7 @@ namespace {
 }
 
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_inputAction(Action_Rename),
-	m_iconCount(0), m_searchVisible(false), m_alphaTouch(false), m_alphaCurrent(-1)
+	m_iconCount(0), m_searchVisible(false), m_alphaTouch(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -344,9 +345,12 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 	m_root->AddEventCallback(OptionMenu::OptionMenuEvent,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
-		if (e->GetValue(0) == OptionMenu::OptionMenuEvent_Button && e->GetValue(2) == 0)
+		if (e->GetValue(2) == 0)
 		{
-			reinterpret_cast<BrowserMenu *>(userdata)->OnOption(e->GetValue(1));
+			BrowserMenu *menu = reinterpret_cast<BrowserMenu *>(userdata);
+			menu->HighlightOptionTarget(false);
+			if (e->GetValue(0) == OptionMenu::OptionMenuEvent_Button)
+				menu->OnOption(e->GetValue(1));
 		}
 	}, this);
 
@@ -731,6 +735,18 @@ void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 		ret = fs::ListDirectory(page->path.c_str(), &page->all);
 	}
 	page->entries = page->all;
+	if (page == m_pages.back() && !m_focusAfterRefresh.empty())
+	{
+		for (uint32_t i = 0; i < page->entries.size(); i++)
+		{
+			if (!strcasecmp(page->entries.at(i)->name.c_str(), m_focusAfterRefresh.c_str()))
+			{
+				page->focused = i;
+				break;
+			}
+		}
+		m_focusAfterRefresh.clear();
+	}
 
 	PerfLog(page->path.c_str(), page->entries.size(), sceKernelGetProcessTimeLow() - startTime);
 
@@ -744,6 +760,8 @@ void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 	{
 		page->cellCount = page->entries.size();
 		page->list->InsertCell(0, 0, page->cellCount);
+		if (page->focused >= 0)
+			page->list->SetFocus(0, page->focused, ui::ListView::FOCUS_ALIGN_TYPE_CENTER, NULL);
 	}
 	if (page == m_pages.back())
 	{
@@ -1255,6 +1273,11 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 	{
 		anyMarked |= page->entries.at(i)->marked;
 	}
+	if (!submenu)
+	{
+		m_optionTarget = hasTarget ? page->focused : -1;
+		HighlightOptionTarget(true);
+	}
 
 	// At most 8 rows fit the screen; the rest goes to "More...".
 	m_optionActions.clear();
@@ -1272,6 +1295,7 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		m_optionActions.push_back(Action_Qr);
 		m_optionActions.push_back(Action_Sort);
 		m_optionActions.push_back(Action_Settings);
+		if (m_undoType != Undo_None) m_optionActions.push_back(Action_Undo);
 	}
 	else if (atRoot)
 	{
@@ -1288,6 +1312,7 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		m_optionActions.push_back(Action_Qr);
 		m_optionActions.push_back(Action_Sort);
 		m_optionActions.push_back(Action_Settings);
+		if (m_undoType != Undo_None) m_optionActions.push_back(Action_Undo);
 	}
 	else
 	{
@@ -1321,7 +1346,7 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		msg_opt_select, msg_opt_clear_selection, msg_opt_copy, msg_opt_move, msg_opt_paste,
 		msg_opt_delete, msg_opt_rename, msg_opt_new_folder, msg_opt_info, msg_opt_settings,
 		msg_opt_more, msg_opt_add_shortcut, msg_opt_remove_shortcut, msg_ftp_server, msg_qr_code,
-		msg_sort, msg_sort_date, msg_sort_name, msg_sort_type, msg_decrypt
+		msg_sort, msg_sort_date, msg_sort_name, msg_sort_type, msg_decrypt, msg_undo
 	};
 
 	paf::vector<OptionMenu::Button> buttons;
@@ -1333,6 +1358,19 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 	}
 
 	new OptionMenu(g_appPlugin, m_root, &buttons, submenu ? page_option_menu_sub : 0xd098335eu);
+}
+
+void BrowserMenu::HighlightOptionTarget(bool highlighted)
+{
+	if (m_pages.empty() || m_optionTarget < 0) return;
+	BrowserPage *page = Top();
+	ui::ListItem *item = page->list->GetListItem(0, m_optionTarget);
+	if (!item) return;
+	ui::Widget *button = item->FindChild(image_button_list_item);
+	if (!button) return;
+	button->SetColor(highlighted ? 0.72f : 1.0f, highlighted ? 0.38f : 1.0f,
+		highlighted ? 0.92f : 1.0f, 1.0f);
+	if (!highlighted) m_optionTarget = -1;
 }
 
 void BrowserMenu::OpenSortMenu()
@@ -1445,7 +1483,21 @@ void BrowserMenu::DoAction(Action action)
 		m_opSources.clear();
 		CollectSelection(&m_opSources);
 		m_pending = Pending_ConfirmDelete;
-		dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_confirm_delete_title), g_appPlugin->GetString(msg_confirm_delete));
+		m_scratch.clear();
+		for (uint32_t i = 0; i < m_opSources.size() && i < 4; i++)
+		{
+			const char *path = m_opSources.at(i).c_str();
+			const char *slash = strrchr(path, '/');
+			if (i) m_scratch += "\n";
+			m_scratch += slash ? slash + 1 : path;
+		}
+		if (m_opSources.size() > 4) m_scratch += common::FormatString("\n+%u", (uint32_t)m_opSources.size() - 4);
+		{
+			paf::string pattern;
+			common::Utf16ToUtf8(paf::wstring(g_appPlugin->GetString(msg_confirm_delete_item)), &pattern);
+			paf::wstring question = ToWide(common::FormatString(pattern.c_str(), m_scratch.c_str()));
+			dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_confirm_delete_title), question.c_str());
+		}
 		break;
 
 	case Action_Rename:
@@ -1492,7 +1544,16 @@ void BrowserMenu::DoAction(Action action)
 		break;
 
 	case Action_Qr:
-		dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_qr_code), g_appPlugin->GetString(msg_qr_unavailable));
+		new QrMenu(m_root,
+		[](const paf::string &payload, void *userdata)
+		{
+			reinterpret_cast<BrowserMenu *>(userdata)->OnQrResult(payload);
+		}, this);
+		break;
+
+	case Action_Undo:
+		dialog::OpenPleaseWait(g_appPlugin, NULL, g_appPlugin->GetString(msg_undoing));
+		Enqueue(new CallJob(this, &BrowserMenu::RunUndo));
 		break;
 
 	case Action_Sort:
@@ -1545,7 +1606,16 @@ void BrowserMenu::OnNameEntered(const paf::wstring &text)
 	int32_t ret;
 	if (m_inputAction == Action_Rename)
 	{
-		ret = sceIoRename(fs::Join(page->path, m_inputTarget).c_str(), fs::Join(page->path, name).c_str());
+		paf::string oldPath = fs::Join(page->path, m_inputTarget);
+		paf::string newPath = fs::Join(page->path, name);
+		ret = sceIoRename(oldPath.c_str(), newPath.c_str());
+		if (ret >= 0)
+		{
+			m_undoType = Undo_Rename;
+			m_undoFrom.clear(); m_undoTo.clear();
+			m_undoFrom.push_back(oldPath); m_undoTo.push_back(newPath);
+			m_focusAfterRefresh = name;
+		}
 	}
 	else
 	{
@@ -1616,7 +1686,19 @@ void BrowserMenu::StartOperation(int32_t type)
 	s_cancel = false;
 	s_lastPercent = 0;
 
-	dialog::OpenProgress(g_appPlugin, NULL, g_appPlugin->GetString(title));
+	paf::wstring progressText = g_appPlugin->GetString(title);
+	if ((type == Op_Copy || type == Op_Move) && !m_opSources.empty())
+	{
+		const char *path = m_opSources.at(0).c_str();
+		const char *slash = strrchr(path, '/');
+		paf::string pattern;
+		common::Utf16ToUtf8(paf::wstring(g_appPlugin->GetString(type == Op_Move ? msg_moving_file : msg_copying_file)), &pattern);
+		progressText = ToWide(common::FormatString(pattern.c_str(), slash ? slash + 1 : path));
+		m_undoFrom.clear();
+		m_undoTo.clear();
+		m_undoType = Undo_None;
+	}
+	dialog::OpenProgress(g_appPlugin, NULL, progressText.c_str());
 	if (type == Op_Install && !m_opSources.empty())
 	{
 		VpkInfo info;
@@ -1709,6 +1791,11 @@ void BrowserMenu::RunOperation()
 				}
 			}
 		}
+		if (result > 0)
+		{
+			m_undoFrom.push_back(src);
+			m_undoTo.push_back(dst);
+		}
 	}
 
 	FinishOperation(result);
@@ -1723,6 +1810,8 @@ void BrowserMenu::FinishOperation(int32_t result)
 	{
 		m_clipboard.clear();
 	}
+	if (result > 0 && (m_opType == Op_Move || m_opType == Op_Copy) && !m_undoTo.empty())
+		m_undoType = m_opType == Op_Move ? Undo_Move : Undo_Copy;
 
 	thread::RMutex::MainThreadMutex()->Lock();
 	if (result < 0)
@@ -1756,6 +1845,36 @@ void BrowserMenu::FinishOperation(int32_t result)
 		}, this);
 	}
 	Refresh();
+	thread::RMutex::MainThreadMutex()->Unlock();
+}
+
+void BrowserMenu::RunUndo()
+{
+	int32_t result = 1;
+	for (int32_t i = (int32_t)m_undoTo.size() - 1; i >= 0 && result > 0; i--)
+	{
+		if (m_undoType == Undo_Copy)
+			result = removePath(m_undoTo.at(i).c_str(), NULL);
+		else
+			result = movePath(m_undoTo.at(i).c_str(), m_undoFrom.at(i).c_str(), 0, NULL);
+	}
+	FinishUndo(result);
+}
+
+void BrowserMenu::FinishUndo(int32_t result)
+{
+	thread::RMutex::MainThreadMutex()->Lock();
+	dialog::Close();
+	if (result < 0)
+		dialog::OpenError(g_appPlugin, result);
+	else
+	{
+		m_undoType = Undo_None;
+		m_undoFrom.clear();
+		m_undoTo.clear();
+		Refresh();
+		if (m_pages.size() > 1) ReloadRoot();
+	}
 	thread::RMutex::MainThreadMutex()->Unlock();
 }
 
@@ -1801,6 +1920,22 @@ void BrowserMenu::OnFtpClosed(bool stopped)
 	}
 }
 
+void BrowserMenu::OnQrResult(const paf::string &payload)
+{
+	m_scratch = payload;
+	if (!strncasecmp(payload.c_str(), "http://", 7) || !strncasecmp(payload.c_str(), "https://", 8))
+	{
+		m_pending = Pending_QrOpen;
+		paf::wstring text = ToWide(payload);
+		dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_qr_open_title), text.c_str());
+	}
+	else
+	{
+		paf::wstring text = ToWide(payload);
+		dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_qr_result), text.c_str());
+	}
+}
+
 void BrowserMenu::ReloadRoot()
 {
 	BrowserPage *rootPage = m_pages.at(0);
@@ -1827,6 +1962,12 @@ void BrowserMenu::OnDialog(int32_t buttonCode)
 		{
 			StartOperation(Op_Delete);
 		}
+		break;
+
+	case Pending_QrOpen:
+		m_pending = Pending_None;
+		if (buttonCode == dialog::ButtonCode_Yes && !m_scratch.empty())
+			sceAppMgrLaunchAppByUri(0xFFFFF, m_scratch.c_str());
 		break;
 
 	case Pending_Operation:

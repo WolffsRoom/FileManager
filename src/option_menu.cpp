@@ -139,6 +139,14 @@ OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button>
 		button = optRoot->GetChild(optRoot->GetChildrenNum() - 1);
 		button->SetName(OPTION_MENU_BUTTON_MAGIC + i);
 		button->SetString(btItem.label);
+		// Long translated labels stay centered inside the native button instead
+		// of wrapping or disappearing beyond its bounds.
+		graph::TextObj *labelObj = static_cast<graph::TextObj *>(button->GetDrawObj(ui::Button::OBJ_LABEL));
+		if (labelObj && !btItem.label.empty())
+		{
+			float point = btItem.label.length() > 34 ? 18.0f : (btItem.label.length() > 24 ? 22.0f : 28.0f);
+			labelObj->SetStyleAttribute(graph::TextStyleAttribute_Point, 0, btItem.label.length(), point);
+		}
 		button->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 		[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 		{
@@ -159,7 +167,7 @@ OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button>
 	// Size synchronously. The former CB_STATE_READY callback could run after the
 	// menu had already closed, which caused the addcont navigation crash.
 	float len = k_minBtLen + (maxLen > 18 ? (maxLen - 18) * 10.0f : 0.0f);
-	if (len > 520.0f) len = 520.0f;
+	if (len > 620.0f) len = 620.0f;
 	math::v4 btSz(len, 60.0f);
 	math::v4 plSz(len + 12.0f, 12.0f + 60.0f * m_buttonCount);
 	math::v4 plPos(264.0f + ((202.0f - plSz.extract_x()) / 2.0f), 43.0f);

@@ -80,6 +80,11 @@ add_executable(FileManager
   src/info_menu.cpp
   src/notice_menu.cpp
   src/music_menu.cpp
+  src/qr_menu.cpp
+  third_party/quirc_src/lib/quirc.c
+  third_party/quirc_src/lib/decode.c
+  third_party/quirc_src/lib/identify.c
+  third_party/quirc_src/lib/version_db.c
   src/core/music.c
   legacy/audio/player.c
   legacy/audio/mp3player.c
@@ -119,6 +124,7 @@ set_source_files_properties(${LEGACY_AUDIO_SOURCES} PROPERTIES COMPILE_OPTIONS
 target_include_directories(FileManager PRIVATE
   src
   ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/third_party/quirc_src/lib
   "${CMAKE_BINARY_DIR}/generated"
   paf
   paf/sdk_wrapper
@@ -148,6 +154,7 @@ target_link_libraries(FileManager
   SceAvPlayer_stub
   SceFios2_stub
   SceMusicExport_stub
+  SceCamera_stub
   ftpvita
   archive
   vorbisfile

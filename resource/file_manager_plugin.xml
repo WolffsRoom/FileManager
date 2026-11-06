@@ -308,6 +308,21 @@
       <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_preview" />
       <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_options_page_preview" />
     </page>
+    <page id="page_qr">
+      <plane style="style_plane_black" id="plane_black_page_qr">
+        <layout_hint size="960, 544" />
+      </plane>
+      <plane style="_common_default_style_plane" texture="_common_texture_transparent" id="plane_camera_page_qr">
+        <layout_hint size="800, 450" pos="0, 12" />
+      </plane>
+      <plane style="style_plane_qr_frame" id="plane_frame_page_qr">
+        <layout_hint size="270, 270" pos="0, 18" />
+      </plane>
+      <text style="style_text_qr_status" id="text_status_page_qr">
+        <layout_hint size="760, 38" pos="0, -220" />
+      </text>
+      <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_qr" />
+    </page>
     <page id="page_text_input">
       <plane style="style_plane_dim" id="plane_dim_page_text_input">
         <layout_hint size="960, 544" />
@@ -326,7 +341,7 @@
   <styletable>
     <style_button sound="_common_sound_button_enter" bottom_margin="12" right_margin="20" top_margin="12" left_margin="20" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_option_single">
       <planeobj texture0="_common_texture_option_menu_button_single" id="plane_obj1" />
-      <textobj font_size="28" bold="1" align_y="1" align_x="3" id="label_obj1" />
+      <textobj font_size="28" bold="1" ellipsis="1" align_y="1" align_x="3" id="label_obj1" />
       <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj2" />
     </style_button>
     <style_button sound="_common_sound_button_enter" bottom_margin="8" right_margin="10" top_margin="8" left_margin="10" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_music_action">
@@ -341,17 +356,17 @@
     </style_button>
     <style_button sound="_common_sound_button_enter" bottom_margin="12" right_margin="20" top_margin="12" left_margin="20" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_option_top">
       <planeobj texture0="_common_texture_option_menu_button_top" id="plane_obj1" />
-      <textobj font_size="28" bold="1" align_y="1" align_x="3" id="label_obj1" />
+      <textobj font_size="28" bold="1" ellipsis="1" align_y="1" align_x="3" id="label_obj1" />
       <planeobj texture0="_common_texture_option_menu_button_top_glow" blend="2" id="plane_obj2" />
     </style_button>
     <style_button sound="_common_sound_button_enter" bottom_margin="12" right_margin="20" top_margin="12" left_margin="20" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_option_bottom">
       <planeobj texture0="_common_texture_option_menu_button_bottom" id="plane_obj1" />
-      <textobj font_size="28" bold="1" align_y="1" align_x="3" id="label_obj1" />
+      <textobj font_size="28" bold="1" ellipsis="1" align_y="1" align_x="3" id="label_obj1" />
       <planeobj texture0="_common_texture_option_menu_button_bottom_glow" blend="2" id="plane_obj2" />
     </style_button>
     <style_button sound="_common_sound_button_enter" bottom_margin="12" right_margin="20" top_margin="12" left_margin="20" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_option_middle">
       <planeobj texture0="_common_texture_option_menu_button_middle" id="plane_obj1" />
-      <textobj font_size="28" bold="1" align_y="1" align_x="3" id="label_obj1" />
+      <textobj font_size="28" bold="1" ellipsis="1" align_y="1" align_x="3" id="label_obj1" />
       <planeobj texture0="_common_texture_option_menu_button_middle_glow" blend="2" id="plane_obj2" />
     </style_button>
     <style_text textobj="text_obj1" id="style_text_option_menu_ruler">
@@ -385,6 +400,9 @@
       <planeobj id="plane_obj1" />
     </style_plane>
     <style_plane color="0.28, 0.02, 0.42, 0.88" planeobj="plane_obj1" id="style_plane_selection_bar">
+      <planeobj id="plane_obj1" />
+    </style_plane>
+    <style_plane color="1, 1, 1, 0.20" planeobj="plane_obj1" id="style_plane_qr_frame">
       <planeobj id="plane_obj1" />
     </style_plane>
 
@@ -435,6 +453,9 @@
     </style_text>
     <style_text textobj="text_obj1" id="style_text_alpha_letter">
       <textobj font_size="34" bold="1" align_y="1" align_x="1" font_color="1, 1, 1, 1" id="text_obj1" />
+    </style_text>
+    <style_text textobj="text_obj1" id="style_text_qr_status">
+      <textobj font_size="22" bold="1" align_y="1" align_x="1" ellipsis="1" font_color="1, 1, 1, 1" id="text_obj1" />
     </style_text>
     <style_text textobj="text_obj1" id="style_text_preview_title">
       <textobj font_size="24" align_y="1" align_x="1" ellipsis="1" font_color="1, 1, 1, 1" id="text_obj1" />
@@ -582,9 +603,9 @@
     <locale src="locale/en.xml" id="ja" />
     <locale src="locale/en.xml" id="en" />
     <locale src="locale/en.xml" id="en-gb" />
-    <locale src="locale/en.xml" id="fr" />
-    <locale src="locale/en.xml" id="es" />
-    <locale src="locale/en.xml" id="de" />
+    <locale src="locale/fr.xml" id="fr" />
+    <locale src="locale/es.xml" id="es" />
+    <locale src="locale/de.xml" id="de" />
     <locale src="locale/en.xml" id="it" />
     <locale src="locale/en.xml" id="nl" />
     <locale src="locale/pt-br.xml" id="pt" />

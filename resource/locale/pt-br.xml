@@ -21,12 +21,17 @@
   <string src="Nova Pasta" id="msg_opt_new_folder" />
   <string src="Detalhes" id="msg_opt_info" />
   <string src="Descriptografar" id="msg_decrypt" />
+  <string src="Desfazer última ação" id="msg_undo" />
 
   <string src="Excluir" id="msg_confirm_delete_title" />
   <string src="Excluir os itens selecionados? Não é possível desfazer." id="msg_confirm_delete" />
+  <string src="Excluir:&#10;%s&#10;&#10;Não é possível desfazer." id="msg_confirm_delete_item" />
   <string src="Aguarde..." id="msg_wait" />
   <string src="Copiando..." id="msg_copying" />
   <string src="Movendo..." id="msg_moving" />
+  <string src="Movendo arquivo: %s" id="msg_moving_file" />
+  <string src="Copiando arquivo: %s" id="msg_copying_file" />
+  <string src="Desfazendo..." id="msg_undoing" />
   <string src="Excluindo..." id="msg_deleting" />
   <string src="Renomear" id="msg_rename_title" />
   <string src="Nova Pasta" id="msg_new_folder_title" />
@@ -99,8 +104,14 @@
   <string src="Idioma do sistema" id="msg_lang_system" />
   <string src="Português (Brasil)" id="msg_lang_ptbr" />
   <string src="English" id="msg_lang_en" />
+  <string src="Español" id="msg_lang_es" />
+  <string src="Français" id="msg_lang_fr" />
+  <string src="Deutsch" id="msg_lang_de" />
   <string src="QR Code" id="msg_qr_code" />
-  <string src="A leitura de QR Code ainda não está disponível nesta versão." id="msg_qr_unavailable" />
+  <string src="Aponte a câmera traseira para um QR Code" id="msg_qr_scanning" />
+  <string src="Não foi possível abrir a câmera traseira." id="msg_qr_camera_error" />
+  <string src="Resultado do QR Code" id="msg_qr_result" />
+  <string src="Abrir este link do QR Code?" id="msg_qr_open_title" />
   <string src="Cruz" id="msg_btn_cross" />
   <string src="Círculo" id="msg_btn_circle" />
   <string src="Triângulo" id="msg_btn_triangle" />

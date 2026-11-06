@@ -21,7 +21,7 @@ namespace settings {
 	{
 		int32_t theme;
 		int32_t view;
-		int32_t language;        // 0 system, 1 Português (Brasil), 2 English
+		int32_t language;        // system, Português (Brasil), English, Español, Français, Deutsch
 		int32_t selectFunction;  // 0 FTP server, 1 QR code
 		int32_t fontSize;        // 0 small, 1 normal (original), 2 large
 		int32_t autoDecrypt;     // mount protected application data automatically

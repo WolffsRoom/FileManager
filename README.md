@@ -80,7 +80,7 @@ The project carries forward the proven file-management logic of [FMVita](https:/
 - VPK metadata, icon, name, version and Title ID preview.
 - VPK extraction and installation through `ScePromoterUtil`.
 - FTP server powered by `ftpvita`, with connection and transfer progress.
-- Configurable Select-button action; FTP is available and the QR scanner is still being ported.
+- Configurable Select-button action for FTP or the rear-camera QR scanner.
 
 ## Screenshots
 
@@ -202,6 +202,7 @@ The v0.30 beta expands the original file browser into a more complete Vita-nativ
 - Reworked video playback around `SceAvPlayer`, following the VitaShell/FMVita initialization flow and adding pause, seek, sound and progress information.
 - Video files using MP4, M4V, MOV, MKV and AVI extensions are now sent to the native player. Actual playback still depends on codecs and containers supported by the Vita firmware.
 - Added diagnostic output at `ux0:data/FileManager/video.log` when video initialization fails.
+- Added a native rear-camera QR scanner using `quirc`; text payloads are displayed and HTTP/HTTPS links require confirmation before opening.
 
 #### Preview and Editing
 
@@ -227,6 +228,7 @@ The v0.30 beta expands the original file browser into a more complete Vita-nativ
 - Added eight color themes with softly tinted preview icons.
 - Added custom backgrounds through `ux0:data/FileManager/background.png`.
 - Added multiple-background rotation with fade transitions through `ux0:data/FileManager/backgrounds/`.
+- Added Spanish, French and German language options based on the corresponding FMVita/VitaShell translations, with English fallback for File Manager-specific text.
 - Fixed the Themes screen crash and several navigation, protected-folder and preview regressions reported during console testing.
 
 ### v0.1.0 Alpha - First Public Release
@@ -299,6 +301,7 @@ File Manager is possible because of the following developers, libraries, applica
 - **[Julian Seward](https://sourceware.org/bzip2/)** - bzip2 compression.
 - **[OpenSSL Project](https://www.openssl.org/)** - libcrypto.
 - **[James Clark and Expat maintainers](https://github.com/libexpat/libexpat)** - Expat XML parser.
+- **[Daniel Beer](https://github.com/dlbeer/quirc)** - `quirc`, used for rear-camera QR code recognition and decoding.
 - **[Python Software Foundation](https://www.python.org/)** - Python runtime used by the RCO and resource tools.
 - **[Pillow contributors](https://python-pillow.github.io/)** - image processing used by the LiveArea asset generator.
 - **[Kitware and CMake contributors](https://cmake.org/)** - CMake build system.

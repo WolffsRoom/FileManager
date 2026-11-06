@@ -36,7 +36,8 @@ public:
 		Action_SortDate,
 		Action_SortName,
 		Action_SortType,
-		Action_Decrypt
+		Action_Decrypt,
+		Action_Undo
 	};
 
 	enum PendingDialog
@@ -44,6 +45,7 @@ public:
 		Pending_None,
 		Pending_ConfirmDelete,
 		Pending_ConfirmInstall,
+		Pending_QrOpen,
 		Pending_Operation,
 		Pending_Message,
 		Pending_Ftp
@@ -97,6 +99,7 @@ public:
 
 	/** Worker-thread side of a file operation. */
 	void RunOperation();
+	void RunUndo();
 
 	/** Worker-thread side of the information dialog. */
 	void RunInfo();
@@ -104,6 +107,7 @@ public:
 	void OnNameEntered(const paf::wstring &text);
 
 	void OnFtpClosed(bool stopped);
+	void OnQrResult(const paf::string &payload);
 	const paf::string &InstalledTitle() const { return m_installedTitle; }
 	void DoActionPublic(Action action);
 	void OnInstallAnswer(bool accepted);
@@ -153,6 +157,8 @@ private:
 	void CollectSelection(paf::vector<paf::string> *out);
 	void StartOperation(int32_t type);
 	void FinishOperation(int32_t result);
+	void FinishUndo(int32_t result);
+	void HighlightOptionTarget(bool highlighted);
 
 	enum OperationType
 	{
@@ -160,6 +166,14 @@ private:
 		Op_Move,
 		Op_Delete,
 		Op_Install
+	};
+
+	enum UndoType
+	{
+		Undo_None,
+		Undo_Rename,
+		Undo_Move,
+		Undo_Copy
 	};
 
 	paf::ui::Scene *m_root;
@@ -204,6 +218,11 @@ private:
 	paf::string m_inputTarget;
 	paf::string m_installedTitle;
 	paf::string m_scratch;
+	paf::string m_focusAfterRefresh;
+	int32_t m_optionTarget;
+	UndoType m_undoType;
+	paf::vector<paf::string> m_undoFrom;
+	paf::vector<paf::string> m_undoTo;
 };
 
 #endif

@@ -21,12 +21,17 @@
   <string src="New Folder" id="msg_opt_new_folder" />
   <string src="Details" id="msg_opt_info" />
   <string src="Decrypt" id="msg_decrypt" />
+  <string src="Undo last action" id="msg_undo" />
 
   <string src="Delete" id="msg_confirm_delete_title" />
   <string src="Delete the selected items? This cannot be undone." id="msg_confirm_delete" />
+  <string src="Delete:&#10;%s&#10;&#10;This cannot be undone." id="msg_confirm_delete_item" />
   <string src="Please wait..." id="msg_wait" />
   <string src="Copying..." id="msg_copying" />
   <string src="Moving..." id="msg_moving" />
+  <string src="Moving file: %s" id="msg_moving_file" />
+  <string src="Copying file: %s" id="msg_copying_file" />
+  <string src="Undoing..." id="msg_undoing" />
   <string src="Deleting..." id="msg_deleting" />
   <string src="Rename" id="msg_rename_title" />
   <string src="New Folder" id="msg_new_folder_title" />
@@ -99,8 +104,14 @@
   <string src="System Language" id="msg_lang_system" />
   <string src="Português (Brasil)" id="msg_lang_ptbr" />
   <string src="English" id="msg_lang_en" />
+  <string src="Español" id="msg_lang_es" />
+  <string src="Français" id="msg_lang_fr" />
+  <string src="Deutsch" id="msg_lang_de" />
   <string src="QR Code" id="msg_qr_code" />
-  <string src="QR code reading is not available in this version yet." id="msg_qr_unavailable" />
+  <string src="Point the rear camera at a QR code" id="msg_qr_scanning" />
+  <string src="The rear camera could not be opened." id="msg_qr_camera_error" />
+  <string src="QR Code Result" id="msg_qr_result" />
+  <string src="Open this QR link?" id="msg_qr_open_title" />
   <string src="Cross" id="msg_btn_cross" />
   <string src="Circle" id="msg_btn_circle" />
   <string src="Triangle" id="msg_btn_triangle" />

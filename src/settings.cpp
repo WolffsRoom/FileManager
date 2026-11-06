@@ -93,7 +93,7 @@ void settings::Load()
 	if (p)
 	{
 		int32_t v = atoi(p + 9);
-		if (v >= 0 && v <= 2)
+		if (v >= 0 && v <= 5)
 		{
 			s_config.language = v;
 		}
@@ -160,7 +160,7 @@ void settings::Save()
 void settings::ApplyLanguage()
 {
 	// "pt" carries the Brazilian strings in this resource.
-	static const Locale k_locales[] = { Locale_Default, Locale_PT, Locale_EN };
+	static const Locale k_locales[] = { Locale_Default, Locale_PT, Locale_EN, Locale_ES, Locale_FR, Locale_DE };
 	Locale locale = k_locales[s_config.language];
 	if (locale == Locale_Default)
 	{

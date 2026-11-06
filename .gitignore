@@ -1,4 +1,10 @@
 build/
+third_party/quirc/
+third_party/quirc_src/demo/
+third_party/quirc_src/tests/
+third_party/quirc_src/.gitignore
+third_party/quirc_src/README.md
+third_party/quirc_src/Makefile
 *.o
 *.o.cmd
 *.o.d

@@ -18,7 +18,7 @@ namespace {
 	const uint32_t k_mainLabels[Main_Count] = { msg_set_themes, msg_set_font_size, msg_set_language, msg_set_select, msg_set_auto_decrypt, msg_set_shortcuts, msg_set_commands, msg_set_about };
 	const uint32_t k_mainIcons[Main_Count] = { tex_ui_image, tex_ui_text, tex_ui_text, tex_ui_ftp, tex_ui_encrypted, tex_ui_bookmark, tex_new_gears, tex_about };
 
-	const uint32_t k_languages[] = { msg_lang_system, msg_lang_ptbr, msg_lang_en };
+	const uint32_t k_languages[] = { msg_lang_system, msg_lang_ptbr, msg_lang_en, msg_lang_es, msg_lang_fr, msg_lang_de };
 	const uint32_t k_selectFunctions[] = { msg_ftp_server, msg_qr_code };
 	const uint32_t k_fontSizes[] = { msg_font_small, msg_font_normal, msg_font_large };
 	const uint32_t k_enabled[] = { msg_disabled, msg_enabled };
@@ -115,7 +115,7 @@ int32_t SettingsMenu::RowCount(Level level)
 	case Level_Main: return Main_Count;
 	case Level_Themes: return theme::Count();
 	case Level_FontSize: return 3;
-	case Level_Language: return 3;
+	case Level_Language: return sizeof(k_languages) / sizeof(k_languages[0]);
 	case Level_Select: return 2;
 	case Level_AutoDecrypt: return 2;
 	case Level_Shortcuts: return m_shortcuts.size();
