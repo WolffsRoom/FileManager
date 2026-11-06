@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "core/fs.h"
+#include "core/psarc.h"
 #include "settings.h"
 extern "C" {
 #include "legacy/strnatcmp.h"
@@ -134,6 +135,25 @@ namespace {
 				list->at(j) = tmp;
 			}
 		}
+	}
+
+	int AddPsarcEntry(const char *name, int isDir, uint64_t size, void *userdata)
+	{
+		fs::EntryList *out = static_cast<fs::EntryList *>(userdata);
+		fs::Entry *e = new fs::Entry();
+		e->name = name;
+		e->isDir = isDir != 0;
+		e->kind = e->isDir ? fs::Kind_Folder : KindForName(name);
+		e->marked = false;
+		e->size = size;
+		e->capacity = 0;
+		e->modified = 0;
+		e->labelHash = 0;
+		e->iconHash = 0;
+		e->target.clear();
+		e->isShortcut = false;
+		out->push_back(e);
+		return 0;
 	}
 }
 
@@ -351,6 +371,12 @@ void fs::ListSystem(EntryList *out)
 
 int32_t fs::ListDirectory(const char *path, EntryList *out)
 {
+	if (psarcContainsPath(path))
+	{
+		int32_t res = psarcList(path, AddPsarcEntry, out);
+		if (res >= 0) Sort(out);
+		return res;
+	}
 	SceUID dfd = sceIoDopen(path);
 	if (dfd < 0)
 	{

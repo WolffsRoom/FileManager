@@ -250,6 +250,20 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	{
 		button->SetTexture(tex);
 	}
+	if (m_level == Level_Themes)
+	{
+		const theme::Info &preview = theme::At(row);
+		graph::DrawObj *image = button->GetDrawObj(ui::ImageButton::OBJ_IMAGE);
+		if (image)
+			image->SetColor(math::v4(preview.bg[0], preview.bg[1], preview.bg[2], 0.72f));
+	}
+	else if (m_level == Level_Commands)
+	{
+		math::v3 iconSize;
+		float values[4] = { 71.4f, 49.0f, 0.0f, 0.0f };
+		memcpy(&iconSize, values, sizeof(iconSize));
+		static_cast<ui::ImageButton *>(button)->SetTextureSize(iconSize);
+	}
 
 	button->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)

@@ -19,7 +19,8 @@
   <string src="Delete" id="msg_opt_delete" />
   <string src="Rename" id="msg_opt_rename" />
   <string src="New Folder" id="msg_opt_new_folder" />
-  <string src="Information" id="msg_opt_info" />
+  <string src="Details" id="msg_opt_info" />
+  <string src="Decrypt" id="msg_decrypt" />
 
   <string src="Delete" id="msg_confirm_delete_title" />
   <string src="Delete the selected items? This cannot be undone." id="msg_confirm_delete" />
@@ -29,7 +30,7 @@
   <string src="Deleting..." id="msg_deleting" />
   <string src="Rename" id="msg_rename_title" />
   <string src="New Folder" id="msg_new_folder_title" />
-  <string src="Information" id="msg_info_title" />
+  <string src="Details" id="msg_info_title" />
   <string src="Location" id="msg_info_location" />
   <string src="Size" id="msg_info_size" />
   <string src="Free" id="msg_info_free" />
@@ -59,7 +60,7 @@
   <string src="More..." id="msg_opt_more" />
   <string src="Add to Shortcuts" id="msg_opt_add_shortcut" />
   <string src="Remove Shortcut" id="msg_opt_remove_shortcut" />
-  <string src="FTP Server" id="msg_ftp_server" />
+  <string src="FTP" id="msg_ftp_server" />
   <string src="Connect an FTP client to the address above." id="msg_ftp_running" />
   <string src="Stop" id="msg_ftp_stop" />
   <string src="Connect to Wi-Fi in Settings first." id="msg_ftp_no_network" />
@@ -114,8 +115,8 @@
   <string src="Back" id="msg_cmd_back" />
   <string src="Options" id="msg_cmd_options" />
   <string src="Select item" id="msg_cmd_mark" />
-  <string src="FTP server or QR code" id="msg_cmd_select" />
-  <string src="Settings" id="msg_cmd_settings" />
+  <string src="FTP or QR code" id="msg_cmd_select" />
+  <string src="Search" id="msg_cmd_settings" />
   <string src="Go to the first item" id="msg_cmd_first" />
   <string src="Go to the last item" id="msg_cmd_last" />
   <string src="Previous folder" id="msg_cmd_parent" />
@@ -132,10 +133,10 @@
   <string src="Client connected: %s" id="msg_ftp_client" />
   <string src="Trash" id="msg_shortcut_trash" />
   <string src="About" id="msg_set_about" />
-  <string src="File Manager 0.1.0 Alpha&#10;&#10;Made by Wolff, File Manager is a file explorer for the PS Vita that brings together what VitaShell and FileManager Vita (FMVita, a fork of VitaShell) can do, in the system's own interface: the same menus, sounds and transitions as Sony's apps.&#10;&#10;Built with: ScePaf, the system UI framework (reverse engineering by GrapheneCt); NetStream and BetterHomebrewBrowser as references; VitaShell by TheFloW; ftpvita by xerpi; libarchive, libpng, zlib and libmad. Icons: Icons8.&#10;&#10;Licensed under GPLv3." id="msg_about_text" />
+  <string src="File Manager 0.2.0 Beta&#10;&#10;Made by Wolff, File Manager is a file explorer for the PS Vita that brings together what VitaShell and FileManager Vita (FMVita, a fork of VitaShell) can do, in the system's own interface: the same menus, sounds and transitions as Sony's apps.&#10;&#10;Built with: ScePaf, the system UI framework (reverse engineering by GrapheneCt); NetStream and BetterHomebrewBrowser as references; VitaShell by TheFloW; ftpvita by xerpi; libarchive, libpng, zlib and libmad. Icons: Icons8.&#10;&#10;Licensed under GPLv3." id="msg_about_text" />
   <string src="Wi-Fi is off" id="msg_wifi_off_title" />
   <string src="The FTP server needs a Wi-Fi connection. Turn on Wi-Fi and connect to a network, then try again." id="msg_wifi_off" />
-  <string src="Network Settings" id="msg_network_settings" />
+  <string src="Open settings" id="msg_network_settings" />
   <string src="Success! Sent: %s" id="msg_ftp_sent" />
   <string src="Success! Received: %s" id="msg_ftp_received_ok" />
   <string src="Success! Deleted: %s" id="msg_ftp_deleted" />
@@ -163,6 +164,8 @@
   <string src="Type" id="msg_sort_type" />
   <string src="Mirror" id="msg_preview_mirror" />
   <string src="Flip vertically" id="msg_preview_invert" />
-  <string src="Play in background" id="msg_music_background" />
+  <string src="Listen in background" id="msg_music_background" />
+  <string src="Export to Music" id="msg_music_export" />
+  <string src="Music exported successfully." id="msg_music_export_done" />
   <string src="Unknown artist" id="msg_music_unknown_artist" />
 </stringset>

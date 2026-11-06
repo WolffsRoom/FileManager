@@ -30,7 +30,7 @@
         <layout_hint size="36, 36" pos="-330, 208" />
       </plane>
       <text_box auto_scroll="1" ime_type="0" edit_mode="1" paste_mode="1" edit_auto_transition_mode="0" style="style_text_box_input" id="text_box_search_page_browser">
-        <layout_hint size="860, 44" pos="0, 148" />
+        <layout_hint size="860, 44" pos="0, 174" />
         <focus_hint focus_shape="0" />
       </text_box>
       <button style="_common_default_style_button_transparent" id="button_start_page_browser">
@@ -130,13 +130,13 @@
           <layout_hint size="120, 120" pos="-275, 75" />
         </plane>
         <text style="style_text_info_title" id="text_title_page_info">
-          <layout_hint anchor="1, 0" align="1, 0" size="540, 44" pos="215, 105" />
+          <layout_hint anchor="1, 0" align="1, 0" size="540, 44" pos="215, 126" />
         </text>
         <text style="style_text_info_details" id="text_details_page_info">
-          <layout_hint anchor="1, 0" align="1, 2" size="540, 170" pos="215, 75" />
+          <layout_hint anchor="1, 0" align="1, 2" size="540, 112" pos="215, 82" />
         </text>
         <text style="style_text_ftp_activity" id="text_question_page_info">
-          <layout_hint size="720, 34" pos="0, -96" />
+          <layout_hint size="720, 34" pos="0, -78" />
         </text>
         <button style="style_button_option_single" id="button_ok_page_info">
           <layout_hint size="240, 60" pos="-140, -160" />
@@ -209,16 +209,19 @@
         <layout_hint anchor="1, 0" align="1, 0" size="200, 30" pos="720, -46" />
       </text>
       <button style="style_button_option_single" id="button_prev_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="150, 56" pos="440, -120" />
+        <layout_hint anchor="1, 0" align="1, 0" size="100, 50" pos="500, -116" />
       </button>
       <button style="style_button_option_single" id="button_play_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="150, 56" pos="605, -120" />
+        <layout_hint anchor="1, 0" align="1, 0" size="100, 50" pos="610, -116" />
       </button>
       <button style="style_button_option_single" id="button_next_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="150, 56" pos="770, -120" />
+        <layout_hint anchor="1, 0" align="1, 0" size="100, 50" pos="720, -116" />
       </button>
-      <button style="style_button_option_single" id="button_background_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="315, 50" pos="605, -190" />
+      <button style="style_button_music_action" id="button_export_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="230, 48" pos="490, -180" />
+      </button>
+      <button style="style_button_music_action" id="button_background_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="230, 48" pos="735, -180" />
       </button>
       <button style="_common_default_style_button_transparent" id="button_rewind_page_music">
         <layout_hint size="1, 1" pos="-479, 271" />
@@ -300,6 +303,11 @@
     <style_button sound="_common_sound_button_enter" bottom_margin="12" right_margin="20" top_margin="12" left_margin="20" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_option_single">
       <planeobj texture0="_common_texture_option_menu_button_single" id="plane_obj1" />
       <textobj font_size="28" bold="1" align_y="1" align_x="3" id="label_obj1" />
+      <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj2" />
+    </style_button>
+    <style_button sound="_common_sound_button_enter" bottom_margin="8" right_margin="10" top_margin="8" left_margin="10" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_music_action">
+      <planeobj texture0="_common_texture_option_menu_button_single" id="plane_obj1" />
+      <textobj font_size="20" bold="1" ellipsis="1" align_y="1" align_x="3" id="label_obj1" />
       <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj2" />
     </style_button>
     <style_button sound="_common_sound_button_enter" bottom_margin="12" right_margin="20" top_margin="12" left_margin="20" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_option_top">

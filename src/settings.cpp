@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #include "common.h"
 #include "settings.h"
@@ -25,6 +26,38 @@ namespace {
 		{ msg_theme_custom,   { 1.00f, 1.00f, 1.00f }, { 1.00f, 1.00f, 1.00f } },
 	};
 	const uint32_t k_themeCount = sizeof(k_themes) / sizeof(k_themes[0]);
+	paf::vector<paf::string> s_backgrounds;
+	uint32_t s_backgroundIndex = 0;
+	uint64_t s_backgroundTick = 0;
+
+	void FindBackgrounds()
+	{
+		s_backgrounds.clear();
+		SceIoStat stat;
+		if (sceIoGetstat(FM_BACKGROUND_PATH, &stat) >= 0)
+			s_backgrounds.push_back(FM_BACKGROUND_PATH);
+		SceUID dir = sceIoDopen(FM_BACKGROUNDS_DIR);
+		if (dir >= 0)
+		{
+			SceIoDirent ent;
+			while (memset(&ent, 0, sizeof(ent)), sceIoDread(dir, &ent) > 0)
+			{
+				const char *dot = strrchr(ent.d_name, '.');
+				if (!SCE_S_ISDIR(ent.d_stat.st_mode) && dot && !strcasecmp(dot, ".png"))
+					s_backgrounds.push_back(paf::string(FM_BACKGROUNDS_DIR "/") + ent.d_name);
+			}
+			sceIoDclose(dir);
+		}
+		s_backgroundIndex = 0;
+		s_backgroundTick = sceKernelGetProcessTimeWide();
+	}
+
+	intrusive_ptr<graph::Surface> LoadBackground(const paf::string &path)
+	{
+		int32_t res = -1;
+		auto file = LocalFile::Open(path.c_str(), SCE_O_RDONLY, 0, &res);
+		return res == 0 ? graph::Surface::Load(gutil::GetDefaultSurfacePool(), (common::SharedPtr<File> &)file) : intrusive_ptr<graph::Surface>();
+	}
 }
 
 void settings::Load()
@@ -176,12 +209,8 @@ void theme::ApplyBackground(ui::Widget *plane)
 	intrusive_ptr<graph::Surface> tex;
 	if (index == CustomIndex())
 	{
-		int32_t res = -1;
-		auto file = LocalFile::Open(FM_BACKGROUND_PATH, SCE_O_RDONLY, 0, &res);
-		if (res == 0)
-		{
-			tex = graph::Surface::Load(gutil::GetDefaultSurfacePool(), (common::SharedPtr<File> &)file);
-		}
+		FindBackgrounds();
+		if (!s_backgrounds.empty()) tex = LoadBackground(s_backgrounds.at(0));
 	}
 	if (!tex.get())
 	{
@@ -194,4 +223,20 @@ void theme::ApplyBackground(ui::Widget *plane)
 		plane->SetTexture(tex, 0, 0);
 	}
 	plane->SetColor(info.bg[0], info.bg[1], info.bg[2], 1.0f);
+}
+
+void theme::UpdateBackground(ui::Widget *plane)
+{
+	if (settings::Get().theme != CustomIndex() || s_backgrounds.size() < 2 || !plane)
+		return;
+	uint64_t now = sceKernelGetProcessTimeWide();
+	if (now - s_backgroundTick < 8000000ULL)
+		return;
+	s_backgroundTick = now;
+	s_backgroundIndex = (s_backgroundIndex + 1) % s_backgrounds.size();
+	intrusive_ptr<graph::Surface> tex = LoadBackground(s_backgrounds.at(s_backgroundIndex));
+	if (!tex.get()) return;
+	plane->SetTexture(tex, 0, 0);
+	plane->SetColor(1.0f, 1.0f, 1.0f, 0.0f);
+	plane->SetColor(1.0f, 1.0f, 1.0f, 1.0f, new Timer(0.8f, Timer::FUNC_SINE_OUT));
 }

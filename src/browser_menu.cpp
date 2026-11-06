@@ -24,6 +24,7 @@
 #include "core/install.h"
 #include "core/bubble.h"
 #include "core/pfs.h"
+#include "core/psarc.h"
 
 // Second option menu ("More..."): its own page, since the first is still fading out.
 #define page_option_menu_sub (0xcd2afa0du)
@@ -158,6 +159,11 @@ namespace {
 		reinterpret_cast<BrowserMenu *>(userdata)->ApplySettings();
 	}
 
+	void BackgroundTask(void *userdata)
+	{
+		reinterpret_cast<BrowserMenu *>(userdata)->UpdateBackground();
+	}
+
 	// Timings to tell slow storage from slow UI on the real console.
 	void PerfLog(const char *path, uint32_t count, uint32_t usRead)
 	{
@@ -192,6 +198,7 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 
 	m_background = m_root->FindChild(plane_base_bg_page_browser);
 	ApplySettings();
+	common::MainThreadCallList::Register(BackgroundTask, this);
 
 	m_emptyText->Hide(common::transition::Type_Reset);
 	paf::wstring empty = g_appPlugin->GetString(msg_empty_folder);
@@ -312,10 +319,16 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 
 BrowserMenu::~BrowserMenu()
 {
+	common::MainThreadCallList::Unregister(BackgroundTask, this);
 	while (PopPage())
 	{
 	}
 	g_appPlugin->PageClose(page_browser, Plugin::PageCloseParam());
+}
+
+void BrowserMenu::UpdateBackground()
+{
+	theme::UpdateBackground(m_background);
 }
 
 // ------------------------------------------------------------------ pages
@@ -360,13 +373,15 @@ void BrowserMenu::SetSearchVisible(bool visible)
 	if (m_searchVisible)
 	{
 		m_search->Show(common::transition::Type_Reset);
-		page->list->SetSize(960.0f, 392.0f, 0.0f);
+		page->list->SetSize(960.0f, 376.0f, 0.0f);
+		page->list->SetPos(0.0f, -308.0f, 0.0f);
 	}
 	else
 	{
 		m_search->ReleaseFocus();
 		m_search->Hide(common::transition::Type_Reset);
 		page->list->SetSize(960.0f, 448.0f, 0.0f);
+		page->list->SetPos(0.0f, -272.0f, 0.0f);
 		if (page->focused >= 0 && page->focused < (int32_t)page->entries.size())
 		{
 			page->list->SetFocus(0, page->focused, ui::ListView::FOCUS_ALIGN_TYPE_CENTER, NULL);
@@ -426,7 +441,7 @@ void BrowserMenu::UpdateFtpIndicator()
 	}
 }
 
-void BrowserMenu::PushPage(const paf::string &path)
+void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool ownsPsarc)
 {
 	Plugin::TemplateOpenParam tmpParam;
 	paf::string physicalPath = path;
@@ -443,7 +458,7 @@ void BrowserMenu::PushPage(const paf::string &path)
 			logicalPath += path.c_str() + current->path.size();
 		}
 
-		if (settings::Get().autoDecrypt && pfsIsProtectedContainer(current->logicalPath.c_str()) && pfsShouldMount(path.c_str()))
+		if ((forceDecrypt || settings::Get().autoDecrypt) && pfsIsProtectedContainer(current->logicalPath.c_str()) && pfsShouldMount(path.c_str()))
 		{
 			int32_t mountResult = pfsMount(path.c_str());
 			if (mountResult < 0 &&
@@ -477,6 +492,7 @@ void BrowserMenu::PushPage(const paf::string &path)
 	page->path = physicalPath;
 	page->logicalPath = logicalPath;
 	page->ownsMount = ownsMount;
+	page->ownsPsarc = ownsPsarc;
 	page->cellCount = 0;
 	page->focused = -1;
 	page->loaded = false;
@@ -538,6 +554,10 @@ bool BrowserMenu::PopPage()
 	if (page->ownsMount)
 	{
 		pfsUmount();
+	}
+	if (page->ownsPsarc)
+	{
+		psarcClose();
 	}
 	delete page;
 	m_pages.pop_back();
@@ -993,6 +1013,15 @@ void BrowserMenu::OnItemDecide(ui::Widget *wdg)
 	{
 		PushPage(fs::IsRootStyle(page->path) ? entry->target : fs::Join(page->path, entry->name));
 	}
+	else if (entry->kind == fs::Kind_Package && strcasecmp(strrchr(entry->name.c_str(), '.') ? strrchr(entry->name.c_str(), '.') : "", ".psarc") == 0)
+	{
+		paf::string archivePath = fs::Join(page->path, entry->name);
+		int32_t result = psarcOpen(archivePath.c_str());
+		if (result >= 0)
+			PushPage(archivePath, false, true);
+		else
+			dialog::OpenError(g_appPlugin, result);
+	}
 	else if (Previewable(entry))
 	{
 		OpenPreview(index);
@@ -1150,6 +1179,10 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		{
 			m_optionActions.push_back(Action_Rename);
 		}
+		if (target && target->isDir && !anyMarked && pfsShouldMount(fs::Join(page->path, target->name).c_str()))
+		{
+			m_optionActions.push_back(Action_Decrypt);
+		}
 		m_optionActions.push_back(Action_NewFolder);
 		if (target && !anyMarked)
 		{
@@ -1162,7 +1195,7 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		msg_opt_select, msg_opt_clear_selection, msg_opt_copy, msg_opt_move, msg_opt_paste,
 		msg_opt_delete, msg_opt_rename, msg_opt_new_folder, msg_opt_info, msg_opt_settings,
 		msg_opt_more, msg_opt_add_shortcut, msg_opt_remove_shortcut, msg_ftp_server, msg_qr_code,
-		msg_sort, msg_sort_date, msg_sort_name, msg_sort_type
+		msg_sort, msg_sort_date, msg_sort_name, msg_sort_type, msg_decrypt
 	};
 
 	paf::vector<OptionMenu::Button> buttons;
@@ -1346,6 +1379,11 @@ void BrowserMenu::DoAction(Action action)
 		settings::Get().sortMode = action == Action_SortDate ? 1 : (action == Action_SortType ? 2 : 0);
 		settings::Save();
 		Refresh();
+		break;
+
+	case Action_Decrypt:
+		if (page->focused >= 0)
+			PushPage(fs::Join(page->path, page->entries.at(page->focused)->name), true);
 		break;
 
 	case Action_Info:
@@ -1611,7 +1649,7 @@ void BrowserMenu::StartFtp()
 	int32_t ret = ftp::Start();
 	if (ret < 0)
 	{
-		new NoticeMenu(m_root, msg_wifi_off_title, msg_wifi_off, msg_network_settings, msg_ok,
+		new NoticeMenu(m_root, msg_wifi_off_title, msg_wifi_off, msg_network_settings, msg_cancel,
 		[](int32_t choice, void *userdata)
 		{
 			if (choice == 0)

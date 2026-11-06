@@ -35,7 +35,8 @@ public:
 		Action_Sort,
 		Action_SortDate,
 		Action_SortName,
-		Action_SortType
+		Action_SortType,
+		Action_Decrypt
 	};
 
 	enum PendingDialog
@@ -75,6 +76,7 @@ public:
 		paf::string path;           // empty = the device list
 		paf::string logicalPath;    // original path while a protected PFS is mounted
 		bool ownsMount;
+		bool ownsPsarc;
 		fs::EntryList all;          // owns the entries
 		fs::EntryList entries;      // shown: all, or the search matches
 		paf::ui::ListView *list;
@@ -115,11 +117,12 @@ public:
 
 	/** The theme changed in the settings page. */
 	void ApplySettings();
+	void UpdateBackground();
 
 
 private:
 
-	void PushPage(const paf::string &path);
+	void PushPage(const paf::string &path, bool forceDecrypt = false, bool ownsPsarc = false);
 	bool PopPage();
 	void Refresh();
 	BrowserPage *Top() { return m_pages.back(); }

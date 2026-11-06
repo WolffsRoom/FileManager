@@ -14,7 +14,7 @@ include("$ENV{VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "File Manager")
 set(VITA_TITLEID  "FILEMGR01")
-set(VITA_VERSION  "00.10")
+set(VITA_VERSION  "00.20")
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
@@ -104,6 +104,7 @@ add_executable(FileManager
   src/format.cpp
   src/core/fs.cpp
   src/core/pfs.c
+  src/core/psarc.c
   src/core/fileops.c
   legacy/strnatcmp.c
 )
@@ -145,6 +146,7 @@ target_link_libraries(FileManager
   SceAudio_stub
   SceRtc_stub
   SceAvPlayer_stub
+  SceFios2_stub
   SceMusicExport_stub
   ftpvita
   archive

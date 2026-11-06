@@ -16,6 +16,7 @@
 
 // In the stub (NID 0x2CD86FD6) but not in the VitaSDK header.
 extern "C" int sceAvPlayerStreamCount(SceAvPlayerHandle handle);
+extern "C" int sceAvPlayerStart(SceAvPlayerHandle handle);
 
 #include "common.h"
 #include "preview_menu.h"
@@ -609,7 +610,7 @@ bool PreviewMenu::StartVideo(const char *path)
 	init.fileReplacement.size = VideoSizeFile;
 	init.basePriority = 0x10000100;
 	init.numOutputVideoFrameBuffers = 16;
-	init.autoStart = SCE_TRUE;
+	init.autoStart = SCE_FALSE;
 
 	m_player = sceAvPlayerInit(&init);
 	VideoLog("sceAvPlayerInit: 0x%08X", m_player);
@@ -622,6 +623,14 @@ bool PreviewMenu::StartVideo(const char *path)
 	int32_t added = sceAvPlayerAddSource(m_player, path);
 	VideoLog("sceAvPlayerAddSource: 0x%08X", added);
 	if (added < 0)
+	{
+		sceAvPlayerClose(m_player);
+		m_player = 0;
+		return false;
+	}
+	int32_t started = sceAvPlayerStart(m_player);
+	VideoLog("sceAvPlayerStart: 0x%08X", started);
+	if (started < 0)
 	{
 		sceAvPlayerClose(m_player);
 		m_player = 0;

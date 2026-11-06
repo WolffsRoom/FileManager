@@ -87,7 +87,6 @@ InfoMenu::InfoMenu(ui::Widget *parentRoot, Mode mode, const paf::string &path, c
 			}
 		}
 		AddLine(common::FormatString("%s: %s", Utf8(msg_info_size).c_str(), sizeText.c_str()).c_str());
-		AddLine(name);
 	}
 	else if (entry->kind == fs::Kind_Image && (int64_t)entry->size <= k_maxPreviewFile)
 	{

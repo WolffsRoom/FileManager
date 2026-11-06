@@ -19,7 +19,8 @@
   <string src="Excluir" id="msg_opt_delete" />
   <string src="Renomear" id="msg_opt_rename" />
   <string src="Nova Pasta" id="msg_opt_new_folder" />
-  <string src="Informações" id="msg_opt_info" />
+  <string src="Detalhes" id="msg_opt_info" />
+  <string src="Descriptografar" id="msg_decrypt" />
 
   <string src="Excluir" id="msg_confirm_delete_title" />
   <string src="Excluir os itens selecionados? Não é possível desfazer." id="msg_confirm_delete" />
@@ -29,14 +30,14 @@
   <string src="Excluindo..." id="msg_deleting" />
   <string src="Renomear" id="msg_rename_title" />
   <string src="Nova Pasta" id="msg_new_folder_title" />
-  <string src="Informações" id="msg_info_title" />
+  <string src="Detalhes" id="msg_info_title" />
   <string src="Local" id="msg_info_location" />
   <string src="Tamanho" id="msg_info_size" />
   <string src="Livre" id="msg_info_free" />
   <string src="Pastas" id="msg_info_folders" />
   <string src="Arquivos" id="msg_info_files" />
   <string src="livres" id="msg_free_suffix" />
-  <string src="Configurações" id="msg_opt_settings" />
+  <string src="Ajustes" id="msg_opt_settings" />
   <string src="Exibição" id="msg_section_view" />
   <string src="Tema" id="msg_section_theme" />
   <string src="Lista" id="msg_view_list" />
@@ -59,7 +60,7 @@
   <string src="Mais..." id="msg_opt_more" />
   <string src="Adicionar aos Atalhos" id="msg_opt_add_shortcut" />
   <string src="Remover Atalho" id="msg_opt_remove_shortcut" />
-  <string src="Servidor FTP" id="msg_ftp_server" />
+  <string src="FTP" id="msg_ftp_server" />
   <string src="Conecte um cliente FTP ao endereço acima." id="msg_ftp_running" />
   <string src="Parar" id="msg_ftp_stop" />
   <string src="Conecte-se a uma rede Wi-Fi nas Configurações primeiro." id="msg_ftp_no_network" />
@@ -114,8 +115,8 @@
   <string src="Voltar" id="msg_cmd_back" />
   <string src="Opções" id="msg_cmd_options" />
   <string src="Selecionar item" id="msg_cmd_mark" />
-  <string src="Servidor FTP ou QR Code" id="msg_cmd_select" />
-  <string src="Configurações" id="msg_cmd_settings" />
+  <string src="FTP ou QR Code" id="msg_cmd_select" />
+  <string src="Pesquisar" id="msg_cmd_settings" />
   <string src="Ir para o primeiro item" id="msg_cmd_first" />
   <string src="Ir para o último item" id="msg_cmd_last" />
   <string src="Pasta anterior" id="msg_cmd_parent" />
@@ -132,10 +133,10 @@
   <string src="Cliente conectado: %s" id="msg_ftp_client" />
   <string src="Lixeira" id="msg_shortcut_trash" />
   <string src="Sobre" id="msg_set_about" />
-  <string src="File Manager 0.1.0 Alpha&#10;&#10;Desenvolvido por Wolff, o File Manager é um explorador de arquivos para PS Vita que reúne as funções do VitaShell e do FileManager Vita (FMVita, um fork do VitaShell) na interface do próprio sistema: os mesmos menus, sons e transições dos apps da Sony.&#10;&#10;Feito com: ScePaf, o framework de interface do sistema (engenharia reversa de GrapheneCt); NetStream e BetterHomebrewBrowser como referência; VitaShell, de TheFloW; ftpvita, de xerpi; libarchive, libpng, zlib e libmad. Ícones: Icons8.&#10;&#10;Licença GPLv3." id="msg_about_text" />
+  <string src="File Manager 0.2.0 Beta&#10;&#10;Desenvolvido por Wolff, o File Manager é um explorador de arquivos para PS Vita que reúne as funções do VitaShell e do FileManager Vita (FMVita, um fork do VitaShell) na interface do próprio sistema: os mesmos menus, sons e transições dos apps da Sony.&#10;&#10;Feito com: ScePaf, o framework de interface do sistema (engenharia reversa de GrapheneCt); NetStream e BetterHomebrewBrowser como referência; VitaShell, de TheFloW; ftpvita, de xerpi; libarchive, libpng, zlib e libmad. Ícones: Icons8.&#10;&#10;Licença GPLv3." id="msg_about_text" />
   <string src="Wi-Fi desligado" id="msg_wifi_off_title" />
   <string src="O servidor FTP precisa de uma conexão Wi-Fi. Ligue o Wi-Fi e conecte-se a uma rede, depois tente de novo." id="msg_wifi_off" />
-  <string src="Configurações de rede" id="msg_network_settings" />
+  <string src="Abrir configurações" id="msg_network_settings" />
   <string src="Sucesso! Enviado: %s" id="msg_ftp_sent" />
   <string src="Sucesso! Recebido: %s" id="msg_ftp_received_ok" />
   <string src="Sucesso! Excluído: %s" id="msg_ftp_deleted" />
@@ -163,6 +164,8 @@
   <string src="Tipo" id="msg_sort_type" />
   <string src="Espelhar" id="msg_preview_mirror" />
   <string src="Inverter" id="msg_preview_invert" />
-  <string src="Tocar em segundo plano" id="msg_music_background" />
+  <string src="Ouvir em segundo plano" id="msg_music_background" />
+  <string src="Exportar pra Música" id="msg_music_export" />
+  <string src="Música exportada com sucesso." id="msg_music_export_done" />
   <string src="Artista desconhecido" id="msg_music_unknown_artist" />
 </stringset>

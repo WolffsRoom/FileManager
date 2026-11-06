@@ -6,6 +6,7 @@
 
 #define FM_DATA_DIR "ux0:data/FileManager"
 #define FM_BACKGROUND_PATH FM_DATA_DIR "/background.png"
+#define FM_BACKGROUNDS_DIR FM_DATA_DIR "/backgrounds"
 
 namespace settings {
 
@@ -54,6 +55,8 @@ namespace theme {
 
 	/** Applies the current theme to a full-screen background plane. */
 	void ApplyBackground(paf::ui::Widget *plane);
+	/** Advances custom backgrounds and fades the next image in. */
+	void UpdateBackground(paf::ui::Widget *plane);
 
 	const float *Accent();
 }

@@ -70,8 +70,9 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	m_barFill = m_root->FindChild(plane_bar_fill_page_music);
 	m_playButton = m_root->FindChild(button_play_page_music);
 
-	SetText(m_root->FindChild(button_prev_page_music), Utf8(msg_music_prev).c_str());
-	SetText(m_root->FindChild(button_next_page_music), Utf8(msg_music_next).c_str());
+	SetText(m_root->FindChild(button_prev_page_music), "◀◀");
+	SetText(m_root->FindChild(button_next_page_music), "▶▶");
+	SetText(m_root->FindChild(button_export_page_music), Utf8(msg_music_export).c_str());
 	SetText(m_root->FindChild(button_background_page_music), Utf8(msg_music_background).c_str());
 
 	AddKey(m_root->FindChild(button_back_page_music), inputdevice::pad::Data::PAD_ESCAPE,
@@ -104,10 +105,15 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	{
 		reinterpret_cast<MusicMenu *>(userdata)->Seek(10);
 	}, this);
+	AddKey(m_root->FindChild(button_export_page_music), 0,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<MusicMenu *>(userdata)->ExportToMusic();
+	}, this);
 	AddKey(m_root->FindChild(button_background_page_music), 0,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
-		reinterpret_cast<MusicMenu *>(userdata)->PlayInBackground();
+		reinterpret_cast<MusicMenu *>(userdata)->ListenInBackground();
 	}, this);
 
 	Play(index);
@@ -221,11 +227,9 @@ void MusicMenu::TogglePause()
 	SetText(m_playButton, musicIsPlaying() ? "Ⅱ" : "▶");
 }
 
-void MusicMenu::PlayInBackground()
+void MusicMenu::ExportToMusic()
 {
 	const char *path = m_paths.at(m_index).c_str();
-	m_playing = false;
-	musicClose();
 	int32_t res = sceSysmoduleLoadModule(SCE_SYSMODULE_MUSIC_EXPORT);
 	if (res >= 0)
 	{
@@ -243,10 +247,21 @@ void MusicMenu::PlayInBackground()
 			free(work);
 		}
 	}
-	if (res >= 0)
-		res = sceAppMgrLaunchAppByName(0x60000, "NPXS10009", NULL);
 	if (res < 0)
 		dialog::OpenError(g_appPlugin, res);
+	else
+		dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_music_export), g_appPlugin->GetString(msg_music_export_done));
+}
+
+void MusicMenu::ListenInBackground()
+{
+	if (m_closing) return;
+	m_closing = true;
+	common::MainThreadCallList::Unregister(UpdateTask, this);
+	// Do not call musicClose(): the decoder/output threads keep the current song
+	// playing while the browser becomes active again.
+	m_root->SetActivate(false);
+	DeferDelete(this);
 }
 
 void MusicMenu::Update()

@@ -9,8 +9,8 @@
 </p>
 
 <div align="center">
-  <a href="https://github.com/WolffsRoom/FileManager/releases/latest"><img src="https://img.shields.io/badge/RELEASE-v0.1.0--alpha-377bb5?style=for-the-badge" alt="File Manager v0.1.0 Alpha"></a>
-  <img src="https://img.shields.io/badge/STATUS-ALPHA-f0ad4e?style=for-the-badge" alt="Alpha status">
+  <a href="https://github.com/WolffsRoom/FileManager/releases/latest"><img src="https://img.shields.io/badge/RELEASE-v0.2.0--beta-377bb5?style=for-the-badge" alt="File Manager v0.2.0 Beta"></a>
+  <img src="https://img.shields.io/badge/STATUS-BETA-4c9aff?style=for-the-badge" alt="Beta status">
   <img src="https://img.shields.io/badge/PLATFORM-PS%20VITA-6f42c1?style=for-the-badge&amp;logo=playstation&amp;logoColor=white" alt="PlayStation Vita">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/WolffsRoom/FileManager?style=for-the-badge&amp;color=2ea44f" alt="GPL-3.0 license"></a>
 </div>
@@ -51,7 +51,7 @@ The project carries forward the proven file-management logic of [FMVita](https:/
 </p>
 
 > [!WARNING]
-> This is an early alpha intended for testing on real hardware. Keep backups of important files before using copy, move, delete, rename or VPK installation features.
+> This beta is intended for testing on real hardware. Keep backups of important files before using copy, move, delete, rename or VPK installation features.
 
 ## Features
 
@@ -62,7 +62,7 @@ The project carries forward the proven file-management logic of [FMVita](https:/
 - Quick entries for Downloads, Images, Music, PSP, Trash and system partitions.
 - Natural sorting with folders first, multi-selection and touch support.
 - Portuguese (Brazil) and English interfaces.
-- Eight visual themes plus a custom background at `ux0:data/FileManager/background.png`.
+- Eight visual themes plus a custom background at `ux0:data/FileManager/background.png`. Additional PNG images placed in `ux0:data/FileManager/backgrounds/` rotate automatically with a soft fade.
 
 ### File Operations
 
@@ -116,7 +116,7 @@ The project carries forward the proven file-management logic of [FMVita](https:/
 | Triangle / lower-right button | Options and settings |
 | Square / long press | Mark an item |
 | Select | FTP server or QR Code, configurable |
-| Start | Settings |
+| Start | Search in the open folder |
 | L / R | First / last list item |
 | D-pad left / right | Go back / open focused folder |
 | L / R in a preview | Previous / next file |
@@ -172,7 +172,7 @@ The custom RCO compiler was validated by recompiling NetStream resources and com
 ## Current Status and Limitations
 
 - The application opens and navigates on real PS Vita hardware.
-- Core features compile and are present in the alpha, but destructive operations still need broad hardware testing.
+- Core features compile and are present in the beta, but destructive operations still need broad hardware testing.
 - Vita3K does not execute ScePaf applications; it is used only as a firmware/resource reference for the PC viewer.
 - MP4, MP3/OGG and text editing are implemented but still need broad real-hardware format testing.
 - Image swipe, pinch zoom and panning are implemented; rotation/mirroring and QR code support are still being ported.

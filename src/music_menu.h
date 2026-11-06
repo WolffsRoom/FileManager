@@ -21,7 +21,8 @@ public:
 	void Step(int32_t delta);
 	void Seek(int32_t seconds);
 	void TogglePause();
-	void PlayInBackground();
+	void ExportToMusic();
+	void ListenInBackground();
 	void Close();
 
 private:
