@@ -1,0 +1,259 @@
+/*
+	ScePaf-RE Project
+*/
+
+#ifndef _PAF_STDCXX_LIST_H
+#define _PAF_STDCXX_LIST_H
+
+#include <stdint.h>
+#include <stddef.h>
+#include <paf/std/ngp/memory>
+#include <paf/std/ngp/string>
+
+namespace paf {
+	template<class _Type, class _Alloc>
+	class _list_node
+	{
+	public:
+
+		_list_node<_Type,_Alloc> *prev;
+		_list_node<_Type, _Alloc> *next;
+		_Type val;
+	};
+
+	template<class _Type, class _Alloc>
+	class _list_const_iterator
+	{
+	public:
+
+		_list_const_iterator() : node_ptr(NULL)
+		{
+
+		}
+
+		_list_const_iterator(_list_node<_Type, _Alloc> *_node_ptr) : node_ptr(_node_ptr)
+		{
+
+		}
+
+		_list_const_iterator<_Type, _Alloc> operator++(int32_t dummy)
+		{
+			_list_const_iterator<_Type, _Alloc> ret = *this;
+			node_ptr = node_ptr->next;
+			return ret;
+		}
+
+		_list_const_iterator<_Type, _Alloc>& operator++()
+		{
+			node_ptr = node_ptr->next;
+			return *this;
+		}
+
+		_Type& operator*() const
+		{
+			return node_ptr->val;
+		}
+
+		_Type *operator->() const
+		{
+			return &node_ptr->val;
+		}
+
+		bool operator!=(_list_const_iterator<_Type, _Alloc> const& right) const
+		{
+			return (node_ptr != right.node_ptr);
+		}
+
+	protected:
+
+		_list_node<_Type, _Alloc> *node_ptr;
+	};
+
+	template<class _Type, class _Alloc>
+	class _list_iterator : public _list_const_iterator<_Type, _Alloc>
+	{
+	public:
+
+		_list_iterator()
+		{
+
+		}
+
+		_list_iterator(_list_node<_Type, _Alloc> *_node_ptr) : _list_const_iterator<_Type, _Alloc>(_node_ptr)
+		{
+
+		}
+	};
+
+	template<class _Type, class _Alloc = paf::allocator<_Type>>
+	class list
+	{
+	public:
+
+		typedef  _list_iterator<_Type, _Alloc> iterator;
+		typedef  _list_const_iterator<_Type, _Alloc> const_iterator;
+
+		list()
+		{
+			count = 0;
+			root_node = (_list_node<_Type, _Alloc>*)alloc_node.allocate(1);
+			root_node->prev = root_node;
+			root_node->next = root_node;
+		}
+
+		list(_Alloc const& _Al) : alloc_value(_Al), alloc_node(_Al)
+		{
+			count = 0;
+			root_node = (_list_node<_Type, _Alloc>*)alloc_node.allocate(1);
+			root_node->prev = root_node;
+			root_node->next = root_node;
+		}
+
+		~list()
+		{
+			_list_node<_Type, _Alloc> *nnode;
+			_list_node<_Type, _Alloc> *cnode = root_node->next;
+			if (cnode != root_node)
+			{
+				do
+				{
+					nnode = cnode->next;
+					_release_node(cnode);
+					cnode = nnode;
+				} while (nnode != root_node);
+			}
+			alloc_node.deallocate(root_node, 1);
+		}
+
+		void push_back(_Type const& element)
+		{
+			_list_node<_Type, _Alloc> *nnode = _create_node(element);
+			nnode->prev = root_node->prev;
+			nnode->next = root_node;
+			root_node->prev->next = nnode;
+			root_node->prev = nnode;
+			count++;
+		}
+
+		void push_front(_Type const& element)
+		{
+			_list_node<_Type, _Alloc> *nnode = _create_node(element);
+			nnode->prev = root_node;
+			nnode->next = root_node->next;
+			root_node->next->prev = nnode;
+			root_node->next = nnode;
+			count++;
+		}
+
+		void pop_front()
+		{
+			_list_node<_Type, _Alloc> *node;
+			if (count != 0)
+			{
+				node = root_node->next;
+				node->next->prev = node->prev;
+				node->prev->next = node->next;
+				_release_node(node);
+				count--;
+			}
+		}
+
+		void clear()
+		{
+			_list_node<_Type, _Alloc> *cnode = root_node->next;
+			if (cnode != root_node)
+			{
+				_list_node<_Type, _Alloc> *nnode = NULL;
+				do
+				{
+					nnode = cnode->next;
+					_release_node(cnode);
+					cnode = nnode;
+				} while (nnode != root_node);
+			}
+			root_node->next = root_node;
+			root_node->prev = root_node;
+			count = 0;
+		}
+
+		iterator erase(iterator at)
+		{
+			_list_node<_Type, _Alloc> *node = at.node_ptr;
+			_list_node<_Type, _Alloc> *_node_ptr = node->next;
+			node->next->prev = node->prev;
+			node->prev->next = node->next;
+			_release_node(node);
+			count--;
+			_list_iterator<_Type, _Alloc> ret(_node_ptr);
+			return ret;
+		}
+
+		_Type& front()
+		{
+			return root_node->next->val;
+		}
+
+		_Type& back()
+		{
+			return root_node->prev->val;
+		}
+
+		iterator begin()
+		{
+			_list_iterator<_Type, _Alloc> ret(root_node->next);
+			return ret;
+		}
+
+		iterator end()
+		{
+			_list_iterator<_Type, _Alloc> ret(root_node);
+			return ret;
+		}
+
+		bool empty() const
+		{
+			return (count == 0);
+		}
+
+		const_iterator begin() const
+		{
+			_list_const_iterator<_Type, _Alloc> ret(root_node->next);
+			return ret;
+		}
+
+		const_iterator end() const
+		{
+			_list_const_iterator<_Type, _Alloc> ret(root_node);
+			return ret;
+		}
+
+		size_t size() const
+		{
+			return count;
+		}
+
+	private:
+
+		_list_node<_Type, _Alloc> *_create_node(_Type const& val)
+		{
+			_list_node<_Type, _Alloc> *ret = alloc_node.allocate(1);
+			alloc_value.construct(&ret->val, val);
+			return ret;
+		}
+
+		void _release_node(_list_node<_Type, _Alloc> *node)
+		{
+			alloc_value.destroy(&node->val);
+			alloc_node.deallocate(node, 1);
+		}
+
+		_list_node<_Type, _Alloc> *root_node;
+		int32_t count;
+		paf::allocator<_Type> alloc_value;
+		paf::allocator<_list_node<_Type, _Alloc>> alloc_node;
+	};
+
+	typedef class list<string> token_list_t;
+}
+
+#endif

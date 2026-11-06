@@ -1,0 +1,38 @@
+/*
+	ScePaf-RE Project
+*/
+
+#ifndef _PAF_WIDGET_W_PAGETURN_BASE_H
+#define _PAF_WIDGET_W_PAGETURN_BASE_H
+
+#include <paf/widget/core/widget.h>
+#include <paf/widget/factory.h>
+
+SCE_PAF_IMPORTED_FROM_PRX extern paf::ui::FactoryFuncTable g_factoryPageTurnBase;
+
+namespace paf {
+
+	namespace ui {
+
+		class PageTurnBase : public Widget
+		{
+		public:
+
+			static const char *TypeName(void);
+
+			PageTurnBase(Widget *_parent, CreateParam *_param);
+
+			virtual ~PageTurnBase();
+
+			virtual bool IsInherit(char const *) const;
+			virtual char *GetTypeName(void) const;
+
+		protected:
+			unsigned char m_unk_0x27C[0x34];
+
+			SCE_PAF_IMPORTED_FROM_PRX static const char m_widget_type[];
+		};
+	}
+}
+
+#endif /* _PAF_WIDGET_W_PAGETURN_BASE_H */

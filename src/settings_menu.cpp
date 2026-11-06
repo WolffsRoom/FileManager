@@ -1,0 +1,317 @@
+#include <sdk_compat.h>
+#include <paf.h>
+#include <string.h>
+
+#include "common.h"
+#include "settings.h"
+#include "settings_menu.h"
+#include "core/fs.h"
+
+using namespace paf;
+
+namespace {
+
+	// Main level rows
+	enum MainRow { Main_Themes, Main_Language, Main_Select, Main_Shortcuts, Main_Commands, Main_Count };
+
+	const uint32_t k_mainLabels[Main_Count] = { msg_set_themes, msg_set_language, msg_set_select, msg_set_shortcuts, msg_set_commands };
+	const uint32_t k_mainIcons[Main_Count] = { tex_ui_image, tex_ui_text, tex_ui_ftp, tex_ui_bookmark, tex_new_gears };
+
+	const uint32_t k_languages[] = { msg_lang_system, msg_lang_ptbr, msg_lang_en };
+	const uint32_t k_selectFunctions[] = { msg_ftp_server, msg_qr_code };
+
+	// Button, then what it does
+	const uint32_t k_commands[][2] = {
+		{ msg_btn_cross, msg_cmd_open },
+		{ msg_btn_circle, msg_cmd_back },
+		{ msg_btn_triangle, msg_cmd_options },
+		{ msg_btn_square, msg_cmd_mark },
+		{ msg_btn_select, msg_cmd_select },
+		{ msg_btn_start, msg_cmd_settings },
+		{ msg_btn_l, msg_cmd_first },
+		{ msg_btn_r, msg_cmd_last },
+		{ msg_btn_left, msg_cmd_parent },
+		{ msg_btn_right, msg_cmd_enter },
+		{ msg_btn_hold, msg_cmd_mark },
+	};
+	const int32_t k_commandCount = sizeof(k_commands) / sizeof(k_commands[0]);
+
+	paf::wstring Str(uint32_t id)
+	{
+		// Through UTF-8 so the PAF builds the string itself.
+		paf::string s;
+		common::Utf16ToUtf8(paf::wstring(g_appPlugin->GetString(id)), &s);
+		paf::wstring w;
+		common::Utf8ToUtf16(s, &w);
+		return w;
+	}
+
+	paf::wstring Wide(const char *s)
+	{
+		paf::wstring w;
+		common::Utf8ToUtf16(s, &w);
+		return w;
+	}
+}
+
+SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *userdata) :
+	m_parentRoot(parentRoot), m_cb(cb), m_userdata(userdata), m_level(Level_Main), m_rows(0)
+{
+	Plugin::PageOpenParam openParam;
+	openParam.graphics_flag = 0x80;
+	openParam.overwrite_draw_priority = 8;
+	m_root = g_appPlugin->PageOpen(page_settings, openParam);
+
+	m_parentRoot->SetActivate(false);
+
+	theme::ApplyBackground(m_root->FindChild(plane_base_bg_page_settings));
+
+	ui::Widget *back = m_root->FindChild(button_back_page_settings);
+	back->SetKeycode(inputdevice::pad::Data::PAD_ESCAPE);
+	back->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<SettingsMenu *>(userdata)->OnBack();
+	}, this);
+
+	m_list = static_cast<ui::ListView *>(m_root->FindChild(list_view_page_settings));
+	m_list->SetItemFactory(new ListViewCb(this));
+	m_list->InsertSegment(0, 1);
+	math::v4 cellSize(960.0f, 80.0f);
+	m_list->SetCellSizeDefault(0, cellSize);
+	m_list->SetSegmentLayoutType(0, ui::ListView::LAYOUT_TYPE_LIST);
+
+	ShowLevel(Level_Main);
+}
+
+SettingsMenu::~SettingsMenu()
+{
+	m_list->SetName(static_cast<uint32_t>(0));
+	Plugin::PageCloseParam closeParam;
+	closeParam.fade = true;
+	closeParam.fade_time_ms = 200.0f;
+	g_appPlugin->PageClose(page_settings, closeParam);
+	m_parentRoot->SetActivate(true);
+}
+
+void SettingsMenu::OnBack()
+{
+	if (m_level != Level_Main)
+	{
+		ShowLevel(Level_Main);
+		return;
+	}
+	m_root->SetActivate(false);
+	DeferDelete(this);
+}
+
+int32_t SettingsMenu::RowCount(Level level)
+{
+	switch (level)
+	{
+	case Level_Main: return Main_Count;
+	case Level_Themes: return theme::Count();
+	case Level_Language: return 3;
+	case Level_Select: return 2;
+	case Level_Shortcuts: return m_shortcuts.size();
+	case Level_Commands: return k_commandCount;
+	}
+	return 0;
+}
+
+void SettingsMenu::ShowLevel(Level level)
+{
+	if (m_rows > 0)
+	{
+		m_list->DeleteCell(0, 0, m_rows);
+	}
+	m_level = level;
+
+	if (level == Level_Shortcuts)
+	{
+		// A working copy: unticking removes at once, ticking again restores.
+		m_shortcuts = shortcuts::List();
+		m_shortcutKept.clear();
+		for (uint32_t i = 0; i < m_shortcuts.size(); i++)
+		{
+			m_shortcutKept.push_back(1);
+		}
+	}
+
+	static const uint32_t k_titles[] = { msg_opt_settings, msg_set_themes, msg_set_language, msg_set_select, msg_set_shortcuts, msg_set_commands };
+	m_root->FindChild(text_top)->SetString(Str(k_titles[level]));
+
+	m_rows = RowCount(level);
+	if (m_rows > 0)
+	{
+		m_list->InsertCell(0, 0, m_rows);
+	}
+}
+
+bool SettingsMenu::IsSelected(int32_t row)
+{
+	settings::Config &c = settings::Get();
+	switch (m_level)
+	{
+	case Level_Themes: return c.theme == row;
+	case Level_Language: return c.language == row;
+	case Level_Select: return c.selectFunction == row;
+	case Level_Shortcuts: return row < (int32_t)m_shortcutKept.size() && m_shortcutKept.at(row);
+	default: return false;
+	}
+}
+
+ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &param)
+{
+	if (!param.list_view->GetName().GetIDHash() || param.cell_index >= m_rows)
+	{
+		return new ui::ListItem(param.parent, 0);
+	}
+
+	Plugin::TemplateOpenParam tmpParam;
+	const int32_t row = param.cell_index;
+
+	ui::Widget *targetRoot = param.parent;
+	g_appPlugin->TemplateOpen(targetRoot, template_list_item_file, tmpParam);
+	ui::Widget *item = targetRoot->GetChild(targetRoot->GetChildrenNum() - 1);
+
+	ui::Widget *button = item->FindChild(image_button_list_item);
+	button->SetName(row);
+
+	paf::wstring label, info;
+	uint32_t icon = tex_new_settings;
+	settings::Config &c = settings::Get();
+
+	switch (m_level)
+	{
+	case Level_Main:
+		label = Str(k_mainLabels[row]);
+		icon = k_mainIcons[row];
+		if (row == Main_Themes) info = Str(theme::At(c.theme).nameHash);
+		else if (row == Main_Language) info = Str(k_languages[c.language]);
+		else if (row == Main_Select) info = Str(k_selectFunctions[c.selectFunction]);
+		else if (row == Main_Shortcuts) info = Wide(common::FormatString("%u", (uint32_t)shortcuts::List().size()).c_str());
+		break;
+	case Level_Themes:
+		label = Str(theme::At(row).nameHash);
+		icon = tex_ui_image;
+		break;
+	case Level_Language:
+		label = Str(k_languages[row]);
+		icon = tex_ui_text;
+		break;
+	case Level_Select:
+		label = Str(k_selectFunctions[row]);
+		icon = tex_ui_ftp;
+		break;
+	case Level_Shortcuts:
+		label = Wide(m_shortcuts.at(row).c_str());
+		icon = tex_ui_bookmark;
+		break;
+	case Level_Commands:
+		label = Str(k_commands[row][1]);
+		info = Str(k_commands[row][0]);
+		icon = tex_new_gear;
+		break;
+	}
+
+	button->SetString(label);
+	button->FindChild(text_list_item_info)->SetString(info);
+
+	ui::Widget *check = button->FindChild(plane_list_item_check);
+	if (m_level == Level_Shortcuts)
+	{
+		// shortcuts use a check box that can be unticked
+		check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_checkbox_on : tex_checkbox_off), 0, 0);
+	}
+	else if (!IsSelected(row))
+	{
+		check->Hide(common::transition::Type_Reset);
+	}
+
+	intrusive_ptr<graph::Surface> tex = g_appPlugin->GetTexture(icon);
+	if (tex.get())
+	{
+		button->SetTexture(tex);
+	}
+
+	button->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<SettingsMenu *>(userdata)->OnRow(static_cast<ui::Widget *>(self)->GetName().GetIDHash());
+	}, this);
+
+	return static_cast<ui::ListItem *>(item);
+}
+
+void SettingsMenu::UpdateChecks()
+{
+	for (int32_t row = 0; row < m_rows; row++)
+	{
+		ui::ListItem *item = m_list->GetListItem(0, row);
+		if (!item)
+		{
+			continue;
+		}
+		ui::Widget *check = item->FindChild(plane_list_item_check);
+		if (m_level == Level_Shortcuts)
+		{
+			check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_checkbox_on : tex_checkbox_off), 0, 0);
+		}
+		else if (IsSelected(row))
+		{
+			check->Show(common::transition::Type_Reset);
+		}
+		else
+		{
+			check->Hide(common::transition::Type_Reset);
+		}
+	}
+}
+
+void SettingsMenu::OnRow(int32_t row)
+{
+	settings::Config &c = settings::Get();
+	switch (m_level)
+	{
+	case Level_Main:
+		if (row == Main_Themes) ShowLevel(Level_Themes);
+		else if (row == Main_Language) ShowLevel(Level_Language);
+		else if (row == Main_Select) ShowLevel(Level_Select);
+		else if (row == Main_Shortcuts) ShowLevel(Level_Shortcuts);
+		else ShowLevel(Level_Commands);
+		return;
+	case Level_Themes:
+		c.theme = row;
+		theme::ApplyBackground(m_root->FindChild(plane_base_bg_page_settings));
+		break;
+	case Level_Language:
+		c.language = row;
+		settings::ApplyLanguage();
+		// Rows of this page take the new strings when rebuilt.
+		ShowLevel(Level_Language);
+		break;
+	case Level_Select:
+		c.selectFunction = row;
+		break;
+	case Level_Shortcuts:
+		if (row < (int32_t)m_shortcutKept.size())
+		{
+			m_shortcutKept.at(row) = !m_shortcutKept.at(row);
+			if (m_shortcutKept.at(row))
+			{
+				shortcuts::Add(m_shortcuts.at(row));
+			}
+			else
+			{
+				shortcuts::Remove(m_shortcuts.at(row));
+			}
+		}
+		break;
+	case Level_Commands:
+		return;
+	}
+	settings::Save();
+	UpdateChecks();
+	m_cb(m_userdata);
+}

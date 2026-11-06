@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Same style as the system's Content Manager: the LiveArea itself writes the
+     application title in the top left corner. The text is the TITLE of param.sfo,
+     localized there ("Gerenciador de arquivos" on Portuguese consoles). -->
+<livearea style="content_manager" format-ver="01.00" content-rev="2">
+	<livearea-background>
+		<image>labg.png</image>
+	</livearea-background>
+
+	<title color="#ffffff"/>
+
+	<gate>
+		<startup-image>gate.png</startup-image>
+	</gate>
+</livearea>

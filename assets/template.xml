@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<livearea style="content_manager" format-ver="01.03" content-rev="1">
+
+	<livearea-background>
+		<image>labg.png</image>
+	</livearea-background>
+
+	<gate>
+		<startup-image>gate.png</startup-image>
+	</gate>
+
+	<frame id="frame3">
+		<liveitem default="on">
+			<image valign="top">title.png</image>
+		</liveitem>
+	</frame>
+</livearea>

@@ -1,0 +1,206 @@
+/*
+	ScePaf-RE Project
+*/
+
+#ifndef _PAF_INPUTDEVICE_INPUTLISTENER_H
+#define _PAF_INPUTDEVICE_INPUTLISTENER_H
+
+#include <stdint.h>
+#include <paf/inputdevice/inputdevice.h>
+#include <paf/common/shared_ptr.h>
+
+namespace paf {
+	namespace inputdevice {
+
+		enum
+		{
+			DEVICE_TYPE_PAD = 0,
+			DEVICE_TYPE_TOUCHSCREEN_FRONT = 3,
+			DEVICE_TYPE_TOUCHSCREEN_BACK = 4,
+			DEVICE_TYPE_MOTIONSENSOR = 5,
+			DEVICE_TYPE_BTRM = 8,
+			DEVICE_TYPE_HIDRM = 9,
+			DEVICE_TYPE_KEYBOARD = 10
+		};
+
+		class InputListener
+		{
+		public:
+
+			InputListener() : m_init(false), m_type(DEVICE_TYPE_TOUCHSCREEN_FRONT)
+			{
+				Init();
+			}
+
+			InputListener(int32_t type) : m_init(false), m_type(type)
+			{
+				Init();
+			}
+
+			virtual ~InputListener()
+			{
+
+			}
+
+			virtual void Init()
+			{
+
+				m_init = true;
+			}
+
+			virtual void OnUpdate(Data *data)
+			{
+
+			}
+
+			virtual void unkFun_10()
+			{
+
+			}
+
+			virtual void unkFun_14()
+			{
+
+			}
+
+		protected:
+
+			bool m_init;
+			int32_t m_type;
+		};
+
+		class InputGestureListener;
+
+		class GestureParam
+		{
+		public:
+
+			GestureParam()
+			{
+
+			}
+
+			virtual ~GestureParam()
+			{
+
+			}
+
+			virtual void AdjustParam()
+			{
+
+			}
+		};
+
+		class GestureListener
+		{
+		public:
+
+			GestureListener() : m_input(NULL), m_on_delete(false), m_attached_bitmap(0), m_attached_bitmap_pre(0), m_attached_counter(0), m_orientation(0), m_user_data(NULL)
+			{
+
+			}
+
+			virtual ~GestureListener()
+			{
+
+			}
+
+			virtual void Init()
+			{
+
+			}
+
+			virtual void PreUpdate()
+			{
+
+			}
+
+			virtual int32_t OnUpdate(const Data *data)
+			{
+				m_attached_bitmap_pre = m_attached_bitmap;
+				return 0;
+			}
+
+			virtual void SetGestureParam(const GestureParam *param)
+			{
+
+			}
+
+			virtual int32_t Attach(uint32_t attach_id);
+
+			virtual int32_t Detach(uint32_t attach_id);
+
+			void AddUserDataList(void *data);
+
+			void DelUserDataList(void *data);
+
+			void IncrUserDataList(void *data);
+
+			void DecrUserDataList(void *data);
+
+			bool IsValidUserData(void *data);
+
+		protected:
+
+			int32_t get_id_from_bitmap(uint32_t bitmap, uint32_t idx);
+
+			InputGestureListener *m_input;
+			bool m_on_delete;
+			uint32_t m_attached_bitmap;
+			uint32_t m_attached_bitmap_pre;
+			uint32_t m_attached_counter;
+			uint32_t m_orientation;
+			void *m_user_data;
+		};
+
+		class GestureListenerPack
+		{
+		public:
+
+			common::SharedPtr<GestureListener> gesture_listener;
+			bool on_detach;
+		};
+
+		class InputGestureListener : public InputListener
+		{
+		public:
+
+			InputGestureListener()
+			{
+
+			}
+
+			virtual ~InputGestureListener()
+			{
+
+			}
+
+			virtual void Init();
+
+			virtual void PreUpdateGesturePort(uint32_t port_id);
+
+			virtual int32_t OnUpdateGesturePort(const Data *data, uint32_t port_id);
+
+			virtual int32_t SetInputMask(uint32_t port, uint32_t mask)
+			{
+				return 0;
+			}
+			
+			common::SharedPtr<GestureListener> GetGestureListener(uint32_t port_id, int32_t priority, void *user_data);
+
+			int32_t DetachGestureListener(uint32_t port_id, common::SharedPtr<GestureListener> listener);
+
+		protected:
+
+			void update_gesture_delete(uint32_t port_id);
+
+			map<int32_t, GestureListenerPack> m_gesture[8];
+		};
+
+		extern int32_t AddInputListener(common::SharedPtr<InputListener>& input_listener);
+
+		extern int32_t DelInputListener(common::SharedPtr<InputListener>& input_listener);
+	}
+}
+
+#endif /* _PAF_INPUTDEVICE_INPUTLISTENER_H */

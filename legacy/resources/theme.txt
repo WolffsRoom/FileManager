@@ -1,0 +1,3 @@
+# FileManager theme file
+
+THEME_NAME = "Default"

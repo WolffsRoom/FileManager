@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<stringset>
+  <string src="Gerenciador de Arquivos" id="msg_app_title" />
+  <string src="Esta pasta está vazia" id="msg_empty_folder" />
+  <string src="Cartão de Memória" id="msg_dev_ux0" />
+  <string src="Memória do Sistema" id="msg_dev_ur0" />
+  <string src="Armazenamento USB" id="msg_dev_uma0" />
+  <string src="Armazenamento Interno" id="msg_dev_imc0" />
+  <string src="Memória Adicional" id="msg_dev_xmc0" />
+  <string src="Cartão de Jogo" id="msg_dev_gro0" />
+  <string src="Cartão de Jogo (Gravável)" id="msg_dev_grw0" />
+  <string src="Partição do Sistema" id="msg_dev_system" />
+
+  <string src="Selecionar" id="msg_opt_select" />
+  <string src="Limpar Seleção" id="msg_opt_clear_selection" />
+  <string src="Copiar" id="msg_opt_copy" />
+  <string src="Mover" id="msg_opt_move" />
+  <string src="Colar" id="msg_opt_paste" />
+  <string src="Excluir" id="msg_opt_delete" />
+  <string src="Renomear" id="msg_opt_rename" />
+  <string src="Nova Pasta" id="msg_opt_new_folder" />
+  <string src="Informações" id="msg_opt_info" />
+
+  <string src="Excluir" id="msg_confirm_delete_title" />
+  <string src="Excluir os itens selecionados? Não é possível desfazer." id="msg_confirm_delete" />
+  <string src="Aguarde..." id="msg_wait" />
+  <string src="Copiando..." id="msg_copying" />
+  <string src="Movendo..." id="msg_moving" />
+  <string src="Excluindo..." id="msg_deleting" />
+  <string src="Renomear" id="msg_rename_title" />
+  <string src="Nova Pasta" id="msg_new_folder_title" />
+  <string src="Informações" id="msg_info_title" />
+  <string src="Local" id="msg_info_location" />
+  <string src="Tamanho" id="msg_info_size" />
+  <string src="Livre" id="msg_info_free" />
+  <string src="Pastas" id="msg_info_folders" />
+  <string src="Arquivos" id="msg_info_files" />
+  <string src="livres" id="msg_free_suffix" />
+  <string src="Configurações" id="msg_opt_settings" />
+  <string src="Exibição" id="msg_section_view" />
+  <string src="Tema" id="msg_section_theme" />
+  <string src="Lista" id="msg_view_list" />
+  <string src="Duas Colunas" id="msg_view_two_columns" />
+  <string src="Padrão" id="msg_theme_default" />
+  <string src="Meia-noite" id="msg_theme_midnight" />
+  <string src="Grafite" id="msg_theme_graphite" />
+  <string src="Oceano" id="msg_theme_ocean" />
+  <string src="Roxo" id="msg_theme_purple" />
+  <string src="Esmeralda" id="msg_theme_emerald" />
+  <string src="Vinho" id="msg_theme_wine" />
+  <string src="Rosa" id="msg_theme_pink" />
+  <string src="Imagem Personalizada" id="msg_theme_custom" />
+  <string src="Não foi possível visualizar este arquivo" id="msg_preview_error" />
+  <string src="Partições do Sistema" id="msg_system_partitions" />
+  <string src="Aplicativos" id="msg_shortcut_apps" />
+  <string src="Dados de Apps" id="msg_shortcut_data" />
+  <string src="Plugins" id="msg_shortcut_plugins" />
+  <string src="%s livres de %s" id="msg_free_of" />
+  <string src="Mais..." id="msg_opt_more" />
+  <string src="Adicionar aos Atalhos" id="msg_opt_add_shortcut" />
+  <string src="Remover Atalho" id="msg_opt_remove_shortcut" />
+  <string src="Servidor FTP" id="msg_ftp_server" />
+  <string src="Conecte um cliente FTP ao endereço acima." id="msg_ftp_running" />
+  <string src="Parar" id="msg_ftp_stop" />
+  <string src="Conecte-se a uma rede Wi-Fi nas Configurações primeiro." id="msg_ftp_no_network" />
+  <string src="IP: %s     Porta: %s" id="msg_ftp_address" />
+  <string src="Aguardando conexão..." id="msg_ftp_waiting" />
+  <string src="Pronto" id="msg_ftp_ready" />
+  <string src="Enviando: %s" id="msg_ftp_sending" />
+  <string src="Recebendo: %s" id="msg_ftp_receiving" />
+  <string src="Excluindo: %s" id="msg_ftp_deleting" />
+  <string src="Listando arquivos..." id="msg_ftp_listing" />
+  <string src="Pasta: %s" id="msg_ftp_folder" />
+  <string src="Criando pasta: %s" id="msg_ftp_mkdir" />
+  <string src="Removendo pasta: %s" id="msg_ftp_rmdir" />
+  <string src="Renomeando: %s" id="msg_ftp_rename" />
+  <string src="%s de %s" id="msg_ftp_progress_of" />
+  <string src="%s recebidos" id="msg_ftp_received" />
+  <string src="OK" id="msg_ok" />
+  <string src="Cancelar" id="msg_cancel" />
+  <string src="Instalar" id="msg_install_title" />
+  <string src="Instalar este pacote?" id="msg_install_confirm" />
+  <string src="Instalando..." id="msg_installing" />
+  <string src="Instalado (%s). Já está na tela inicial." id="msg_install_done" />
+  <string src="Temas" id="msg_set_themes" />
+  <string src="Idioma" id="msg_set_language" />
+  <string src="Função do Select" id="msg_set_select" />
+  <string src="Atalhos" id="msg_set_shortcuts" />
+  <string src="Comandos" id="msg_set_commands" />
+  <string src="Idioma do sistema" id="msg_lang_system" />
+  <string src="Português (Brasil)" id="msg_lang_ptbr" />
+  <string src="English" id="msg_lang_en" />
+  <string src="QR Code" id="msg_qr_code" />
+  <string src="A leitura de QR Code ainda não está disponível nesta versão." id="msg_qr_unavailable" />
+  <string src="Cruz" id="msg_btn_cross" />
+  <string src="Círculo" id="msg_btn_circle" />
+  <string src="Triângulo" id="msg_btn_triangle" />
+  <string src="Quadrado" id="msg_btn_square" />
+  <string src="SELECT" id="msg_btn_select" />
+  <string src="START" id="msg_btn_start" />
+  <string src="Botão L" id="msg_btn_l" />
+  <string src="Botão R" id="msg_btn_r" />
+  <string src="Esquerda" id="msg_btn_left" />
+  <string src="Direita" id="msg_btn_right" />
+  <string src="Tocar e segurar" id="msg_btn_hold" />
+  <string src="Abrir / confirmar" id="msg_cmd_open" />
+  <string src="Voltar" id="msg_cmd_back" />
+  <string src="Opções" id="msg_cmd_options" />
+  <string src="Selecionar item" id="msg_cmd_mark" />
+  <string src="Servidor FTP ou QR Code" id="msg_cmd_select" />
+  <string src="Configurações" id="msg_cmd_settings" />
+  <string src="Ir para o primeiro item" id="msg_cmd_first" />
+  <string src="Ir para o último item" id="msg_cmd_last" />
+  <string src="Pasta anterior" id="msg_cmd_parent" />
+  <string src="Abrir pasta" id="msg_cmd_enter" />
+  <string src="Downloads" id="msg_shortcut_downloads" />
+  <string src="Imagens" id="msg_shortcut_pictures" />
+  <string src="Músicas" id="msg_shortcut_music" />
+  <string src="PSP" id="msg_shortcut_psp" />
+  <string src="Deseja instalar esse conteúdo?" id="msg_install_question" />
+  <string src="Instalar" id="msg_install_button" />
+  <string src="Versão" id="msg_info_version" />
+  <string src="ID do título" id="msg_info_titleid" />
+  <string src="Dimensões" id="msg_info_dimensions" />
+  <string src="Cliente conectado: %s" id="msg_ftp_client" />
+  <string src="Lixeira" id="msg_shortcut_trash" />
+</stringset>

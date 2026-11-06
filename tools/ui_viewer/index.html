@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>File Manager UI Viewer</title>
+<style>
+  :root { --bg: #15171c; --fg: #e6e8ec; --muted: #9aa0aa; --accent: #6fa8ff; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; }
+  main { display: flex; gap: 20px; padding: 16px; flex-wrap: wrap; }
+  canvas { width: 960px; max-width: 100%; aspect-ratio: 960 / 544; background: #000; border-radius: 8px; image-rendering: auto; }
+  aside { min-width: 260px; max-width: 360px; }
+  h1 { font-size: 16px; margin: 0 0 8px; }
+  kbd { background: #2a2e36; border-radius: 4px; padding: 1px 6px; font-size: 12px; }
+  table { border-collapse: collapse; width: 100%; }
+  td { padding: 3px 4px; border-bottom: 1px solid #2a2e36; }
+  #log { color: var(--muted); white-space: pre-wrap; font-size: 12px; max-height: 220px; overflow: auto; }
+  select, button { background: #2a2e36; color: var(--fg); border: 1px solid #3a3f49; border-radius: 4px; padding: 4px 8px; }
+  label { display: block; margin: 6px 0; }
+</style>
+</head>
+<body>
+<main>
+  <canvas id="screen" width="960" height="544"></canvas>
+  <aside>
+    <h1>File Manager - UI viewer</h1>
+    <p style="color:var(--muted)">Desenha o RCO compilado com as texturas e estilos do firmware. Valida layout e fluxo; não executa o PAF.</p>
+    <table>
+      <tr><td>Cruz</td><td><kbd>Enter</kbd> / clique</td></tr>
+      <tr><td>Círculo</td><td><kbd>Esc</kbd> / <kbd>Backspace</kbd></td></tr>
+      <tr><td>Triângulo</td><td><kbd>T</kbd></td></tr>
+      <tr><td>Quadrado</td><td><kbd>Espaço</kbd></td></tr>
+      <tr><td>Select</td><td><kbd>S</kbd></td></tr>
+      <tr><td>D-pad</td><td>setas</td></tr>
+      <tr><td>L / R</td><td><kbd>Q</kbd> / <kbd>E</kbd></td></tr>
+    </table>
+    <label>Idioma <select id="lang"><option>pt-br</option><option>en</option></select></label>
+    <label><input type="checkbox" id="bounds"> mostrar contornos dos widgets</label>
+    <div id="log"></div>
+  </aside>
+</main>
+<script>
+  // Always load the current files: the viewer is edited and reloaded constantly.
+  const bust = '?t=' + Date.now();
+  const load = (src) => new Promise((ok) => { const e = document.createElement('script'); e.src = src + bust; e.onload = ok; document.body.appendChild(e); });
+  load('viewer.js').then(() => load('app_sim.js'));
+</script>
+</body>
+</html>

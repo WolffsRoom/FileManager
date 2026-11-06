@@ -1,0 +1,29 @@
+/*
+	ScePaf-RE Project
+*/
+
+#ifndef _PAF_STD_STDC_H
+#define _PAF_STD_STDC_H
+
+#if defined(__SNC__)
+#include <scetypes.h>
+#elif defined(__vita__)
+#include <psp2/types.h>
+#endif
+
+namespace paf {
+	class TTY
+	{
+	public:
+
+		TTY();
+
+		~TTY();
+
+		SceUID fd_stdout;
+		SceUID fd_stdin;
+		SceUID fd_extratty;
+	};
+}
+
+#endif

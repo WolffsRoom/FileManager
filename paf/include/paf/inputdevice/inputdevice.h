@@ -1,0 +1,62 @@
+/*
+	ScePaf-RE Project
+*/
+
+#ifndef _PAF_INPUTDEVICE_INPUTDEVICE_H
+#define _PAF_INPUTDEVICE_INPUTDEVICE_H
+
+#include <stdint.h>
+#include <paf/inputdevice/pad/pad.h>
+#include <paf/inputdevice/touchscreen/touchscreen.h>
+#include <paf/inputdevice/motionsensor/motionsensor.h>
+#include <paf/inputdevice/keyboard/keyboard.h>
+
+namespace paf {
+	namespace inputdevice {
+
+		class InitParam
+		{
+		public:
+
+			enum Mode : int32_t
+			{
+				Mode_Normal = 0,
+				Mode_DigitalAnalog = 1,
+				Mode_CommonDialog = 2,
+				Mode_DigitalOnly = 3,
+			};
+
+			int32_t m_mode;
+		};
+
+		class Data
+		{
+		public:
+
+			pad::Data *m_pad_data;
+			pad::Data *m_pad_data_pre;
+			touchscreen::Data *m_touch_data;
+			touchscreen::Data *m_touch_data_pre;
+			touchscreen::Data *m_touch_rear_data;
+			touchscreen::Data *m_touch_rear_data_pre;
+			motionsensor::Data *m_motion_data;
+			motionsensor::Data *m_motion_data_pre;
+			int32_t m_btrm_data;
+			int32_t m_btrm_data_pre;
+			int32_t m_bdrmc_data;
+			int32_t m_bdrmc_data_pre;
+			keyboard::Data *m_keyboard_data;
+			keyboard::Data *m_keyboard_data_pre;
+		};
+
+		extern int32_t Init(InitParam& init_param);
+
+		int32_t End();
+
+		int32_t Update(float diff_time);
+
+		int32_t GetCurrPort(void);
+	}
+}
+
+#endif /* _PAF_INPUTDEVICE_INPUTDEVICE_H */

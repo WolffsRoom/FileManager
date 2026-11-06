@@ -1,0 +1,97 @@
+﻿/*
+	ScePaf-RE Project
+*/
+
+#ifndef _PAF_RTC_RTC_H
+#define _PAF_RTC_RTC_H
+
+#include <paf/paf_types.h>
+#include <stdint.h>
+
+namespace paf {
+	namespace rtc {
+
+		typedef uint64_t Tick;
+
+		enum SQLiteDateTimeFormatType : int32_t
+		{
+			INVALID = 0,
+			YEAR_ONLY = 1,
+			YEAR_MONTH = 2,
+			DATE = 3,
+			DATE_HOUR = 4,
+			DATE_HOUR_MINUTE = 5,
+			DATE_HOUR_MINUTE_SECOND = 6,
+			DATE_HOUR_MINUTE_SECOND_MILLISECOND = 7
+		};
+
+		struct DateTime
+		{
+			uint16_t year;
+			uint16_t month;
+			uint16_t day;
+			uint16_t hour;
+			uint16_t minute;
+			uint16_t second;
+			uint32_t microsecond;
+		};
+
+		struct DateTimeEx
+		{
+			uint16_t weekday;
+			uint16_t yearday;
+			uint16_t unk_04;
+			uint16_t unk_06;
+		};
+
+		extern int32_t IsLeapYear(uint16_t year);
+
+		extern int32_t IsLeapYear(const Tick *pTick);
+
+		extern int32_t GetDaysInMonth(const Tick *pTick);
+
+		extern int32_t ParseSQLiteDateTime(Tick *pTick, const char *dt);
+
+		extern int32_t ParseSQLiteDateTime(Tick *pTick, SQLiteDateTimeFormatType *ftype, const char *dt);
+
+		extern int32_t ConvertDateTimeToTick(DateTime const* src, Tick *pTick);
+
+		extern int32_t ConvertTickToDateTime(Tick const *pTick, DateTime *dst, DateTimeEx *exdst);
+
+		extern int32_t GetCurrentLocalTick(Tick *pTick);
+
+		extern int32_t GetCurrentTick(Tick *pTick);
+
+		extern int32_t GetCurrentNetworkTick(Tick *pTick);
+
+		extern int32_t TickAddMicroseconds(Tick *pTick0, const Tick *pTick1, int64_t lAdd);
+
+		extern int32_t TickAddSeconds(Tick *pTick0, const Tick *pTick1, int64_t lAdd);
+
+		extern int32_t TickAddMinutes(Tick *pTick0, const Tick *pTick1, int64_t lAdd);
+
+		extern int32_t TickAddHours(Tick *pTick0, const Tick *pTick1, int32_t iAdd);
+
+		extern int32_t TickAddDays(Tick *pTick0, const Tick *pTick1, int32_t iAdd);
+
+		extern int32_t TickAddWeeks(Tick *pTick0, const Tick *pTick1, int32_t iAdd);
+
+		extern int32_t TickAddMonths(Tick *pTick0, const Tick *pTick1, int32_t iAdd);
+
+		extern int32_t TickAddYears(Tick *pTick0, const Tick *pTick1, int32_t iAdd);
+
+		extern int32_t ConvertUtcToLocalTime(const Tick *pUtc, Tick *pLocalTime);
+
+		extern int32_t ConvertLocalTimeToUtc(const Tick *pLocalTime, Tick *pUtc);
+
+		extern int32_t ParseRFC3339(Tick *pUtc, const char *pszDateTime);
+
+		extern int32_t ParseRFC3339LocalTime(Tick *pLocal, const char *pszDateTime);
+
+		extern int32_t FormatRFC3339(char *pszDateTime, const Tick *pUtc, int32_t iTimeZoneMinutes);
+
+		extern int32_t FormatRFC3339LocalTime(char *pszDateTime, const Tick *pLocal);
+	}
+}
+
+#endif /* _PAF_RTC_RTC_H */

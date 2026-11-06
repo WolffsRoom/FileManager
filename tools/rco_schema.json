@@ -1,0 +1,2273 @@
+{
+"alias": {
+"id": [
+11
+],
+"org_id": [
+12
+]
+},
+"app_icon_simple": {
+"appearance": [
+1
+],
+"enable_tap": [
+1
+],
+"id": [
+5
+],
+"texture": [
+12
+]
+},
+"banner_button": {
+"id": [
+5
+],
+"style": [
+12
+]
+},
+"box": {
+"exclusive_list": [
+3
+],
+"hit_ignore": [
+1
+],
+"id": [
+5
+],
+"style": [
+12
+],
+"texture": [
+12
+]
+},
+"browser_rich_text": {
+"id": [
+5
+],
+"style": [
+12
+],
+"w_sbar_v": [
+5
+]
+},
+"busyindicator": {
+"id": [
+5
+],
+"style": [
+12
+],
+"texture": [
+12
+]
+},
+"button": {
+"enable": [
+1
+],
+"enable_long_press_text_auto_scroll": [
+1
+],
+"id": [
+5
+],
+"label": [
+12
+],
+"sound": [
+12
+],
+"style": [
+12
+],
+"texture": [
+12
+]
+},
+"button_base": {
+"id": [
+5
+],
+"style": [
+12
+]
+},
+"check_box": {
+"id": [
+5
+],
+"sound": [
+12
+],
+"style": [
+12
+]
+},
+"color_change_button": {
+"enable_long_press_text_auto_scroll": [
+1
+],
+"id": [
+5
+],
+"style": [
+12
+],
+"texture": [
+12
+]
+},
+"color_shift_button": {
+"default_color": [
+7
+],
+"enable_long_press_text_auto_scroll": [
+1
+],
+"id": [
+5
+],
+"press_color": [
+7
+],
+"style": [
+12
+]
+},
+"composite_button": {
+"id": [
+5
+],
+"sound": [
+12
+],
+"str1": [
+12
+],
+"style": [
+12
+],
+"tex0": [
+12
+]
+},
+"composite_drawer": {
+"id": [
+5
+],
+"style": [
+12
+]
+},
+"corner_button": {
+"id": [
+5
+],
+"style": [
+12
+]
+},
+"dialog": {
+"exclusive_list": [
+3
+],
+"id": [
+5
+],
+"style": [
+12
+]
+},
+"directbar": {
+"balloon_type": [
+1
+],
+"hitmargin": [
+2
+],
+"id": [
+5
+],
+"label": [
+12
+],
+"launchbtn_y": [
+2
+],
+"style": [
+12
+],
+"texture": [
+12
+]
+},
+"drop_shadow_button": {
+"enable_long_press_text_auto_scroll": [
+1
+],
+"id": [
+5
+],
+"shadow_blur_factor": [
+2
+],
+"shadow_color": [
+7
+],
+"shadow_ofs": [
+7
+],
+"shadow_pos": [
+7
+],
+"shadow_press_blur_factor": [
+2
+],
+"shadow_press_color": [
+7
+],
+"shadow_press_pos": [
+7
+],
+"shadow_scale": [
+7
+],
+"shadow_texture_no": [
+1
+],
+"style": [
+12
+],
+"texture": [
+12
+]
+},
+"file": {
+"compress": [
+3
+],
+"id": [
+11
+],
+"origsize": [
+1
+],
+"src": [
+8
+],
+"type": [
+3
+]
+},
+"file_list": {
+"id": [
+5
+],
+"style": [
+12
+]
+},
+"five_star_plane": {
+"id": [
+5
+],
+"off_texture": [
+12
+],
+"on_texture": [
+12
+],
+"style": [
+12
+]
+},
+"focus_hint": {
+"direct_key": [
+1
+],
+"down_id": [
+5
+],
+"enable": [
+1
+],
+"focus_offset": [
+7
+],
+"focus_rot": [
+7
+],
+"focus_shape": [
+1
+],
+"focus_size": [
+7
+],
+"focus_texture": [
+12
+],
+"left_id": [
+12,
+5
+],
+"right_id": [
+12,
+5
+],
+"up_id": [
+5
+]
+},
+"group": {
+"id": [
+5
+]
+},
+"id": {
+"id": [
+5
+]
+},
+"image_button": {
+"enable": [
+1
+],
+"enable_long_press_text_auto_scroll": [
+1
+],
+"id": [
+5
+],
+"label": [
+12
+],
+"sound": [
+12
+],
+"style": [
+12
+],
+"texture": [
+12
+]
+},
+"image_slidebar": {
+"base_mode": [
+1
+],
+"id": [
+5
+],
+"style": [
+12
+],
+"tex_mode": [
+1
+],
+"texture": [
+12
+],
+"texture_bar": [
+12
+]
+},
+"layout_box": {
+"adjust": [
+6
+],
+"align": [
+6
+],
+"alpha": [
+2
+],
+"anchor": [
+6
+],
+"bottom_margin": [
+2
+],
+"boundary_mode_x": [
+1
+],
+"boundary_mode_y": [
+1
+],
+"children_adjust_x": [
+1
+],
+"children_adjust_y": [
+1
+],
+"children_align_x": [
+1
+],
+"children_align_y": [
+1
+],
+"children_height": [
+2
+],
+"id": [
+5
+],
+"layout_type": [
+1
+],
+"left_margin": [
+2
+],
+"max_size": [
+7
+],
+"min_size": [
+7
+],
+"origin": [
+6
+],
+"pos": [
+7
+],
+"right_margin": [
+2
+],
+"size": [
+7
+],
+"space": [
+2
+],
+"space_adjust": [
+1
+],
+"top_margin": [
+2
+]
+},
+"layout_dialog": {
+"adjust": [
+6
+],
+"align": [
+6
+],
+"children_adjust_x": [
+1
+],
+"children_adjust_y": [
+1
+],
+"id": [
+5
+],
+"layout_type": [
+1
+],
+"min_size": [
+7
+],
+"pos": [
+7
+],
+"size": [
+7
+]
+},
+"layout_hint": {
+"adjust": [
+6
+],
+"align": [
+6
+],
+"alpha": [
+2
+],
+"anchor": [
+6
+],
+"id": [
+5
+],
+"origin": [
+6
+],
+"pos": [
+7
+],
+"rot": [
+7
+],
+"size": [
+7
+]
+},
+"list_edge": {
+"id": [
+5
+],
+"style": [
+12
+]
+},
+"list_item": {
+"id": [
+11,
+5
+],
+"style": [
+12
+],
+"text_auto_scroll_target": [
+5
+]
+},
+"list_view": {
+"id": [
+5
+],
+"sbar_fadeout_time": [
+2
+],
+"sound": [
+12
+],
+"style": [
+12
+],
+"w_sbar_h": [
+5
+],
+"w_sbar_v": [
+5
+]
+},
+"locale": {
+"compress": [
+3
+],
+"id": [
+9
+],
+"origsize": [
+1
+],
+"src": [
+8
+]
+},
+"num_spin": {
+"id": [
+5
+],
+"loop": [
+1
+]
+},
+"override_alias": {
+"model_type": [
+1
+],
+"org_id": [
+12
+]
+},
+"override_template_ref": {
+"resolution": [
+5
+],
+"template": [
+12
+]
+},
+"override_texture": {
+"compress": [
+3
+],
+"ignore_make_surface_first": [
+3
+],
+"margin_h": [
+6
+],
+"margin_v": [
+6
+],
+"model_type": [
+1
+],
+"origsize": [
+1
+],
+"src": [
+8
+],
+"type": [
+3
+]
+},
+"page": {
+"id": [
+11
+],
+"layouter": [
+3
+],
+"origin": [
+6
+],
+"style": [
+12
+],
+"template": [
+12
+]
+},
+"plane": {
+"hit_ignore": [
+1
+],
+"id": [
+5
+],
+"style": [
+12
+],
+"texture": [
+12
+]
+},
+"plane_button": {
+"enable": [
+1
+],
+"id": [
+5
+],
+"sound": [
+12
+],
+"style": [
+12
+],
+"texture": [
+12
+]
+},
+"plane_shadow": {
+"id": [
+5
+],
+"style": [
+12
+]
+},
+"planeobj": {
+"align_x": [
+1
+],
+"align_y": [
+1
+],
+"blend": [
+1
+],
+"color": [
+7
+],
+"id": [
+5
+],
+"pos": [
+7
+],
+"reduce_transparency": [
+1
+],
+"scale_mode_x": [
+1
+],
+"scale_mode_y": [
+1
+],
+"scale_value": [
+7
+],
+"size": [
+7
+],
+"tex_region": [
+7
+],
+"texture0": [
+12
+],
+"texture1": [
+12
+]
+},
+"progressbar": {
+"bar_mode": [
+1
+],
+"id": [
+5
+],
+"label_margin": [
+2
+],
+"label_mode": [
+1
+],
+"label_pos_mode": [
+1
+],
+"signal_anim": [
+1
+],
+"style": [
+12
+],
+"w_label": [
+5
+]
+},
+"progressbar_touch": {
+"bar_mode": [
+1
+],
+"id": [
+5
+],
+"label_margin": [
+2
+],
+"label_mode": [
+1
+],
+"label_pos_mode": [
+1
+],
+"style": [
+12
+],
+"w_label": [
+5
+]
+},
+"radio_box": {
+"id": [
+5
+]
+},
+"radio_button": {
+"id": [
+5
+],
+"style": [
+12
+],
+"tuck": [
+1
+]
+},
+"resolution": {
+"id": [
+5
+],
+"pos": [
+7
+],
+"rot": [
+7
+],
+"size": [
+7
+]
+},
+"resource": {
+"id": [
+11
+],
+"type": [
+3
+],
+"version": [
+2
+]
+},
+"rich_text": {
+"id": [
+5
+],
+"style": [
+12
+],
+"w_sbar_v": [
+5
+]
+},
+"scroll_view": {
+"auto_snap": [
+1
+],
+"edit_auto_transition_mode": [
+1
+],
+"id": [
+5
+],
+"sbar_fadeout_time": [
+2
+],
+"snap_anim_time": [
+2
+],
+"snap_power": [
+2
+],
+"style": [
+12
+],
+"w_sbar_h": [
+5
+],
+"w_sbar_v": [
+5
+]
+},
+"scrollbar": {
+"id": [
+5
+],
+"scroll_type": [
+1
+],
+"style": [
+12
+]
+},
+"scrollbar_touch": {
+"id": [
+5
+],
+"scroll_type": [
+1
+],
+"sound": [
+12
+],
+"style": [
+12
+]
+},
+"slidebar": {
+"id": [
+5
+],
+"max_label_margin": [
+2
+],
+"max_label_mode": [
+1
+],
+"max_label_pos_mode": [
+1
+],
+"min_label_margin": [
+2
+],
+"min_label_mode": [
+1
+],
+"min_label_pos_mode": [
+1
+],
+"slider_label_margin": [
+2
+],
+"slider_label_mode": [
+1
+],
+"slider_label_pos_mode": [
+1
+],
+"slider_size": [
+7
+],
+"style": [
+12
+],
+"touch_mode": [
+1
+],
+"w_max_label": [
+5
+],
+"w_min_label": [
+5
+],
+"w_slider_label": [
+5
+]
+},
+"sliding_drawer": {
+"id": [
+5
+],
+"style": [
+12
+]
+},
+"sound_banner_button": {
+"decide": [
+12
+],
+"id": [
+11
+]
+},
+"sound_button": {
+"decide": [
+12
+],
+"id": [
+11
+],
+"long_press": [
+12
+],
+"move_out": [
+12
+],
+"press": [
+12
+]
+},
+"sound_check_box": {
+"check": [
+12
+],
+"id": [
+11
+],
+"uncheck": [
+12
+]
+},
+"sound_composite_button": {
+"decide": [
+12
+],
+"id": [
+11
+]
+},
+"sound_corner_button": {
+"decide": [
+12
+],
+"id": [
+11
+]
+},
+"sound_file_list": {
+"id": [
+11
+]
+},
+"sound_image_button": {
+"decide": [
+12
+],
+"id": [
+11
+]
+},
+"sound_list_item": {
+"id": [
+11
+]
+},
+"sound_list_view": {
+"id": [
+11
+]
+},
+"sound_mapview": {
+"id": [
+11
+]
+},
+"sound_plane_button": {
+"decide": [
+12
+],
+"id": [
+11
+]
+},
+"sound_radio_button": {
+"decide": [
+12
+],
+"id": [
+11
+]
+},
+"sound_rich_text": {
+"id": [
+11
+]
+},
+"sound_scroll_view": {
+"id": [
+11
+]
+},
+"sound_scrollbar_touch": {
+"drag_begin": [
+12
+],
+"drag_end": [
+12
+],
+"id": [
+11
+],
+"page_scroll": [
+12
+],
+"page_scroll_repeat": [
+12
+]
+},
+"sound_text": {
+"id": [
+11
+],
+"link_tapped": [
+12
+]
+},
+"sound_text_box": {
+"id": [
+11
+],
+"link_tapped": [
+12
+],
+"tapped": [
+12
+]
+},
+"sound_thumbnail_button": {
+"decide": [
+12
+],
+"id": [
+11
+]
+},
+"sound_update_button": {
+"decide": [
+12
+],
+"id": [
+11
+]
+},
+"sound_webview": {
+"id": [
+11
+]
+},
+"sounddata": {
+"id": [
+11
+],
+"left": [
+8
+],
+"rate": [
+1
+],
+"right": [
+8
+],
+"src": [
+8
+],
+"type": [
+3
+]
+},
+"speech_balloon": {
+"id": [
+5
+],
+"style": [
+12
+],
+"texture": [
+12
+]
+},
+"string": {
+"id": [
+11
+],
+"src": [
+4
+]
+},
+"style_app_icon_simple": {
+"id": [
+11
+]
+},
+"style_banner_button": {
+"bg_obj": [
+5
+],
+"color": [
+7
+],
+"glow_obj": [
+5
+],
+"id": [
+11
+],
+"sound": [
+12
+]
+},
+"style_box": {
+"color": [
+7
+],
+"id": [
+11
+],
+"planeobj": [
+5
+]
+},
+"style_browser_rich_text": {
+"bg_obj": [
+5
+],
+"id": [
+11
+]
+},
+"style_busyindicator": {
+"ball_color": [
+7
+],
+"ball_size": [
+2
+],
+"color": [
+7
+],
+"id": [
+11
+]
+},
+"style_button": {
+"adjust_max_size": [
+7
+],
+"adjust_min_size": [
+7
+],
+"bg_obj": [
+5
+],
+"bottom_margin": [
+2
+],
+"color": [
+7
+],
+"direct_key": [
+1
+],
+"focus_in_group": [
+1
+],
+"glow_obj": [
+5
+],
+"highlight_obj": [
+5
+],
+"id": [
+11
+],
+"key_focus": [
+1
+],
+"label_obj": [
+5
+],
+"left_margin": [
+2
+],
+"right_margin": [
+2
+],
+"sound": [
+12
+],
+"style_type": [
+1
+],
+"top_margin": [
+2
+]
+},
+"style_button_base": {
+"color": [
+7
+],
+"id": [
+11
+]
+},
+"style_check_box": {
+"color": [
+7
+],
+"frame_num": [
+1
+],
+"glow_obj": [
+5
+],
+"id": [
+11
+],
+"image_obj": [
+5
+],
+"left_margin": [
+2
+],
+"sound": [
+12
+]
+},
+"style_color_change_button": {
+"bg_obj": [
+5
+],
+"color": [
+7
+],
+"id": [
+11
+]
+},
+"style_color_shift_button": {
+"color": [
+7
+],
+"id": [
+11
+]
+},
+"style_composite_button": {
+"color": [
+7
+],
+"glow_obj_id": [
+1
+],
+"id": [
+11
+],
+"sound": [
+12
+]
+},
+"style_composite_drawer": {
+"id": [
+11
+]
+},
+"style_corner_button": {
+"bg_obj": [
+5
+],
+"color": [
+7
+],
+"corner_obj": [
+5
+],
+"direct_key": [
+1
+],
+"focus_in_group": [
+1
+],
+"glow_obj": [
+5
+],
+"highlight_obj": [
+5
+],
+"id": [
+11
+],
+"key_focus": [
+1
+],
+"layout_type": [
+1
+],
+"sound": [
+12
+]
+},
+"style_dialog": {
+"color": [
+7
+],
+"id": [
+11
+]
+},
+"style_directbar": {
+"balloon_obj": [
+5
+],
+"bg_obj": [
+5
+],
+"color": [
+7
+],
+"id": [
+11
+],
+"label_obj": [
+5
+],
+"launchbtn_obj": [
+5
+]
+},
+"style_drop_shadow_button": {
+"bg_obj": [
+5
+],
+"color": [
+7
+],
+"id": [
+11
+]
+},
+"style_drop_shadow_plane": {
+"color": [
+7
+],
+"id": [
+11
+],
+"planeobj": [
+5
+]
+},
+"style_file_list": {
+"bg_obj": [
+5
+],
+"color": [
+7
+],
+"id": [
+11
+],
+"sbar_v_margin": [
+7
+],
+"sound": [
+12
+]
+},
+"style_five_star_plane": {
+"color": [
+7
+],
+"id": [
+11
+],
+"planeobj": [
+5
+]
+},
+"style_group": {
+"id": [
+11
+]
+},
+"style_image_button": {
+"adjust_min_size": [
+7
+],
+"bg_obj": [
+5
+],
+"bottom_margin": [
+2
+],
+"color": [
+7
+],
+"focus_in_group": [
+1
+],
+"glow_obj": [
+5
+],
+"highlight_obj": [
+5
+],
+"id": [
+11
+],
+"image_back_obj": [
+5
+],
+"image_margin": [
+2
+],
+"image_obj": [
+5
+],
+"key_focus": [
+1
+],
+"label_obj": [
+5
+],
+"layout_type_x": [
+1
+],
+"layout_type_y": [
+1
+],
+"left_margin": [
+2
+],
+"right_margin": [
+2
+],
+"sound": [
+12
+],
+"style_type": [
+1
+],
+"top_margin": [
+2
+]
+},
+"style_image_slidebar": {
+"bar_obj": [
+5
+],
+"base_obj": [
+5
+],
+"id": [
+11
+]
+},
+"style_list_edge": {
+"bottom_gradient": [
+2
+],
+"bottom_intercept": [
+2
+],
+"bottom_margin": [
+2
+],
+"id": [
+11
+],
+"top_margin": [
+2
+]
+},
+"style_list_item": {
+"bg_obj": [
+5
+],
+"color": [
+7
+],
+"id": [
+11
+],
+"sound": [
+12
+]
+},
+"style_list_view": {
+"bg_obj": [
+5
+],
+"cell_size_initial_default": [
+7
+],
+"color": [
+7
+],
+"id": [
+11
+],
+"sbar_v_margin": [
+7
+],
+"sound": [
+12
+]
+},
+"style_mapview": {
+"bg_obj": [
+5
+],
+"color": [
+7
+],
+"id": [
+11
+],
+"sound": [
+12
+]
+},
+"style_page": {
+"id": [
+11
+]
+},
+"style_plane": {
+"color": [
+7
+],
+"id": [
+11
+],
+"planeobj": [
+5
+]
+},
+"style_plane_button": {
+"adjust_min_size": [
+7
+],
+"bottom_margin": [
+2
+],
+"color": [
+7
+],
+"direct_key": [
+1
+],
+"focus_in_group": [
+1
+],
+"glow_obj": [
+5
+],
+"id": [
+11
+],
+"image_obj": [
+5
+],
+"key_focus": [
+1
+],
+"left_margin": [
+2
+],
+"right_margin": [
+2
+],
+"sound": [
+12
+],
+"top_margin": [
+2
+]
+},
+"style_plane_shadow": {
+"id": [
+11
+],
+"planeobj": [
+5
+],
+"shadow_obj": [
+5
+]
+},
+"style_progressbar": {
+"anim_func": [
+1
+],
+"bar_back_obj": [
+5
+],
+"bar_fore_obj": [
+5
+],
+"bar_shadow_obj": [
+5
+],
+"base_obj": [
+5
+],
+"base_shadow_obj": [
+5
+],
+"glow_obj": [
+5
+],
+"id": [
+11
+],
+"shadow_margin": [
+7
+],
+"shadow_offset": [
+7
+],
+"signal_obj": [
+5
+]
+},
+"style_progressbar_touch": {
+"bar_back_obj": [
+5
+],
+"bar_fore_obj": [
+5
+],
+"bar_shadow_obj": [
+5
+],
+"base_obj": [
+5
+],
+"base_shadow_obj": [
+5
+],
+"glow_obj": [
+5
+],
+"id": [
+11
+],
+"shadow_margin": [
+7
+],
+"shadow_offset": [
+7
+],
+"signal_obj": [
+5
+],
+"slider_glow_obj": [
+5
+],
+"slider_obj": [
+5
+]
+},
+"style_radio_box": {
+"id": [
+11
+]
+},
+"style_radio_button": {
+"bottom_margin": [
+2
+],
+"color": [
+7
+],
+"focus_in_group": [
+1
+],
+"frame_num": [
+1
+],
+"glow_obj": [
+5
+],
+"id": [
+11
+],
+"image_obj": [
+5
+],
+"label_obj": [
+5
+],
+"left_margin": [
+2
+],
+"right_margin": [
+2
+],
+"sound": [
+12
+],
+"top_margin": [
+2
+]
+},
+"style_rich_text": {
+"bg_obj": [
+5
+],
+"id": [
+11
+]
+},
+"style_scroll_view": {
+"bg_obj": [
+5
+],
+"color": [
+7
+],
+"id": [
+11
+],
+"sbar_v_margin": [
+7
+],
+"sound": [
+12
+]
+},
+"style_scrollbar": {
+"base_obj": [
+5
+],
+"id": [
+11
+],
+"jet_tail_obj": [
+5
+],
+"min_size": [
+2
+],
+"slider_obj": [
+5
+]
+},
+"style_scrollbar2d": {
+"base_obj": [
+5
+],
+"id": [
+11
+]
+},
+"style_scrollbar_touch": {
+"base_obj": [
+5
+],
+"id": [
+11
+],
+"min_size": [
+2
+],
+"slider_glow_obj": [
+5
+],
+"slider_obj": [
+5
+],
+"sound": [
+12
+]
+},
+"style_slidebar": {
+"bar_obj": [
+5
+],
+"base_obj": [
+5
+],
+"color": [
+7
+],
+"id": [
+11
+],
+"slider_glow_obj": [
+5
+],
+"slider_obj": [
+5
+]
+},
+"style_sliding_drawer": {
+"color": [
+7
+],
+"id": [
+11
+]
+},
+"style_speech_balloon": {
+"color": [
+7
+],
+"id": [
+11
+],
+"planeobj": [
+5
+],
+"shadow_obj": [
+5
+]
+},
+"style_text": {
+"bottom_margin": [
+2
+],
+"color": [
+7
+],
+"id": [
+11
+],
+"left_margin": [
+2
+],
+"planeobj": [
+5
+],
+"right_margin": [
+2
+],
+"sound": [
+12
+],
+"textobj": [
+5
+],
+"top_margin": [
+2
+]
+},
+"style_text_box": {
+"bottom_margin": [
+2
+],
+"color": [
+7
+],
+"glowobj": [
+5
+],
+"id": [
+11
+],
+"left_margin": [
+2
+],
+"planeobj": [
+5
+],
+"right_margin": [
+2
+],
+"sound": [
+12
+],
+"textobj": [
+5
+],
+"top_margin": [
+2
+]
+},
+"style_thumbnail_button": {
+"bg_obj": [
+5
+],
+"color": [
+7
+],
+"glow_obj": [
+5
+],
+"id": [
+11
+],
+"sound": [
+12
+]
+},
+"style_update_button": {
+"arrow_obj": [
+5
+],
+"glow_obj": [
+5
+],
+"id": [
+11
+],
+"image_obj": [
+5
+]
+},
+"style_webview": {
+"bg_obj": [
+5
+],
+"color": [
+7
+],
+"id": [
+11
+],
+"sound": [
+12
+]
+},
+"style_xm_list": {
+"color": [
+7
+],
+"id": [
+11
+]
+},
+"template": {
+"fast_open": [
+1
+],
+"id": [
+5,
+11
+]
+},
+"template_ref": {
+"id": [
+11,
+5
+],
+"template": [
+12
+]
+},
+"text": {
+"auto_link_detect": [
+1
+],
+"auto_scroll": [
+1
+],
+"auto_scroll_target_friend": [
+5
+],
+"disable_auto_scroll": [
+1
+],
+"id": [
+5
+],
+"label": [
+12
+],
+"label_alias": [
+12
+],
+"long_press_text_auto_scroll_mode": [
+1
+],
+"scroll_view": [
+5
+],
+"selection_mode": [
+1
+],
+"style": [
+12
+],
+"texture": [
+12
+],
+"url_scheme": [
+1
+]
+},
+"text_box": {
+"auto_scroll": [
+1
+],
+"edit_auto_transition_mode": [
+1
+],
+"edit_mode": [
+1
+],
+"id": [
+5
+],
+"ime_languages_forced": [
+1
+],
+"ime_option": [
+1
+],
+"ime_supported_languages": [
+1
+],
+"ime_type": [
+1
+],
+"label": [
+12
+],
+"max_length": [
+1
+],
+"password_mode": [
+1
+],
+"paste_mode": [
+1
+],
+"placeholder": [
+12
+],
+"scroll_view": [
+5
+],
+"selection_mode": [
+1
+],
+"sound": [
+12
+],
+"style": [
+12
+],
+"texture": [
+12
+],
+"v_scrollbar": [
+5
+]
+},
+"textobj": {
+"adjust_x": [
+1
+],
+"adjust_y": [
+1
+],
+"align_x": [
+1
+],
+"align_y": [
+1
+],
+"back_color": [
+7
+],
+"bold": [
+1
+],
+"color": [
+7
+],
+"condense_x": [
+1
+],
+"deepen_color": [
+1
+],
+"ellipsis": [
+1
+],
+"emboss": [
+1
+],
+"enlarge_font_size": [
+1
+],
+"enlarge_line_pitch": [
+1
+],
+"family": [
+1
+],
+"font_color": [
+7
+],
+"font_size": [
+2
+],
+"force_bold": [
+1
+],
+"id": [
+5
+],
+"kinsoku": [
+1
+],
+"line_pitch": [
+2
+],
+"line_space": [
+2
+],
+"mask": [
+1
+],
+"max_line_count": [
+1
+],
+"oblique": [
+1
+],
+"pos": [
+7
+],
+"shadow": [
+1
+],
+"shadow_color": [
+7
+],
+"size": [
+7
+],
+"strike": [
+1
+],
+"strike_color": [
+7
+],
+"text_align": [
+1
+],
+"underline": [
+1
+],
+"underline_color": [
+7
+],
+"visible_pos": [
+7
+],
+"visible_size": [
+7
+],
+"word_wrap": [
+1
+]
+},
+"texture": {
+"compress": [
+3
+],
+"div_mode": [
+3
+],
+"div_ratio_h": [
+7
+],
+"div_ratio_stretch": [
+7
+],
+"div_ratio_v": [
+7
+],
+"id": [
+11
+],
+"ignore_make_surface_first": [
+3
+],
+"margin_h": [
+6
+],
+"margin_v": [
+6
+],
+"origsize": [
+1
+],
+"src": [
+8
+],
+"type": [
+3
+]
+},
+"thumbnail_button": {
+"id": [
+5
+],
+"style": [
+12
+]
+},
+"update_button": {
+"id": [
+5
+],
+"sound": [
+12
+],
+"style": [
+12
+]
+},
+"webview": {
+"id": [
+5
+]
+},
+"xm_list": {
+"id": [
+5
+],
+"style": [
+12
+]
+}
+}
