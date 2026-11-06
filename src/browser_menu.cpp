@@ -18,7 +18,11 @@
 #include "ftp_menu.h"
 #include "text_view.h"
 #include "info_menu.h"
+#include "notice_menu.h"
+#include "music_menu.h"
+#include "core/music.h"
 #include "core/install.h"
+#include "core/pfs.h"
 
 // Second option menu ("More..."): its own page, since the first is still fading out.
 #define page_option_menu_sub (0xcd2afa0du)
@@ -173,7 +177,7 @@ namespace {
 }
 
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_inputAction(Action_Rename),
-	m_iconCount(0)
+	m_iconCount(0), m_searchVisible(false)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -269,7 +273,19 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 		reinterpret_cast<BrowserMenu *>(userdata)->JumpTo(true);
 	}, this);
 
-	// Search box of the main folders: filters the list on Enter.
+	// Lower-right corner: available inside folders only. Triangle still opens Options.
+	m_searchButton = m_root->FindChild(button_search_page_browser);
+	m_searchButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<BrowserMenu *>(userdata)->ToggleSearch();
+	}, this);
+
+	m_ftpIndicator = m_root->FindChild(plane_ftp_indicator_page_browser);
+	m_ftpIndicator->SetColor(1.0f, 1.0f, 1.0f, 0.5f);
+	m_ftpIndicator->Hide(common::transition::Type_Reset);
+
+	// Search box: filters the list on Enter.
 	m_search = static_cast<ui::TextBox *>(m_root->FindChild(text_box_search_page_browser));
 	m_search->Hide(common::transition::Type_Reset);
 	m_search->AddEventCallback(ui::TextBox::CB_TEXT_BOX_ENTER_PRESSED,
@@ -287,7 +303,7 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 	m_root->AddEventCallback(OptionMenu::OptionMenuEvent,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
-		if (e->GetValue(0) == OptionMenu::OptionMenuEvent_Button)
+		if (e->GetValue(0) == OptionMenu::OptionMenuEvent_Button && e->GetValue(2) == 0)
 		{
 			reinterpret_cast<BrowserMenu *>(userdata)->OnOption(e->GetValue(1));
 		}
@@ -315,13 +331,13 @@ void BrowserMenu::UpdateChrome()
 	{
 		title = g_appPlugin->GetString(msg_app_title);
 	}
-	else if (fs::IsRootStyle(page->path))
+	else if (fs::IsRootStyle(page->logicalPath))
 	{
 		title = g_appPlugin->GetString(msg_system_partitions);
 	}
 	else
 	{
-		common::Utf8ToUtf16(page->path, &title);
+		common::Utf8ToUtf16(page->logicalPath, &title);
 	}
 	m_topText->SetString(title);
 
@@ -334,25 +350,144 @@ void BrowserMenu::UpdateChrome()
 		m_backButton->Hide(common::transition::Type_Reset);
 	}
 
-	// The folders opened from the root page get a search box above the list.
-	const bool search = m_pages.size() == 2 && !fs::IsRootStyle(page->path);
-	if (search)
+	if (fs::IsRootStyle(page->path))
+	{
+		m_searchButton->Hide(common::transition::Type_Reset);
+	}
+	else
+	{
+		m_searchButton->Show(common::transition::Type_Reset);
+	}
+	// Each page starts without the search box; the corner button opens it.
+	SetSearchVisible(false);
+}
+
+void BrowserMenu::SetSearchVisible(bool visible)
+{
+	BrowserPage *page = Top();
+	m_searchVisible = visible && !fs::IsRootStyle(page->path);
+	if (m_searchVisible)
 	{
 		m_search->Show(common::transition::Type_Reset);
 		page->list->SetSize(960.0f, 392.0f, 0.0f);
 	}
 	else
 	{
+		m_search->ReleaseFocus();
 		m_search->Hide(common::transition::Type_Reset);
+		page->list->SetSize(960.0f, 448.0f, 0.0f);
+		if (page->focused >= 0 && page->focused < (int32_t)page->entries.size())
+		{
+			page->list->SetFocus(0, page->focused, ui::ListView::FOCUS_ALIGN_TYPE_CENTER, NULL);
+		}
+	}
+}
+
+void BrowserMenu::ToggleSearch()
+{
+	BrowserPage *page = Top();
+	if (!page->loaded || fs::IsRootStyle(page->path))
+	{
+		return;
+	}
+	if (m_searchVisible)
+	{
+		// closing the search shows the whole folder again
+		paf::wstring empty;
+		m_search->SetString(empty);
+		OnSearch();
+	}
+	SetSearchVisible(!m_searchVisible);
+}
+
+void BrowserMenu::SetRowIcon(BrowserPage *page, int32_t index)
+{
+	if (index < 0 || index >= (int32_t)page->entries.size())
+	{
+		return;
+	}
+	ui::ListItem *item = page->list->GetListItem(0, index);
+	if (!item)
+	{
+		return;
+	}
+	ui::Widget *button = item->FindChild(image_button_list_item);
+	if (!button)
+	{
+		return;
+	}
+	intrusive_ptr<graph::Surface> tex = Icon(page->opened == index ? tex_ui_parent : IconFor(page->entries.at(index)));
+	if (tex.get())
+	{
+		button->SetTexture(tex);
+	}
+}
+
+void BrowserMenu::UpdateFtpIndicator()
+{
+	if (ftp::IsRunning())
+	{
+		m_ftpIndicator->Show(common::transition::Type_Reset);
+	}
+	else
+	{
+		m_ftpIndicator->Hide(common::transition::Type_Reset);
 	}
 }
 
 void BrowserMenu::PushPage(const paf::string &path)
 {
 	Plugin::TemplateOpenParam tmpParam;
+	paf::string physicalPath = path;
+	paf::string logicalPath = path;
+	bool ownsMount = false;
+
+	if (!m_pages.empty())
+	{
+		BrowserPage *current = m_pages.back();
+		if (strcmp(current->logicalPath.c_str(), current->path.c_str()) != 0 &&
+			strncmp(path.c_str(), current->path.c_str(), current->path.size()) == 0)
+		{
+			logicalPath = current->logicalPath;
+			logicalPath += path.c_str() + current->path.size();
+		}
+
+		if (settings::Get().autoDecrypt && pfsIsProtectedContainer(current->logicalPath.c_str()))
+		{
+			int32_t mountResult = pfsMount(path.c_str());
+			if (mountResult < 0 &&
+				(!strncasecmp(current->logicalPath.c_str(), "ux0:patch", 9) ||
+				 !strncasecmp(current->logicalPath.c_str(), "grw0:patch", 10)))
+			{
+				const char *slash = strrchr(path.c_str(), '/');
+				paf::string title = slash ? slash + 1 : path.c_str();
+				mountResult = pfsMount((paf::string("ux0:app/") + title).c_str());
+				if (mountResult < 0)
+					mountResult = pfsMount((paf::string("gro0:app/") + title).c_str());
+			}
+			if (mountResult < 0)
+			{
+				dialog::OpenError(g_appPlugin, mountResult);
+				return;
+			}
+			physicalPath = pfsMountPoint();
+			ownsMount = true;
+		}
+	}
+
+	// The folder being opened shows the "open" icon in the list it came from.
+	if (!m_pages.empty())
+	{
+		BrowserPage *from = m_pages.back();
+		from->opened = from->focused;
+		SetRowIcon(from, from->opened);
+	}
 
 	BrowserPage *page = new BrowserPage();
-	page->path = path;
+	page->opened = -1;
+	page->path = physicalPath;
+	page->logicalPath = logicalPath;
+	page->ownsMount = ownsMount;
 	page->cellCount = 0;
 	page->focused = -1;
 	page->loaded = false;
@@ -361,7 +496,7 @@ void BrowserMenu::PushPage(const paf::string &path)
 	page->list = static_cast<ui::ListView *>(m_browserRoot->GetChild(m_browserRoot->GetChildrenNum() - 1));
 	page->list->SetItemFactory(new ListViewCb(this));
 	page->list->InsertSegment(0, 1);
-	math::v4 cellSize(960.0f, fs::IsRootStyle(path) ? k_rowRoot : k_rowFile);
+	math::v4 cellSize(960.0f, fs::IsRootStyle(physicalPath) ? k_rowRoot : k_rowFile);
 	page->list->SetCellSizeDefault(0, cellSize);
 	page->list->SetSegmentLayoutType(0, ui::ListView::LAYOUT_TYPE_LIST);
 
@@ -411,12 +546,19 @@ bool BrowserMenu::PopPage()
 
 	fs::FreeList(&page->all);
 	page->entries.clear();
+	if (page->ownsMount)
+	{
+		pfsUmount();
+	}
 	delete page;
 	m_pages.pop_back();
 
 	if (!isLast)
 	{
 		BrowserPage *current = m_pages.back();
+		int32_t wasOpened = current->opened;
+		current->opened = -1;
+		SetRowIcon(current, wasOpened);
 		current->list->Hide(common::transition::Type_3D_SlideToBack1);
 		current->list->Show(common::transition::Type_Reset);
 		current->list->SetTransitionComplete(false);
@@ -532,6 +674,11 @@ void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 {
 	paf::wstring label = ToWide(entry->name);
 	button->SetString(label);
+	graph::TextObj *labelObj = static_cast<graph::TextObj *>(button->GetDrawObj(ui::Button::OBJ_LABEL));
+	if (labelObj && !label.empty())
+	{
+		labelObj->SetStyleAttribute(graph::TextStyleAttribute_Point, 0, label.size(), settings::FileFontSize());
+	}
 
 	paf::wstring infoWide;
 	if (!entry->isDir)
@@ -539,6 +686,15 @@ void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 		infoWide = ToWide(format::Size(entry->size));
 	}
 	button->FindChild(text_list_item_info)->SetString(infoWide);
+
+	ui::Widget *lock = button->FindChild(plane_list_item_lock);
+	if (lock)
+	{
+		if (entry->isDir && pfsIsProtectedContainer(page->logicalPath.c_str()))
+			lock->Show(common::transition::Type_Reset);
+		else
+			lock->Hide(common::transition::Type_Reset);
+	}
 
 	// Selection mode: every row shows a check box once anything is marked.
 	ui::Widget *check = button->FindChild(plane_list_item_check);
@@ -621,14 +777,17 @@ void BrowserMenu::ApplySettings()
 {
 	theme::ApplyBackground(m_background);
 
-	// Storage bars take the accent color when their cells are built.
+	// Storage bars and file-name sizes take their settings when cells are built.
 	if (!m_pages.empty())
 	{
-		BrowserPage *rootPage = m_pages.at(0);
-		if (rootPage->cellCount > 0 && rootPage->loaded)
+		for (uint32_t i = 0; i < m_pages.size(); i++)
 		{
-			rootPage->list->DeleteCell(0, 0, rootPage->cellCount);
-			rootPage->list->InsertCell(0, 0, rootPage->cellCount);
+			BrowserPage *page = m_pages.at(i);
+			if (page->cellCount > 0 && page->loaded)
+			{
+				page->list->DeleteCell(0, 0, page->cellCount);
+				page->list->InsertCell(0, 0, page->cellCount);
+			}
 		}
 	}
 }
@@ -703,7 +862,7 @@ ui::ListItem *BrowserMenu::CreateListItem(ui::listview::ItemFactory::CreateParam
 		FillFileItem(page, button, entry);
 	}
 
-	intrusive_ptr<graph::Surface> tex = Icon(IconFor(entry));
+	intrusive_ptr<graph::Surface> tex = Icon(page->opened == param.cell_index ? tex_ui_parent : IconFor(entry));
 	if (tex.get())
 	{
 		button->SetTexture(tex);
@@ -857,6 +1016,25 @@ void BrowserMenu::OnItemDecide(ui::Widget *wdg)
 	else if (Previewable(entry))
 	{
 		OpenPreview(index);
+	}
+	else if (entry->kind == fs::Kind_Music && musicSupported(entry->name.c_str()))
+	{
+		// the folder's songs, starting at this one
+		paf::vector<paf::string> songs;
+		int32_t start = 0;
+		for (int32_t i = 0; i < (int32_t)page->entries.size(); i++)
+		{
+			fs::Entry *e = page->entries.at(i);
+			if (e->kind == fs::Kind_Music && musicSupported(e->name.c_str()))
+			{
+				if (i == index)
+				{
+					start = songs.size();
+				}
+				songs.push_back(fs::Join(page->path, e->name));
+			}
+		}
+		new MusicMenu(m_root, songs, start);
 	}
 	else if (entry->kind == fs::Kind_Vpk)
 	{
@@ -1358,10 +1536,29 @@ void BrowserMenu::FinishOperation(int32_t result)
 	}
 	else if (result > 0 && m_opType == Op_Install)
 	{
-		common::Utf16ToUtf8(paf::wstring(g_appPlugin->GetString(msg_install_done)), &m_scratch);
-		paf::wstring text = ToWide(common::FormatString(m_scratch.c_str(), m_installedTitle.c_str()));
-		m_pending = Pending_Message;
-		dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_install_title), text.c_str());
+		// Same panel as the prompt: the bubble, the app's name, OK / Run.
+		fs::Entry entry;
+		entry.kind = fs::Kind_Vpk;
+		entry.isDir = false;
+		entry.marked = false;
+		SceIoStat stat;
+		entry.size = sceIoGetstat(m_opSources.at(0).c_str(), &stat) >= 0 ? stat.st_size : 0;
+		entry.capacity = 0;
+		entry.labelHash = 0;
+		entry.iconHash = 0;
+		entry.isShortcut = false;
+		new InfoMenu(m_root, InfoMenu::Mode_Installed, m_opSources.at(0), &entry,
+		[](bool run, void *userdata)
+		{
+			BrowserMenu *menu = reinterpret_cast<BrowserMenu *>(userdata);
+			if (run && !menu->InstalledTitle().empty())
+			{
+				// As FMVita: start the new app and leave.
+				paf::string uri = common::FormatString("psgm:play?titleid=%s", menu->InstalledTitle().c_str());
+				sceAppMgrLaunchAppByUri(0xFFFFF, uri.c_str());
+				sceKernelExitProcess(0);
+			}
+		}, this);
 	}
 	Refresh();
 	thread::RMutex::MainThreadMutex()->Unlock();
@@ -1383,15 +1580,25 @@ void BrowserMenu::StartFtp()
 	int32_t ret = ftp::Start();
 	if (ret < 0)
 	{
-		dialog::OpenError(g_appPlugin, ret, g_appPlugin->GetString(msg_ftp_no_network));
+		new NoticeMenu(m_root, msg_wifi_off_title, msg_wifi_off, msg_network_settings, msg_ok,
+		[](int32_t choice, void *userdata)
+		{
+			if (choice == 0)
+			{
+				// Opens the system Settings, where Network holds the Wi-Fi options.
+				sceAppMgrLaunchAppByUri(0xFFFFF, "settings_dlg:");
+			}
+		}, this);
 		return;
 	}
+	UpdateFtpIndicator();
 	new FtpMenu(m_root, OnFtpMenuClosed, this);
 }
 
 void BrowserMenu::OnFtpClosed(bool stopped)
 {
 	// Files may have changed over FTP; the root also shows whether the server runs.
+	UpdateFtpIndicator();
 	Refresh();
 	if (m_pages.size() > 1)
 	{

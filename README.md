@@ -69,15 +69,17 @@ The project carries forward the proven file-management logic of [FMVita](https:/
 - Copy, move, paste, delete, rename and create folders.
 - Native progress dialogs with cancellation support.
 - Search, shortcuts and file information.
-- Text preview for TXT, INI, XML, LOG, JSON, SFO and unknown text files.
-- Image preview and MP4 preview, with L/R navigation between files.
+- Text preview and line-based editing for TXT, INI, XML, LOG, JSON, SFO and unknown text files.
+- Image preview and MP4 playback through SceAvPlayer, with sound, seek, pause and L/R navigation.
+- MP3 and OGG playback with metadata, embedded cover art, progress, seek and playlist navigation.
+- Optional automatic PFS mounting for protected application and savedata folders.
 
 ### VPK and Network Tools
 
 - VPK metadata, icon, name, version and Title ID preview.
 - VPK extraction and installation through `ScePromoterUtil`.
 - FTP server powered by `ftpvita`, with connection and transfer progress.
-- Configurable Select-button action for FTP or QR Code.
+- Configurable Select-button action; FTP is available and the QR scanner is still being ported.
 
 ## Screenshots
 
@@ -172,8 +174,9 @@ The custom RCO compiler was validated by recompiling NetStream resources and com
 - The application opens and navigates on real PS Vita hardware.
 - Core features compile and are present in the alpha, but destructive operations still need broad hardware testing.
 - Vita3K does not execute ScePaf applications; it is used only as a firmware/resource reference for the PC viewer.
-- MP4 preview currently has no audio and uses reduced resolution.
-- Archive browsing, a full media player, USB mode and some FMVita features are still being ported.
+- MP4, MP3/OGG and text editing are implemented but still need broad real-hardware format testing.
+- Image swipe, pinch zoom and panning are implemented; rotation/mirroring and QR code support are still being ported.
+- Archive browsing, USB mode and some FMVita features are still being ported.
 
 ## Credits
 

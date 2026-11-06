@@ -138,11 +138,13 @@ void FtpMenu::Update()
 
 	static const uint32_t k_activity[] = {
 		msg_ftp_running, msg_ftp_running, msg_ftp_sending, msg_ftp_receiving, msg_ftp_deleting,
-		msg_ftp_listing, msg_ftp_folder, msg_ftp_mkdir, msg_ftp_rmdir, msg_ftp_rename
+		msg_ftp_listing, msg_ftp_folder, msg_ftp_mkdir, msg_ftp_rmdir, msg_ftp_rename,
+		msg_ftp_sent, msg_ftp_received_ok, msg_ftp_deleted
 	};
 	SetText(m_activity, Format(k_activity[st.activity], st.name[0] ? st.name : "/"));
 
-	const bool transfer = st.activity == ftp::Activity_Sending || st.activity == ftp::Activity_Receiving;
+	const bool transfer = st.activity == ftp::Activity_Sending || st.activity == ftp::Activity_Receiving ||
+		st.activity == ftp::Activity_Sent || st.activity == ftp::Activity_Received;
 	if (!transfer)
 	{
 		m_bar->Hide(common::transition::Type_Reset);
@@ -161,6 +163,11 @@ void FtpMenu::Update()
 		paf::wstring text = Format(msg_ftp_progress_of, done.c_str(), total.c_str());
 		text += Wide(common::FormatString("  (%u%%)", pct));
 		SetText(m_progressText, text);
+	}
+	else if (st.activity == ftp::Activity_Received)
+	{
+		m_barFill->SetSize(k_barWidth, 10.0f, 0.0f);
+		SetText(m_progressText, Wide(done));
 	}
 	else
 	{

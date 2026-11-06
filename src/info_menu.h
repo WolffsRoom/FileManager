@@ -17,7 +17,8 @@ public:
 	enum Mode
 	{
 		Mode_Info,
-		Mode_Install   // asks "Install this content?", Install / Cancel
+		Mode_Install,  // asks "Install this content?", Install / Cancel
+		Mode_Installed // "Installation complete", OK / Run
 	};
 
 	typedef void (*ResultCallback)(bool accepted, void *userdata);

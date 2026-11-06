@@ -69,11 +69,14 @@ public:
 	struct BrowserPage
 	{
 		paf::string path;           // empty = the device list
+		paf::string logicalPath;    // original path while a protected PFS is mounted
+		bool ownsMount;
 		fs::EntryList all;          // owns the entries
 		fs::EntryList entries;      // shown: all, or the search matches
 		paf::ui::ListView *list;
 		uint32_t cellCount;
 		int32_t focused;
+		int32_t opened;             // row whose folder is open above this page
 		float width;                // current list width
 		volatile bool loaded;
 	};
@@ -95,11 +98,16 @@ public:
 	void OnNameEntered(const paf::wstring &text);
 
 	void OnFtpClosed(bool stopped);
+	const paf::string &InstalledTitle() const { return m_installedTitle; }
 	void DoActionPublic(Action action);
 	void OnInstallAnswer(bool accepted);
 	void OnSearch();
 	void JumpTo(bool end);
 	void OnSelectButton();
+	void ToggleSearch();
+	void SetSearchVisible(bool visible);
+	void SetRowIcon(BrowserPage *page, int32_t index);
+	void UpdateFtpIndicator();
 
 	/** The theme changed in the settings page. */
 	void ApplySettings();
@@ -152,6 +160,9 @@ private:
 	paf::ui::Text *m_emptyText;
 	paf::ui::Widget *m_background;
 	paf::ui::TextBox *m_search;
+	paf::ui::Widget *m_searchButton;
+	paf::ui::Widget *m_ftpIndicator;
+	bool m_searchVisible;
 
 	// Fetching an icon's texture once per list cell is a likely cause of slow lists.
 	struct CachedIcon

@@ -18,7 +18,10 @@ namespace ftp {
 		Activity_Folder,
 		Activity_MakeFolder,
 		Activity_RemoveFolder,
-		Activity_Renaming
+		Activity_Renaming,
+		Activity_Sent,        // a download from the Vita finished
+		Activity_Received,    // an upload to the Vita finished
+		Activity_Deleted
 	};
 
 	struct Status

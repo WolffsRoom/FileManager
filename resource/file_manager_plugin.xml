@@ -25,6 +25,10 @@
         <layout_hint size="1, 1" pos="-471, 271" />
         <focus_hint enable="0" />
       </button>
+      <corner_button sound="_common_sound_button_enter" style="style_corner_search" id="button_search_page_browser" />
+      <plane texture="tex_ui_ftp" id="plane_ftp_indicator_page_browser">
+        <layout_hint size="36, 36" pos="-330, 208" />
+      </plane>
       <text_box auto_scroll="1" ime_type="0" edit_mode="1" paste_mode="1" edit_auto_transition_mode="0" style="style_text_box_input" id="text_box_search_page_browser">
         <layout_hint size="860, 44" pos="0, 148" />
         <focus_hint focus_shape="0" />
@@ -50,7 +54,10 @@
         <focus_hint enable="0" />
       </button>
       <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_browser" />
-      <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_options_page_browser" />
+      <button style="_common_default_style_button_transparent" id="button_options_page_browser">
+        <layout_hint size="1, 1" pos="-463, 271" />
+        <focus_hint enable="0" />
+      </button>
     </page>
     <page id="page_settings">
       <plane texture="tex_common_bg" id="plane_base_bg_page_settings">
@@ -109,6 +116,7 @@
         <layout_hint align="0, 1" size="960, 448" pos="0, -272" />
       </list_view>
       <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_text_view" />
+      <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_options_page_text_view" />
     </page>
     <page id="page_info">
       <plane style="style_plane_dim" id="plane_dim_page_info">
@@ -117,13 +125,13 @@
       <plane style="style_plane_panel" id="plane_panel_page_info">
         <layout_hint size="780, 420" />
         <plane style="_common_default_style_plane" texture="_common_texture_transparent" id="plane_picture_page_info">
-          <layout_hint size="220, 220" pos="-250, 40" />
+          <layout_hint size="150, 150" pos="-275, 70" />
         </plane>
         <text style="style_text_info_title" id="text_title_page_info">
-          <layout_hint anchor="1, 0" align="1, 0" size="480, 44" pos="270, 130" />
+          <layout_hint anchor="1, 0" align="1, 0" size="540, 44" pos="215, 125" />
         </text>
         <text style="style_text_info_details" id="text_details_page_info">
-          <layout_hint anchor="1, 0" align="1, 2" size="480, 170" pos="270, 100" />
+          <layout_hint anchor="1, 0" align="1, 2" size="540, 170" pos="215, 100" />
         </text>
         <text style="style_text_ftp_activity" id="text_question_page_info">
           <layout_hint size="720, 34" pos="0, -96" />
@@ -135,6 +143,87 @@
           <layout_hint size="240, 60" pos="140, -160" />
         </button>
       </plane>
+    </page>
+    <page id="page_notice">
+      <plane style="style_plane_dim" id="plane_dim_page_notice">
+        <layout_hint size="960, 544" />
+      </plane>
+      <plane style="style_plane_panel" id="plane_panel_page_notice">
+        <layout_hint size="660, 300" />
+        <text style="style_text_ftp_title" id="text_title_page_notice">
+          <layout_hint size="600, 44" pos="0, 110" />
+        </text>
+        <text style="style_text_notice_message" id="text_message_page_notice">
+          <layout_hint size="600, 110" pos="0, 20" />
+        </text>
+        <button style="style_button_option_single" id="button_primary_page_notice">
+          <layout_hint size="290, 60" pos="-155, -100" />
+        </button>
+        <button style="style_button_option_single" id="button_secondary_page_notice">
+          <layout_hint size="290, 60" pos="155, -100" />
+        </button>
+      </plane>
+    </page>
+    <page id="page_about">
+      <plane texture="tex_common_bg" id="plane_base_bg_page_about">
+        <layout_hint size="960, 544" />
+      </plane>
+      <template_ref id="template_ref_top_title_bar_page_about" template="template_top_title_bar" />
+      <plane texture="tex_about" id="plane_icon_page_about">
+        <layout_hint size="176, 176" pos="-330, -10" />
+      </plane>
+      <text style="style_text_about" id="text_about_page_about">
+        <layout_hint size="620, 400" pos="130, -40" />
+      </text>
+      <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_about" />
+    </page>
+    <page id="page_music">
+      <plane texture="tex_common_bg" id="plane_base_bg_page_music">
+        <layout_hint size="960, 544" />
+      </plane>
+      <template_ref id="template_ref_top_title_bar_page_music" template="template_top_title_bar" />
+      <plane style="_common_default_style_plane" texture="_common_texture_transparent" id="plane_cover_page_music">
+        <layout_hint size="300, 300" pos="-250, -10" />
+      </plane>
+      <text style="style_text_info_title" id="text_song_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="500, 44" pos="440, 110" />
+      </text>
+      <text style="style_text_music_artist" id="text_artist_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="500, 34" pos="440, 68" />
+      </text>
+      <text style="style_text_ftp_info" id="text_album_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="500, 30" pos="440, 34" />
+      </text>
+      <plane style="style_plane_bar_base" id="plane_bar_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="480, 8" pos="440, -20" />
+        <plane style="style_plane_bar_fill" id="plane_bar_fill_page_music">
+          <layout_hint anchor="1, 0" align="1, 0" size="0, 8" />
+        </plane>
+      </plane>
+      <text style="style_text_music_time" id="text_elapsed_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="200, 30" pos="440, -46" />
+      </text>
+      <text style="style_text_music_time_right" id="text_total_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="200, 30" pos="720, -46" />
+      </text>
+      <button style="style_button_option_single" id="button_prev_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="150, 56" pos="440, -120" />
+      </button>
+      <button style="style_button_option_single" id="button_play_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="150, 56" pos="605, -120" />
+      </button>
+      <button style="style_button_option_single" id="button_next_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="150, 56" pos="770, -120" />
+      </button>
+      <button style="_common_default_style_button_transparent" id="button_rewind_page_music">
+        <layout_hint size="1, 1" pos="-479, 271" />
+        <focus_hint enable="0" />
+      </button>
+      <button style="_common_default_style_button_transparent" id="button_forward_page_music">
+        <layout_hint size="1, 1" pos="-477, 271" />
+        <focus_hint enable="0" />
+      </button>
+      <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_music" />
     </page>
     <page id="page_preview">
       <plane style="style_plane_black" id="plane_black_page_preview">
@@ -162,6 +251,26 @@
       </button>
       <button style="_common_default_style_button_transparent" id="button_pause_page_preview">
         <layout_hint size="1, 1" pos="-475, 271" />
+        <focus_hint enable="0" />
+      </button>
+      <plane style="style_plane_panel" id="plane_controls_page_preview">
+        <layout_hint size="960, 70" anchor="0, 1" align="0, 1" pos="0, 0" />
+        <plane style="style_plane_bar_base" id="plane_bar_page_preview">
+          <layout_hint size="600, 8" pos="0, 12" />
+          <plane style="style_plane_bar_fill" id="plane_bar_fill_page_preview">
+            <layout_hint anchor="1, 0" align="1, 0" size="0, 8" />
+          </plane>
+        </plane>
+        <text style="style_text_ftp_info" id="text_time_page_preview">
+          <layout_hint size="600, 30" pos="0, -14" />
+        </text>
+      </plane>
+      <button style="_common_default_style_button_transparent" id="button_rewind_page_preview">
+        <layout_hint size="1, 1" pos="-473, 271" />
+        <focus_hint enable="0" />
+      </button>
+      <button style="_common_default_style_button_transparent" id="button_forward_page_preview">
+        <layout_hint size="1, 1" pos="-471, 271" />
         <focus_hint enable="0" />
       </button>
       <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_preview" />
@@ -206,6 +315,13 @@
       <textobj font_size="28" bold="1" align_y="1" align_x="3" font_color="0, 0, 0, 0" id="text_obj1" />
     </style_text>
 
+    <!-- Native lower-right corner button with the File Manager search icon. -->
+    <style_corner_button corner_obj="plane_obj2" glow_obj="plane_obj4" color="1, 1, 1, 1" highlight_obj="plane_obj3" bg_obj="plane_obj1" layout_type="3" id="style_corner_search">
+      <planeobj color="0.16, 0.15, 0.22, 0.8" texture0="#fb2979d5" id="plane_obj1" />
+      <planeobj size="48, 48" texture0="tex_new_search_corner" id="plane_obj2" pos="-18, 18" />
+      <planeobj texture0="#c903feec" id="plane_obj3" />
+      <planeobj texture0="#60a6dc16" blend="2" id="plane_obj4" />
+    </style_corner_button>
     <style_busyindicator ball_color="0.78, 0.8, 0.85, 1" ball_size="16" id="style_busyindicator_big" />
     <style_plane color="0, 0, 0, 0.75" planeobj="plane_obj1" id="style_plane_dim">
       <planeobj id="plane_obj1" />
@@ -224,7 +340,7 @@
     </style_plane>
 
     <style_text textobj="text_obj1" id="style_text_top_title_bar">
-      <textobj font_size="32" bold="1" align_y="1" align_x="1" ellipsis="1" id="text_obj1" />
+      <textobj font_size="19" bold="1" align_y="1" align_x="1" ellipsis="1" id="text_obj1" />
     </style_text>
     <style_text textobj="text_obj1" id="style_text_empty">
       <textobj font_size="28" align_y="1" align_x="1" font_color="0.75, 0.78, 0.82, 1" id="text_obj1" />
@@ -250,6 +366,21 @@
     <style_text textobj="text_obj1" id="style_text_info_details">
       <textobj font_size="22" align_y="2" align_x="0" word_wrap="1" max_line_count="6" ellipsis="1" font_color="0.82, 0.85, 0.9, 1" id="text_obj1" />
     </style_text>
+    <style_text textobj="text_obj1" id="style_text_notice_message">
+      <textobj font_size="22" align_y="1" align_x="1" word_wrap="1" max_line_count="4" font_color="0.85, 0.88, 0.92, 1" id="text_obj1" />
+    </style_text>
+    <style_text textobj="text_obj1" id="style_text_about">
+      <textobj font_size="20" align_y="1" align_x="0" word_wrap="1" max_line_count="16" font_color="1, 1, 1, 1" id="text_obj1" />
+    </style_text>
+    <style_text textobj="text_obj1" id="style_text_music_artist">
+      <textobj font_size="24" align_y="1" align_x="0" ellipsis="1" font_color="1, 1, 1, 1" id="text_obj1" />
+    </style_text>
+    <style_text textobj="text_obj1" id="style_text_music_time">
+      <textobj font_size="18" align_y="1" align_x="0" font_color="0.75, 0.78, 0.82, 1" id="text_obj1" />
+    </style_text>
+    <style_text textobj="text_obj1" id="style_text_music_time_right">
+      <textobj font_size="18" align_y="1" align_x="2" font_color="0.75, 0.78, 0.82, 1" id="text_obj1" />
+    </style_text>
     <style_text textobj="text_obj1" id="style_text_preview_title">
       <textobj font_size="24" align_y="1" align_x="1" ellipsis="1" font_color="1, 1, 1, 1" id="text_obj1" />
     </style_text>
@@ -272,7 +403,7 @@
 
     <style_image_button layout_type_x="1" layout_type_y="0" color="1, 1, 1, 1" glow_obj="plane_obj1" label_obj="text_obj1" bg_obj="plane_obj2" image_obj="plane_obj3" image_margin="10" right_margin="130" id="style_image_button_list_button">
       <planeobj texture0="_common_texture_list_70px" id="plane_obj2" />
-      <textobj font_size="28" bold="1" max_line_count="2" enlarge_line_pitch="1" line_pitch="28" word_wrap="1" ellipsis="1" align_y="1" id="text_obj1" />
+      <textobj font_size="28" bold="1" max_line_count="2" enlarge_line_pitch="1" line_pitch="30" word_wrap="1" ellipsis="1" align_y="1" id="text_obj1" />
       <planeobj scale_mode_y="3" scale_mode_x="3" size="102, 70" id="plane_obj3" />
       <planeobj texture0="_common_texture_list_glow_70px" blend="2" id="plane_obj1" />
     </style_image_button>
@@ -346,6 +477,9 @@
           <text style="style_text_list_item_info" id="text_list_item_info">
             <layout_hint anchor="2, 0" align="2, 0" size="260, 40" pos="-24, 0" />
           </text>
+          <plane style="_common_default_style_plane" texture="tex_new_lock" id="plane_list_item_lock">
+            <layout_hint anchor="2, 0" align="2, 0" size="34, 34" pos="-58, 0" />
+          </plane>
           <plane style="_common_default_style_plane" texture="_common_texture_check_mark" id="plane_list_item_check">
             <layout_hint anchor="2, 0" align="2, 0" size="40, 40" pos="-4, 0" />
           </plane>
@@ -416,10 +550,23 @@
   </stringtable>
 
   <texturetable>
+    <texture src="texture/about.png" type="texture/png" id="tex_about" />
+    <texture src="texture/new/saves.png" type="texture/png" id="tex_new_saves" />
+    <texture src="texture/new/search_corner.png" type="texture/png" id="tex_new_search_corner" />
     <texture src="texture/new/folder.png" type="texture/png" id="tex_new_folder" />
     <texture src="texture/new/open_folder.png" type="texture/png" id="tex_new_open_folder" />
     <texture src="texture/new/trash.png" type="texture/png" id="tex_new_trash" />
     <texture src="texture/new/lock.png" type="texture/png" id="tex_new_lock" />
+    <texture src="texture/buttons/cross.png" type="texture/png" id="tex_button_cross" />
+    <texture src="texture/buttons/circle.png" type="texture/png" id="tex_button_circle" />
+    <texture src="texture/buttons/triangle.png" type="texture/png" id="tex_button_triangle" />
+    <texture src="texture/buttons/square.png" type="texture/png" id="tex_button_square" />
+    <texture src="texture/buttons/Select.png" type="texture/png" id="tex_button_select" />
+    <texture src="texture/buttons/Start.png" type="texture/png" id="tex_button_start" />
+    <texture src="texture/buttons/analog_l.png" type="texture/png" id="tex_button_l" />
+    <texture src="texture/buttons/analog_r.png" type="texture/png" id="tex_button_r" />
+    <texture src="texture/buttons/left.png" type="texture/png" id="tex_button_left" />
+    <texture src="texture/buttons/touchpad.png" type="texture/png" id="tex_button_touch" />
     <texture src="texture/new/gear.png" type="texture/png" id="tex_new_gear" />
     <texture src="texture/new/gears.png" type="texture/png" id="tex_new_gears" />
     <texture src="texture/new/settings.png" type="texture/png" id="tex_new_settings" />

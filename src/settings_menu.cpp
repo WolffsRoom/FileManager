@@ -6,33 +6,36 @@
 #include "settings.h"
 #include "settings_menu.h"
 #include "core/fs.h"
+#include "notice_menu.h"
 
 using namespace paf;
 
 namespace {
 
 	// Main level rows
-	enum MainRow { Main_Themes, Main_Language, Main_Select, Main_Shortcuts, Main_Commands, Main_Count };
+	enum MainRow { Main_Themes, Main_FontSize, Main_Language, Main_Select, Main_AutoDecrypt, Main_Shortcuts, Main_Commands, Main_About, Main_Count };
 
-	const uint32_t k_mainLabels[Main_Count] = { msg_set_themes, msg_set_language, msg_set_select, msg_set_shortcuts, msg_set_commands };
-	const uint32_t k_mainIcons[Main_Count] = { tex_ui_image, tex_ui_text, tex_ui_ftp, tex_ui_bookmark, tex_new_gears };
+	const uint32_t k_mainLabels[Main_Count] = { msg_set_themes, msg_set_font_size, msg_set_language, msg_set_select, msg_set_auto_decrypt, msg_set_shortcuts, msg_set_commands, msg_set_about };
+	const uint32_t k_mainIcons[Main_Count] = { tex_ui_image, tex_ui_text, tex_ui_text, tex_ui_ftp, tex_ui_encrypted, tex_ui_bookmark, tex_new_gears, tex_about };
 
 	const uint32_t k_languages[] = { msg_lang_system, msg_lang_ptbr, msg_lang_en };
 	const uint32_t k_selectFunctions[] = { msg_ftp_server, msg_qr_code };
+	const uint32_t k_fontSizes[] = { msg_font_small, msg_font_normal, msg_font_large };
+	const uint32_t k_enabled[] = { msg_disabled, msg_enabled };
 
 	// Button, then what it does
-	const uint32_t k_commands[][2] = {
-		{ msg_btn_cross, msg_cmd_open },
-		{ msg_btn_circle, msg_cmd_back },
-		{ msg_btn_triangle, msg_cmd_options },
-		{ msg_btn_square, msg_cmd_mark },
-		{ msg_btn_select, msg_cmd_select },
-		{ msg_btn_start, msg_cmd_settings },
-		{ msg_btn_l, msg_cmd_first },
-		{ msg_btn_r, msg_cmd_last },
-		{ msg_btn_left, msg_cmd_parent },
-		{ msg_btn_right, msg_cmd_enter },
-		{ msg_btn_hold, msg_cmd_mark },
+	const uint32_t k_commands[][3] = {
+		{ msg_btn_cross, msg_cmd_open, tex_button_cross },
+		{ msg_btn_circle, msg_cmd_back, tex_button_circle },
+		{ msg_btn_triangle, msg_cmd_options, tex_button_triangle },
+		{ msg_btn_square, msg_cmd_mark, tex_button_square },
+		{ msg_btn_select, msg_cmd_select, tex_button_select },
+		{ msg_btn_start, msg_cmd_settings, tex_button_start },
+		{ msg_btn_l, msg_cmd_first, tex_button_l },
+		{ msg_btn_r, msg_cmd_last, tex_button_r },
+		{ msg_btn_left, msg_cmd_parent, tex_button_left },
+		{ msg_btn_right, msg_cmd_enter, tex_new_arrow },
+		{ msg_btn_hold, msg_cmd_mark, tex_button_touch },
 	};
 	const int32_t k_commandCount = sizeof(k_commands) / sizeof(k_commands[0]);
 
@@ -111,8 +114,10 @@ int32_t SettingsMenu::RowCount(Level level)
 	{
 	case Level_Main: return Main_Count;
 	case Level_Themes: return theme::Count();
+	case Level_FontSize: return 3;
 	case Level_Language: return 3;
 	case Level_Select: return 2;
+	case Level_AutoDecrypt: return 2;
 	case Level_Shortcuts: return m_shortcuts.size();
 	case Level_Commands: return k_commandCount;
 	}
@@ -138,7 +143,7 @@ void SettingsMenu::ShowLevel(Level level)
 		}
 	}
 
-	static const uint32_t k_titles[] = { msg_opt_settings, msg_set_themes, msg_set_language, msg_set_select, msg_set_shortcuts, msg_set_commands };
+	static const uint32_t k_titles[] = { msg_opt_settings, msg_set_themes, msg_set_font_size, msg_set_language, msg_set_select, msg_set_auto_decrypt, msg_set_shortcuts, msg_set_commands };
 	m_root->FindChild(text_top)->SetString(Str(k_titles[level]));
 
 	m_rows = RowCount(level);
@@ -154,8 +159,10 @@ bool SettingsMenu::IsSelected(int32_t row)
 	switch (m_level)
 	{
 	case Level_Themes: return c.theme == row;
+	case Level_FontSize: return c.fontSize == row;
 	case Level_Language: return c.language == row;
 	case Level_Select: return c.selectFunction == row;
+	case Level_AutoDecrypt: return c.autoDecrypt == row;
 	case Level_Shortcuts: return row < (int32_t)m_shortcutKept.size() && m_shortcutKept.at(row);
 	default: return false;
 	}
@@ -177,6 +184,9 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 
 	ui::Widget *button = item->FindChild(image_button_list_item);
 	button->SetName(row);
+	ui::Widget *lock = button->FindChild(plane_list_item_lock);
+	if (lock)
+		lock->Hide(common::transition::Type_Reset);
 
 	paf::wstring label, info;
 	uint32_t icon = tex_new_settings;
@@ -188,13 +198,19 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		label = Str(k_mainLabels[row]);
 		icon = k_mainIcons[row];
 		if (row == Main_Themes) info = Str(theme::At(c.theme).nameHash);
+		else if (row == Main_FontSize) info = Str(k_fontSizes[c.fontSize]);
 		else if (row == Main_Language) info = Str(k_languages[c.language]);
 		else if (row == Main_Select) info = Str(k_selectFunctions[c.selectFunction]);
+		else if (row == Main_AutoDecrypt) info = Str(k_enabled[c.autoDecrypt]);
 		else if (row == Main_Shortcuts) info = Wide(common::FormatString("%u", (uint32_t)shortcuts::List().size()).c_str());
 		break;
 	case Level_Themes:
 		label = Str(theme::At(row).nameHash);
 		icon = tex_ui_image;
+		break;
+	case Level_FontSize:
+		label = Str(k_fontSizes[row]);
+		icon = tex_ui_text;
 		break;
 	case Level_Language:
 		label = Str(k_languages[row]);
@@ -204,14 +220,17 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		label = Str(k_selectFunctions[row]);
 		icon = tex_ui_ftp;
 		break;
+	case Level_AutoDecrypt:
+		label = Str(k_enabled[row]);
+		icon = tex_ui_encrypted;
+		break;
 	case Level_Shortcuts:
 		label = Wide(m_shortcuts.at(row).c_str());
 		icon = tex_ui_bookmark;
 		break;
 	case Level_Commands:
 		label = Str(k_commands[row][1]);
-		info = Str(k_commands[row][0]);
-		icon = tex_new_gear;
+		icon = k_commands[row][2];
 		break;
 	}
 
@@ -276,14 +295,20 @@ void SettingsMenu::OnRow(int32_t row)
 	{
 	case Level_Main:
 		if (row == Main_Themes) ShowLevel(Level_Themes);
+		else if (row == Main_FontSize) ShowLevel(Level_FontSize);
 		else if (row == Main_Language) ShowLevel(Level_Language);
 		else if (row == Main_Select) ShowLevel(Level_Select);
+		else if (row == Main_AutoDecrypt) ShowLevel(Level_AutoDecrypt);
 		else if (row == Main_Shortcuts) ShowLevel(Level_Shortcuts);
-		else ShowLevel(Level_Commands);
+		else if (row == Main_Commands) ShowLevel(Level_Commands);
+		else new AboutMenu(m_root);
 		return;
 	case Level_Themes:
 		c.theme = row;
 		theme::ApplyBackground(m_root->FindChild(plane_base_bg_page_settings));
+		break;
+	case Level_FontSize:
+		c.fontSize = row;
 		break;
 	case Level_Language:
 		c.language = row;
@@ -293,6 +318,9 @@ void SettingsMenu::OnRow(int32_t row)
 		break;
 	case Level_Select:
 		c.selectFunction = row;
+		break;
+	case Level_AutoDecrypt:
+		c.autoDecrypt = row;
 		break;
 	case Level_Shortcuts:
 		if (row < (int32_t)m_shortcutKept.size())

@@ -11,7 +11,7 @@ using namespace paf;
 
 namespace {
 
-	settings::Config s_config = { 0, settings::View_List, 0, 0 };
+	settings::Config s_config = { 0, settings::View_List, 0, 0, 1, 1 };
 
 	const theme::Info k_themes[] = {
 		{ msg_theme_default,  { 1.00f, 1.00f, 1.00f }, { 1.00f, 1.00f, 1.00f } },
@@ -83,6 +83,24 @@ void settings::Load()
 			s_config.view = v;
 		}
 	}
+	p = strstr(buf, "font=");
+	if (p)
+	{
+		int32_t v = atoi(p + 5);
+		if (v >= 0 && v <= 2)
+		{
+			s_config.fontSize = v;
+		}
+	}
+	p = strstr(buf, "auto_decrypt=");
+	if (p)
+	{
+		int32_t v = atoi(p + 13);
+		if (v >= 0 && v <= 1)
+		{
+			s_config.autoDecrypt = v;
+		}
+	}
 }
 
 void settings::Save()
@@ -92,9 +110,10 @@ void settings::Save()
 	{
 		return;
 	}
-	char buf[96];
-	int32_t n = snprintf(buf, sizeof(buf), "theme=%d\nview=%d\nlanguage=%d\nselect=%d\n",
-		(int)s_config.theme, (int)s_config.view, (int)s_config.language, (int)s_config.selectFunction);
+	char buf[128];
+	int32_t n = snprintf(buf, sizeof(buf), "theme=%d\nview=%d\nlanguage=%d\nselect=%d\nfont=%d\nauto_decrypt=%d\n",
+		(int)s_config.theme, (int)s_config.view, (int)s_config.language, (int)s_config.selectFunction,
+		(int)s_config.fontSize, (int)s_config.autoDecrypt);
 	sceIoWrite(fd, buf, n);
 	sceIoClose(fd);
 }
@@ -114,6 +133,13 @@ void settings::ApplyLanguage()
 settings::Config &settings::Get()
 {
 	return s_config;
+}
+
+float settings::FileFontSize()
+{
+	static const float k_sizes[] = { 22.0f, 28.0f, 34.0f };
+	int32_t index = s_config.fontSize;
+	return k_sizes[index >= 0 && index <= 2 ? index : 1];
 }
 
 uint32_t theme::Count()

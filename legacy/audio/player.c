@@ -27,7 +27,9 @@
 #include "oggplayer.h"
 #include "vita_audio.h"
 
-#include "../file.h"
+/* FMVita file types, without the vita2d file browser header */
+#define FILE_TYPE_MP3 MP3_TYPE
+#define FILE_TYPE_OGG OGG_TYPE
 
 int MUTED_VOLUME = 800;
 int MAX_VOLUME_BOOST = 15;

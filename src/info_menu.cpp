@@ -118,13 +118,27 @@ InfoMenu::InfoMenu(ui::Widget *parentRoot, Mode mode, const paf::string &path, c
 		m_picture->SetTexture(g_appPlugin->GetTexture(entry->kind == fs::Kind_Vpk ? tex_ui_vpk : tex_ui_file), 0, 0);
 	}
 
+	if (mode == Mode_Installed)
+	{
+		// "Installed "<name>". It is now on the home screen."
+		paf::string done = common::FormatString(Utf8(msg_install_done_text).c_str(), title.c_str());
+		m_text = done;
+		title = Utf8(msg_install_done_title);
+	}
 	SetText(m_root->FindChild(text_title_page_info), title.c_str());
 	SetText(m_root->FindChild(text_details_page_info), m_text.c_str());
 
 	ui::Widget *question = m_root->FindChild(text_question_page_info);
 	ui::Widget *ok = m_root->FindChild(button_ok_page_info);
 	ui::Widget *cancel = m_root->FindChild(button_cancel_page_info);
-	if (mode == Mode_Install)
+	if (mode == Mode_Installed)
+	{
+		question->Hide(common::transition::Type_Reset);
+		SetText(ok, Utf8(msg_install_run).c_str());
+		SetText(cancel, Utf8(msg_ok).c_str());
+		cancel->SetKeycode(inputdevice::pad::Data::PAD_ESCAPE);
+	}
+	else if (mode == Mode_Install)
 	{
 		SetText(question, Utf8(msg_install_question).c_str());
 		SetText(ok, Utf8(msg_install_button).c_str());

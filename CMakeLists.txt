@@ -14,7 +14,7 @@ include("$ENV{VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "File Manager")
 set(VITA_TITLEID  "FILEMGR01")
-set(VITA_VERSION  "01.00")
+set(VITA_VERSION  "00.10")
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
@@ -46,6 +46,10 @@ if(NOT EXISTS "${PAF_STUB_DIR}/CMakeLists.txt")
 endif()
 add_subdirectory("${PAF_STUB_DIR}" "${CMAKE_BINARY_DIR}/paf_stubs_build" EXCLUDE_FROM_ALL)
 
+# VitaShell's PFS bridge, used to expose protected application data.
+add_subdirectory(modules/kernel)
+add_subdirectory(modules/user)
+
 # Resource -------------------------------------------------------------------
 file(GLOB RCO_INPUTS CONFIGURE_DEPENDS resource/*.xml resource/locale/*.xml resource/texture/*)
 set(RCO_FILE "${CMAKE_BINARY_DIR}/file_manager_plugin.rco")
@@ -74,16 +78,42 @@ add_executable(FileManager
   src/ftp_menu.cpp
   src/text_view.cpp
   src/info_menu.cpp
+  src/notice_menu.cpp
+  src/music_menu.cpp
+  src/core/music.c
+  legacy/audio/player.c
+  legacy/audio/mp3player.c
+  legacy/audio/mp3xing.c
+  legacy/audio/id3.c
+  legacy/audio/oggplayer.c
+  legacy/audio/vita_audio.c
+  legacy/libmad/bit.c
+  legacy/libmad/decoder.c
+  legacy/libmad/fixed.c
+  legacy/libmad/frame.c
+  legacy/libmad/huffman.c
+  legacy/libmad/layer12.c
+  legacy/libmad/layer3.c
+  legacy/libmad/stream.c
+  legacy/libmad/synth.c
+  legacy/libmad/timer.c
   src/core/bubble.c
   src/core/install.c
   legacy/sha1.c
   src/text_input.cpp
   src/format.cpp
   src/core/fs.cpp
+  src/core/pfs.c
   src/core/fileops.c
   legacy/strnatcmp.c
 )
 add_dependencies(FileManager file_manager_rco)
+add_dependencies(FileManager kernel.skprx-self user.suprx-self vitashell_user_stubs)
+
+# FMVita's audio engine and libmad are older C: keep GCC 15's stricter defaults as warnings.
+file(GLOB LEGACY_AUDIO_SOURCES legacy/audio/*.c legacy/libmad/*.c)
+set_source_files_properties(${LEGACY_AUDIO_SOURCES} PROPERTIES COMPILE_OPTIONS
+  "-Wno-error=implicit-function-declaration;-Wno-error=incompatible-pointer-types;-Wno-error=int-conversion;-Wno-implicit-function-declaration;-Wno-incompatible-pointer-types;-Wno-int-conversion;-Wno-pointer-sign;-std=gnu99")
 
 target_include_directories(FileManager PRIVATE
   src
@@ -92,6 +122,8 @@ target_include_directories(FileManager PRIVATE
   paf
   paf/sdk_wrapper
   paf/include
+	modules/kernel
+	modules/user
 )
 
 target_link_libraries(FileManager
@@ -115,6 +147,9 @@ target_link_libraries(FileManager
   SceAvPlayer_stub
   ftpvita
   archive
+  vorbisfile
+  vorbis
+  ogg
   png
   zstd
   lzma
@@ -125,6 +160,9 @@ target_link_libraries(FileManager
   ScePromoterUtil_stub
   SceNet_stub
   SceNetCtl_stub
+  SceKernelModulemgr_stub
+  taihen_stub
+  ${CMAKE_BINARY_DIR}/modules/user/libVitaShellUser_stub_weak.a
   c
   m
 )
@@ -135,6 +173,8 @@ vita_create_vpk(FileManager.vpk ${VITA_TITLEID} eboot.bin
   NAME ${VITA_APP_NAME}
   FILE
     ${RCO_FILE} resource/file_manager_plugin.rco
+	${CMAKE_BINARY_DIR}/modules/kernel/kernel.skprx module/kernel.skprx
+	${CMAKE_BINARY_DIR}/modules/user/user.suprx module/user.suprx
     legacy/resources/head.bin resource/head.bin
     resource/sce_sys/icon0.png sce_sys/icon0.png
     resource/sce_sys/pic0.png sce_sys/pic0.png

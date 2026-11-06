@@ -29,6 +29,7 @@ namespace {
 	volatile bool s_running = false;
 	volatile bool s_watching = false;   // a RETR/STOR is waiting for its file to open
 	volatile SceUID s_fd = -1;          // the file of the current transfer
+	char s_deletePath[512];             // full path of the file being deleted
 
 	void KeepAwake(void *)
 	{
@@ -98,6 +99,13 @@ namespace {
 			return;
 		}
 
+		if (strncmp(msg, "Deleting: ", 10) == 0)
+		{
+			strncpy(s_deletePath, msg + 10, sizeof(s_deletePath) - 1);
+			s_deletePath[sizeof(s_deletePath) - 1] = 0;
+			return;
+		}
+
 		// command lines: skip "\t<n>> "
 		const char *cmd = strstr(msg, "> ");
 		if (!cmd)
@@ -105,6 +113,12 @@ namespace {
 			return;
 		}
 		cmd += 2;
+		if (strncmp(msg, "Deleting: ", 10) == 0)
+		{
+			strncpy(s_deletePath, msg + 10, sizeof(s_deletePath) - 1);
+			s_deletePath[sizeof(s_deletePath) - 1] = 0;
+			return;
+		}
 		if (strncmp(cmd, "RETR ", 5) == 0 || strncmp(cmd, "STOR ", 5) == 0)
 		{
 			Set(cmd[0] == 'R' ? ftp::Activity_Sending : ftp::Activity_Receiving, cmd + 5);
@@ -115,6 +129,7 @@ namespace {
 		}
 		else if (strncmp(cmd, "DELE ", 5) == 0)
 		{
+			s_deletePath[0] = 0;
 			Set(ftp::Activity_Deleting, cmd + 5);
 		}
 		else if (strncmp(cmd, "CWD ", 4) == 0)
@@ -234,6 +249,7 @@ extern "C" {
 			{
 				s_status.done = s_status.total;
 			}
+			s_status.activity = s_status.activity == ftp::Activity_Sending ? ftp::Activity_Sent : ftp::Activity_Received;
 		}
 		return __real_sceIoClose(fd);
 	}
@@ -298,5 +314,11 @@ bool ftp::IsRunning()
 
 void ftp::GetStatus(Status *out)
 {
+	// A deletion is done once the file is gone.
+	SceIoStat stat;
+	if (s_status.activity == Activity_Deleting && s_deletePath[0] && sceIoGetstat(s_deletePath, &stat) < 0)
+	{
+		s_status.activity = Activity_Deleted;
+	}
 	sce_paf_memcpy(out, &s_status, sizeof(s_status));
 }

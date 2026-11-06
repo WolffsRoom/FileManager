@@ -83,6 +83,13 @@
   <string src="Instalando..." id="msg_installing" />
   <string src="Instalado (%s). Já está na tela inicial." id="msg_install_done" />
   <string src="Temas" id="msg_set_themes" />
+  <string src="Tamanho do nome dos arquivos" id="msg_set_font_size" />
+  <string src="Pequeno" id="msg_font_small" />
+  <string src="Normal" id="msg_font_normal" />
+  <string src="Grande" id="msg_font_large" />
+  <string src="Descriptografar automaticamente" id="msg_set_auto_decrypt" />
+  <string src="Desativado" id="msg_disabled" />
+  <string src="Ativado" id="msg_enabled" />
   <string src="Idioma" id="msg_set_language" />
   <string src="Função do Select" id="msg_set_select" />
   <string src="Atalhos" id="msg_set_shortcuts" />
@@ -124,4 +131,31 @@
   <string src="Dimensões" id="msg_info_dimensions" />
   <string src="Cliente conectado: %s" id="msg_ftp_client" />
   <string src="Lixeira" id="msg_shortcut_trash" />
+  <string src="Sobre" id="msg_set_about" />
+  <string src="File Manager 0.1.0 Alpha&#10;&#10;Desenvolvido por Wolff, o File Manager é um explorador de arquivos para PS Vita que reúne as funções do VitaShell e do FileManager Vita (FMVita, um fork do VitaShell) na interface do próprio sistema: os mesmos menus, sons e transições dos apps da Sony.&#10;&#10;Feito com: ScePaf, o framework de interface do sistema (engenharia reversa de GrapheneCt); NetStream e BetterHomebrewBrowser como referência; VitaShell, de TheFloW; ftpvita, de xerpi; libarchive, libpng, zlib e libmad. Ícones: Icons8.&#10;&#10;Licença GPLv3." id="msg_about_text" />
+  <string src="Wi-Fi desligado" id="msg_wifi_off_title" />
+  <string src="O servidor FTP precisa de uma conexão Wi-Fi. Ligue o Wi-Fi e conecte-se a uma rede, depois tente de novo." id="msg_wifi_off" />
+  <string src="Configurações de rede" id="msg_network_settings" />
+  <string src="Sucesso! Enviado: %s" id="msg_ftp_sent" />
+  <string src="Sucesso! Recebido: %s" id="msg_ftp_received_ok" />
+  <string src="Sucesso! Excluído: %s" id="msg_ftp_deleted" />
+  <string src="Saves" id="msg_shortcut_saves" />
+  <string src="Editar linha" id="msg_text_edit_line" />
+  <string src="Inserir linha abaixo" id="msg_text_insert_line" />
+  <string src="Excluir linha" id="msg_text_delete_line" />
+  <string src="Salvar" id="msg_text_save" />
+  <string src="Descartar" id="msg_text_discard" />
+  <string src="Salvo." id="msg_text_saved" />
+  <string src="Alterações não salvas" id="msg_text_unsaved_title" />
+  <string src="Salvar as alterações deste arquivo antes de sair?" id="msg_text_unsaved" />
+  <string src="Este arquivo tem mais de 2 MB e abre só para leitura." id="msg_text_too_big" />
+  <string src="Instalação concluída com sucesso!" id="msg_install_done_title" />
+  <string src="Foi instalado o &quot;%s&quot;. Já está na tela inicial." id="msg_install_done_text" />
+  <string src="Executar" id="msg_install_run" />
+  <string src="Música" id="msg_music_title" />
+  <string src="Anterior" id="msg_music_prev" />
+  <string src="Próxima" id="msg_music_next" />
+  <string src="Tocar" id="msg_music_play" />
+  <string src="Pausar" id="msg_music_pause" />
+  <string src="Artista desconhecido" id="msg_music_unknown_artist" />
 </stringset>

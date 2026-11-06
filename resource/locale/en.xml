@@ -83,6 +83,13 @@
   <string src="Installing..." id="msg_installing" />
   <string src="Installed (%s). It is now on the home screen." id="msg_install_done" />
   <string src="Themes" id="msg_set_themes" />
+  <string src="File name size" id="msg_set_font_size" />
+  <string src="Small" id="msg_font_small" />
+  <string src="Normal" id="msg_font_normal" />
+  <string src="Large" id="msg_font_large" />
+  <string src="Decrypt automatically" id="msg_set_auto_decrypt" />
+  <string src="Disabled" id="msg_disabled" />
+  <string src="Enabled" id="msg_enabled" />
   <string src="Language" id="msg_set_language" />
   <string src="Select Button" id="msg_set_select" />
   <string src="Shortcuts" id="msg_set_shortcuts" />
@@ -124,4 +131,31 @@
   <string src="Dimensions" id="msg_info_dimensions" />
   <string src="Client connected: %s" id="msg_ftp_client" />
   <string src="Trash" id="msg_shortcut_trash" />
+  <string src="About" id="msg_set_about" />
+  <string src="File Manager 0.1.0 Alpha&#10;&#10;Made by Wolff, File Manager is a file explorer for the PS Vita that brings together what VitaShell and FileManager Vita (FMVita, a fork of VitaShell) can do, in the system's own interface: the same menus, sounds and transitions as Sony's apps.&#10;&#10;Built with: ScePaf, the system UI framework (reverse engineering by GrapheneCt); NetStream and BetterHomebrewBrowser as references; VitaShell by TheFloW; ftpvita by xerpi; libarchive, libpng, zlib and libmad. Icons: Icons8.&#10;&#10;Licensed under GPLv3." id="msg_about_text" />
+  <string src="Wi-Fi is off" id="msg_wifi_off_title" />
+  <string src="The FTP server needs a Wi-Fi connection. Turn on Wi-Fi and connect to a network, then try again." id="msg_wifi_off" />
+  <string src="Network Settings" id="msg_network_settings" />
+  <string src="Success! Sent: %s" id="msg_ftp_sent" />
+  <string src="Success! Received: %s" id="msg_ftp_received_ok" />
+  <string src="Success! Deleted: %s" id="msg_ftp_deleted" />
+  <string src="Saves" id="msg_shortcut_saves" />
+  <string src="Edit Line" id="msg_text_edit_line" />
+  <string src="Insert Line Below" id="msg_text_insert_line" />
+  <string src="Delete Line" id="msg_text_delete_line" />
+  <string src="Save" id="msg_text_save" />
+  <string src="Discard" id="msg_text_discard" />
+  <string src="Saved." id="msg_text_saved" />
+  <string src="Unsaved changes" id="msg_text_unsaved_title" />
+  <string src="Save the changes to this file before leaving?" id="msg_text_unsaved" />
+  <string src="This file is larger than 2 MB and opens read-only." id="msg_text_too_big" />
+  <string src="Installation complete!" id="msg_install_done_title" />
+  <string src="&quot;%s&quot; was installed. It is now on the home screen." id="msg_install_done_text" />
+  <string src="Run" id="msg_install_run" />
+  <string src="Music" id="msg_music_title" />
+  <string src="Previous" id="msg_music_prev" />
+  <string src="Next" id="msg_music_next" />
+  <string src="Play" id="msg_music_play" />
+  <string src="Pause" id="msg_music_pause" />
+  <string src="Unknown artist" id="msg_music_unknown_artist" />
 </stringset>

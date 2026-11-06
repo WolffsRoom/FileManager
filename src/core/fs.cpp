@@ -30,15 +30,15 @@ namespace {
 		{ "ur0:", msg_dev_ur0, tex_ui_root, false },
 		{ "gro0:", msg_dev_gro0, tex_ui_root, false },
 		{ "grw0:", msg_dev_grw0, tex_ui_root, false },
-		{ "vs0:", msg_dev_system, tex_new_lock, true },
-		{ "os0:", msg_dev_system, tex_new_lock, true },
-		{ "sa0:", msg_dev_system, tex_new_lock, true },
-		{ "tm0:", msg_dev_system, tex_new_lock, true },
-		{ "ud0:", msg_dev_system, tex_new_lock, true },
-		{ "pd0:", msg_dev_system, tex_new_lock, true },
-		{ "sd0:", msg_dev_system, tex_new_lock, true },
-		{ "vd0:", msg_dev_system, tex_new_lock, true },
-		{ "host0:", msg_dev_system, tex_new_lock, true },
+		{ "vs0:", msg_dev_system, tex_ui_encrypted, true },
+		{ "os0:", msg_dev_system, tex_ui_encrypted, true },
+		{ "sa0:", msg_dev_system, tex_ui_encrypted, true },
+		{ "tm0:", msg_dev_system, tex_ui_encrypted, true },
+		{ "ud0:", msg_dev_system, tex_ui_encrypted, true },
+		{ "pd0:", msg_dev_system, tex_ui_encrypted, true },
+		{ "sd0:", msg_dev_system, tex_ui_encrypted, true },
+		{ "vd0:", msg_dev_system, tex_ui_encrypted, true },
+		{ "host0:", msg_dev_system, tex_ui_encrypted, true },
 	};
 
 	struct Shortcut
@@ -53,13 +53,14 @@ namespace {
 		{ "ux0:music", msg_shortcut_music },
 		{ "ux0:pspemu", msg_shortcut_psp },
 		{ "ux0:temp", msg_shortcut_trash },
+		{ "ux0:user/00/savedata", msg_shortcut_saves },
 		{ "ux0:app", msg_shortcut_apps },
 		{ "ux0:data", msg_shortcut_data },
 		{ "ur0:tai", msg_shortcut_plugins },
 	};
 	const uint32_t k_shortcutIcons[] = {
-		tex_ui_download, tex_ui_image, tex_ui_music, tex_new_open_folder, tex_new_trash,
-		tex_new_open_folder, tex_new_open_folder, tex_new_open_folder,
+		tex_ui_download, tex_ui_image, tex_ui_music, tex_new_open_folder, tex_new_trash, tex_new_saves,
+		tex_new_open_folder, tex_new_open_folder, tex_ui_sfo,
 	};
 
 	struct ExtKind
@@ -327,7 +328,7 @@ void fs::ListRoot(EntryList *out)
 	e->isDir = true;
 	e->marked = false;
 	e->labelHash = msg_system_partitions;
-	e->iconHash = tex_new_lock;
+	e->iconHash = tex_ui_encrypted;
 	e->size = 0;
 	e->capacity = 0;
 	out->push_back(e);

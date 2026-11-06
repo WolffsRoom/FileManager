@@ -31,7 +31,7 @@ public:
 		paf::wstring label;
 	};
 
-	OptionMenu(Plugin *workPlugin, ui::Widget *root, vector<Button> *buttons, uint32_t pageHash = 0xd098335e);
+	OptionMenu(Plugin *workPlugin, ui::Widget *root, vector<Button> *buttons, uint32_t pageHash = 0xd098335e, int32_t tag = 0);
 
 	~OptionMenu();
 
@@ -46,6 +46,7 @@ private:
 	ui::Widget *m_optPlaneRoot;
 	uint32_t m_buttonCount;
 	uint32_t m_pageHash;
+	int32_t m_tag;   // sent with the events, so each page reacts only to its own menu
 };
 
 #endif

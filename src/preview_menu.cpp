@@ -8,6 +8,14 @@
 #include <psp2/avplayer.h>
 #include <psp2/sysmodule.h>
 #include <psp2/kernel/sysmem.h>
+#include <psp2/kernel/threadmgr.h>
+#include <psp2/audioout.h>
+#include <psp2/touch.h>
+#include <math.h>
+#include <stdio.h>
+
+// In the stub (NID 0x2CD86FD6) but not in the VitaSDK header.
+extern "C" int sceAvPlayerStreamCount(SceAvPlayerHandle handle);
 
 #include "common.h"
 #include "preview_menu.h"
@@ -147,9 +155,87 @@ namespace {
 		}
 	}
 
+	// What the player returned at each step: why a video does not open on the console.
+	void VideoLog(const char *fmt, int32_t value)
+	{
+		SceUID fd = sceIoOpen("ux0:data/FileManager/video.log", SCE_O_WRONLY | SCE_O_CREAT | SCE_O_APPEND, 0777);
+		if (fd >= 0)
+		{
+			char line[160];
+			int n = snprintf(line, sizeof(line), fmt, value);
+			sceIoWrite(fd, line, n);
+			sceIoWrite(fd, "\n", 1);
+			sceIoClose(fd);
+		}
+	}
+
+	// Audio: SceAvPlayer decodes it, this thread feeds the speaker.
+	volatile bool s_audioRun = false;
+	volatile int32_t s_audioPlayer = 0;
+	SceUID s_audioThread = -1;
+
+	int AudioThread(SceSize args, void *argp)
+	{
+		int port = -1;
+		int portRate = 0, portChannels = 0;
+		while (s_audioRun)
+		{
+			SceAvPlayerFrameInfo frame;
+			sce_paf_memset(&frame, 0, sizeof(frame));
+			if (s_audioPlayer && sceAvPlayerIsActive(s_audioPlayer) && sceAvPlayerGetAudioData(s_audioPlayer, &frame) && frame.pData)
+			{
+				int rate = frame.details.audio.sampleRate ? frame.details.audio.sampleRate : 48000;
+				int channels = frame.details.audio.channelCount ? frame.details.audio.channelCount : 2;
+				if (port < 0 || rate != portRate || channels != portChannels)
+				{
+					if (port >= 0)
+					{
+						sceAudioOutReleasePort(port);
+					}
+					port = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_MAIN, 1024, rate,
+						channels == 1 ? SCE_AUDIO_OUT_MODE_MONO : SCE_AUDIO_OUT_MODE_STEREO);
+					portRate = rate;
+					portChannels = channels;
+				}
+				if (port >= 0)
+				{
+					sceAudioOutOutput(port, frame.pData);
+				}
+			}
+			else
+			{
+				sceKernelDelayThread(5000);
+			}
+		}
+		if (port >= 0)
+		{
+			sceAudioOutOutput(port, NULL);
+			sceAudioOutReleasePort(port);
+		}
+		return sceKernelExitDeleteThread(0);
+	}
+
+	void FormatTime(char *out, size_t size, uint64_t ms)
+	{
+		uint32_t s = (uint32_t)(ms / 1000);
+		if (s >= 3600)
+		{
+			snprintf(out, size, "%u:%02u:%02u", s / 3600, (s / 60) % 60, s % 60);
+		}
+		else
+		{
+			snprintf(out, size, "%02u:%02u", s / 60, s % 60);
+		}
+	}
+
 	void VideoTask(void *userdata)
 	{
 		static_cast<PreviewMenu *>(userdata)->OnVideoFrame();
+	}
+
+	void ImageTouchTask(void *userdata)
+	{
+		static_cast<PreviewMenu *>(userdata)->OnImageTouch();
 	}
 
 	bool IsVideo(const char *path)
@@ -186,7 +272,9 @@ namespace {
 
 PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &paths, int32_t index) :
 	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_loadId(0), m_jobId(0),
-	m_player(0), m_videoActive(false), m_paused(false), m_frameShown(false), m_rgba(NULL), m_videoW(0), m_videoH(0)
+	m_player(0), m_videoActive(false), m_imageActive(false), m_paused(false), m_frameShown(false), m_rgba(NULL), m_videoW(0), m_videoH(0),
+	m_touchActive(false), m_pinchActive(false), m_touchStartX(0), m_touchStartY(0), m_touchLastX(0), m_touchLastY(0),
+	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageX(0), m_imageY(0)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -229,6 +317,22 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 		menu->Open((menu->m_index + 1) % menu->m_paths.size());
 	}, this);
 
+	m_controls = m_root->FindChild(plane_controls_page_preview);
+	m_time = m_controls->FindChild(text_time_page_preview);
+	m_barFill = m_controls->FindChild(plane_bar_fill_page_preview);
+	m_controls->Hide(common::transition::Type_Reset);
+
+	AddKey(m_root->FindChild(button_rewind_page_preview), inputdevice::pad::Data::PAD_LEFT,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<PreviewMenu *>(userdata)->SeekVideo(-10000);
+	}, this);
+	AddKey(m_root->FindChild(button_forward_page_preview), inputdevice::pad::Data::PAD_RIGHT,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<PreviewMenu *>(userdata)->SeekVideo(10000);
+	}, this);
+
 	AddKey(m_root->FindChild(button_pause_page_preview), inputdevice::pad::Data::PAD_ENTER,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
@@ -247,12 +351,15 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 		}
 	}, this);
 
+	common::MainThreadCallList::Register(ImageTouchTask, this);
+
 	Open(index);
 }
 
 PreviewMenu::~PreviewMenu()
 {
 	m_loadId++;
+	common::MainThreadCallList::Unregister(ImageTouchTask, this);
 	StopVideo();
 
 	Plugin::PageCloseParam closeParam;
@@ -260,6 +367,24 @@ PreviewMenu::~PreviewMenu()
 	closeParam.fade_time_ms = 200.0f;
 	g_appPlugin->PageClose(page_preview, closeParam);
 	m_parentRoot->SetActivate(true);
+}
+
+void PreviewMenu::SeekVideo(int32_t deltaMs)
+{
+	if (!m_videoActive)
+	{
+		return;
+	}
+	int64_t target = (int64_t)sceAvPlayerCurrentTime(m_player) + deltaMs;
+	if (target < 0)
+	{
+		target = 0;
+	}
+	if (m_duration && (uint64_t)target > m_duration)
+	{
+		target = m_duration - 1000;
+	}
+	sceAvPlayerJumpToTime(m_player, (uint64_t)target);
 }
 
 void PreviewMenu::Close()
@@ -279,6 +404,14 @@ void PreviewMenu::ShowError()
 void PreviewMenu::Open(int32_t index)
 {
 	StopVideo();
+	m_imageActive = false;
+	m_touchActive = false;
+	m_pinchActive = false;
+	m_imageScale = 1.0f;
+	m_imageX = 0.0f;
+	m_imageY = 0.0f;
+	m_plane->SetScale(1.0f, 1.0f, 1.0f);
+	m_plane->SetPos(0.0f, 0.0f, 0.0f);
 	m_index = index;
 	m_loadId++;
 	m_error->Hide(common::transition::Type_Reset);
@@ -334,6 +467,7 @@ void PreviewMenu::LoadImageJob()
 		{
 			m_plane->SetTexture(tex, 0, 0);
 			m_plane->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+			m_imageActive = true;
 		}
 		else
 		{
@@ -343,9 +477,80 @@ void PreviewMenu::LoadImageJob()
 	thread::RMutex::MainThreadMutex()->Unlock();
 }
 
+void PreviewMenu::OnImageTouch()
+{
+	if (!m_imageActive || m_videoActive)
+		return;
+
+	SceTouchData touch;
+	memset(&touch, 0, sizeof(touch));
+	sceTouchPeek(SCE_TOUCH_PORT_FRONT, &touch, 1);
+	if (touch.reportNum == 0)
+	{
+		if (m_touchActive && !m_pinchActive && m_imageScale <= 1.05f)
+		{
+			float dx = m_touchLastX - m_touchStartX;
+			float dy = m_touchLastY - m_touchStartY;
+			if (fabsf(dx) > 140.0f && fabsf(dy) < 90.0f)
+			{
+				int32_t n = m_paths.size();
+				Open(dx < 0 ? (m_index + 1) % n : (m_index + n - 1) % n);
+			}
+		}
+		m_touchActive = false;
+		m_pinchActive = false;
+		return;
+	}
+
+	float x = touch.report[0].x * (960.0f / 1920.0f);
+	float y = touch.report[0].y * (544.0f / 1088.0f);
+	if (y < 48.0f || y > 500.0f)
+		return;
+
+	if (!m_touchActive)
+	{
+		m_touchActive = true;
+		m_touchStartX = m_touchLastX = x;
+		m_touchStartY = m_touchLastY = y;
+	}
+
+	if (touch.reportNum > 1)
+	{
+		float x2 = touch.report[1].x * (960.0f / 1920.0f);
+		float y2 = touch.report[1].y * (544.0f / 1088.0f);
+		float dx = x2 - x;
+		float dy = y2 - y;
+		float distance = sqrtf(dx * dx + dy * dy);
+		if (!m_pinchActive)
+		{
+			m_pinchActive = true;
+			m_pinchStart = distance;
+			m_pinchScale = m_imageScale;
+		}
+		if (m_pinchStart > 1.0f)
+		{
+			m_imageScale = m_pinchScale * distance / m_pinchStart;
+			if (m_imageScale < 1.0f) m_imageScale = 1.0f;
+			if (m_imageScale > 5.0f) m_imageScale = 5.0f;
+			m_plane->SetScale(m_imageScale, m_imageScale, 1.0f);
+		}
+	}
+	else if (!m_pinchActive && m_imageScale > 1.05f)
+	{
+		m_imageX += x - m_touchLastX;
+		m_imageY += y - m_touchLastY;
+		m_plane->SetPos(m_imageX, m_imageY, 0.0f);
+	}
+	m_touchLastX = x;
+	m_touchLastY = y;
+}
+
 bool PreviewMenu::StartVideo(const char *path)
 {
-	if (sceSysmoduleLoadModule(SCE_SYSMODULE_AVPLAYER) < 0)
+	sceIoRemove("ux0:data/FileManager/video.log");
+	int32_t mod = sceSysmoduleLoadModule(SCE_SYSMODULE_AVPLAYER);
+	VideoLog("load AVPLAYER: 0x%08X", mod);
+	if (mod < 0)
 	{
 		return false;
 	}
@@ -363,24 +568,51 @@ bool PreviewMenu::StartVideo(const char *path)
 	init.fileReplacement.readOffset = VideoReadOffset;
 	init.fileReplacement.size = VideoSizeFile;
 	init.basePriority = 0x10000100;
-	init.numOutputVideoFrameBuffers = 8;
+	init.numOutputVideoFrameBuffers = 16;
 	init.autoStart = SCE_TRUE;
 
 	m_player = sceAvPlayerInit(&init);
-	if (m_player <= 0)
+	VideoLog("sceAvPlayerInit: 0x%08X", m_player);
+	if (m_player < 0)
 	{
 		m_player = 0;
 		return false;
 	}
 
-	if (sceAvPlayerAddSource(m_player, path) < 0)
+	int32_t added = sceAvPlayerAddSource(m_player, path);
+	VideoLog("sceAvPlayerAddSource: 0x%08X", added);
+	if (added < 0)
 	{
 		sceAvPlayerClose(m_player);
 		m_player = 0;
 		return false;
 	}
 
+	// Duration from the video stream, for the progress bar.
+	m_duration = 0;
+	int32_t streams = sceAvPlayerStreamCount(m_player);
+	VideoLog("streams: %d", streams);
+	for (int32_t i = 0; i < streams; i++)
+	{
+		SceAvPlayerStreamInfo info;
+		sce_paf_memset(&info, 0, sizeof(info));
+		if (sceAvPlayerGetStreamInfo(m_player, i, &info) >= 0 && info.duration > m_duration)
+		{
+			m_duration = info.duration;
+		}
+	}
+
+	s_audioPlayer = m_player;
+	s_audioRun = true;
+	s_audioThread = sceKernelCreateThread("FM::VideoAudio", AudioThread, 0x10000100, 0x4000, 0, 0, NULL);
+	if (s_audioThread >= 0)
+	{
+		sceKernelStartThread(s_audioThread, 0, NULL);
+	}
+
 	sceAvPlayerSetLooping(m_player, SCE_TRUE);
+	m_controls->Show(common::transition::Type_Reset);
+	m_frameCounter = 0;
 	m_videoActive = true;
 	m_paused = false;
 	m_frameShown = false;
@@ -395,11 +627,19 @@ void PreviewMenu::StopVideo()
 		return;
 	}
 	common::MainThreadCallList::Unregister(VideoTask, this);
+	s_audioRun = false;
+	if (s_audioThread >= 0)
+	{
+		sceKernelWaitThreadEnd(s_audioThread, NULL, NULL);
+		s_audioThread = -1;
+	}
+	s_audioPlayer = 0;
 	sceAvPlayerStop(m_player);
 	sceAvPlayerClose(m_player);
 	VideoCloseFile(NULL);
 	m_player = 0;
 	m_videoActive = false;
+	m_controls->Hide(common::transition::Type_Reset);
 	free(m_rgba);
 	m_rgba = NULL;
 	m_videoW = m_videoH = 0;
@@ -448,6 +688,23 @@ void PreviewMenu::OnVideoFrame()
 
 	ConvertHalf((const uint8_t *)frame.pData, m_rgba, w, h);
 	m_videoSurf->Copy(0, m_rgba, ImageOrder_Linear, (w / 2) * 4, 0);
+
+	if (m_frameCounter++ % 15 == 0)
+	{
+		uint64_t now = sceAvPlayerCurrentTime(m_player);
+		char a[16], b[16], line[40];
+		FormatTime(a, sizeof(a), now);
+		FormatTime(b, sizeof(b), m_duration);
+		snprintf(line, sizeof(line), m_duration ? "%s / %s" : "%s", a, b);
+		paf::wstring text;
+		common::Utf8ToUtf16(line, &text);
+		m_time->SetString(text);
+		if (m_duration)
+		{
+			float w = 600.0f * (float)((double)now / (double)m_duration);
+			m_barFill->SetSize(w > 600.0f ? 600.0f : w, 8.0f, 0.0f);
+		}
+	}
 
 	if (!m_frameShown)
 	{

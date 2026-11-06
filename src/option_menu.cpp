@@ -20,15 +20,16 @@ void OptionMenu::OnButton(ui::Widget *wdg)
 {
 	uint32_t hash = wdg->GetName().GetIDHash();
 	Plugin *plugin = m_plugin;
+	int32_t tag = m_tag;
 	delete this;
 
 	if (hash == button_option_menu_close)
 	{
-		event::BroadcastGlobalEvent(plugin, OptionMenuEvent, OptionMenuEvent_Close);
+		event::BroadcastGlobalEvent(plugin, OptionMenuEvent, OptionMenuEvent_Close, 0, tag);
 	}
 	else
 	{
-		event::BroadcastGlobalEvent(plugin, OptionMenuEvent, OptionMenuEvent_Button, hash - OPTION_MENU_BUTTON_MAGIC);
+		event::BroadcastGlobalEvent(plugin, OptionMenuEvent, OptionMenuEvent_Button, hash - OPTION_MENU_BUTTON_MAGIC, tag);
 	}
 }
 
@@ -66,9 +67,10 @@ void OptionMenu::OnSizeAdjust(int32_t type, ui::Handler *self, ui::Event *e, voi
 	self->DeleteEventCallback(ui::Handler::CB_STATE_READY, OnSizeAdjust, userdata);
 }
 
-OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button> *buttons, uint32_t pageHash)
+OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button> *buttons, uint32_t pageHash, int32_t tag)
 {
 	m_pageHash = pageHash;
+	m_tag = tag;
 	Plugin::TemplateOpenParam tmpParam;
 	ui::Widget *closeButton = NULL;
 	ui::Widget *button = NULL;

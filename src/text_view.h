@@ -4,10 +4,16 @@
 #include <sdk_compat.h>
 #include <paf.h>
 
-/** Read-only text viewer: one list row per line, so big files scroll smoothly. */
+/**
+ * Text viewer and line editor (as in VitaShell/FMVita): one list row per line.
+ * Triangle opens Edit line, Insert line, Delete line and Save. Leaving with unsaved
+ * changes asks whether to save them.
+ */
 class TextView
 {
 public:
+
+	enum { OptionTag = 2 };   // tells this page's option menu apart from the browser's
 
 	class ListViewCb : public paf::ui::listview::ItemFactory
 	{
@@ -25,15 +31,31 @@ public:
 
 	paf::ui::ListItem *CreateLine(paf::ui::listview::ItemFactory::CreateParam &param);
 
+	void OnOption(int32_t index);
+	void OnLineEntered(const paf::wstring &text);
+	void OnSaveAnswer(int32_t choice);
+
 private:
 
-	void Close();
+	void OnBack();
+	void OnOptions();
+	void Rebuild();
+	int32_t Save();
+	void RefreshRow(int32_t row);
+
+	enum Edit { Edit_Change, Edit_Insert };
 
 	paf::ui::Widget *m_parentRoot;
 	paf::ui::Scene *m_root;
 	paf::ui::ListView *m_list;
-	char *m_data;                    // file contents, lines point into it
-	paf::vector<uint32_t> m_lines;   // offset of each line, wrapped
+	paf::string m_path;
+	paf::vector<paf::string> m_lines;
+	uint32_t m_rows;
+	int32_t m_focused;
+	bool m_dirty;
+	bool m_crlf;        // keep the file's own line endings
+	bool m_truncated;   // only the first part of a big file was loaded: never save it
+	Edit m_edit;
 };
 
 #endif

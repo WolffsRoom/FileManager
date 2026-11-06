@@ -100,7 +100,12 @@ void dialog::OpenError(Plugin *workPlugin, int32_t errorCode, const wchar_t *mes
 
 	bool isMainThread = thread::ThreadIDCache::Check();
 
-	CommonGuiDialog::ErrorDialog dialog;
+	// The system keeps using this object after Show() returns: it must not live
+	// on this function's stack. One stays alive until the next error replaces it.
+	static CommonGuiDialog::ErrorDialog *s_errorDialog = NULL;
+	delete s_errorDialog;
+	s_errorDialog = new CommonGuiDialog::ErrorDialog();
+	CommonGuiDialog::ErrorDialog &dialog = *s_errorDialog;
 
 	auto cb = new CommonGuiDialog::EventCBListener(CommonGuiEventHandler, NULL);
 

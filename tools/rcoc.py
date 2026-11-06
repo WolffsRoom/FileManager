@@ -45,6 +45,13 @@ SECTIONS = ("tree", "idstr", "idhash", "strings", "wstrings", "hashes", "ints", 
 
 
 def paf_hash(name):
+    """SHA-1 prefix of a name; "#1234abcd" is taken as the hash itself, for
+    resources of the system whose names are unknown."""
+    if len(name) == 9 and name[0] == "#":
+        try:
+            return int(name[1:], 16)
+        except ValueError:
+            pass
     return int.from_bytes(hashlib.sha1(name.encode("utf-8")).digest()[:4], "big")
 
 

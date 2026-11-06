@@ -19,8 +19,10 @@ public:
 	{
 		Level_Main,
 		Level_Themes,
+		Level_FontSize,
 		Level_Language,
 		Level_Select,
+		Level_AutoDecrypt,
 		Level_Shortcuts,
 		Level_Commands
 	};

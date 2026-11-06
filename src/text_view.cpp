@@ -4,24 +4,38 @@
 #include <string.h>
 
 #include "common.h"
+#include "dialog.h"
 #include "settings.h"
+#include "option_menu.h"
+#include "text_input.h"
+#include "notice_menu.h"
 #include "text_view.h"
 
 using namespace paf;
 
 namespace {
 
-	const int32_t k_maxFile = 2 * 1024 * 1024;  // larger files show their first 2 MB
-	const int32_t k_wrapColumns = 76;           // characters per row at 22 px
+	const int32_t k_maxFile = 2 * 1024 * 1024;  // bigger files open read-only, first 2 MB
 
-	// Start of the next UTF-8 character, so wrapping never cuts one in half.
-	inline bool IsContinuation(char c)
+	enum Option { Option_Edit, Option_Insert, Option_Delete, Option_Save };
+
+	paf::wstring Str(uint32_t id)
 	{
-		return (c & 0xC0) == 0x80;
+		paf::string s;
+		common::Utf16ToUtf8(paf::wstring(g_appPlugin->GetString(id)), &s);
+		paf::wstring w;
+		common::Utf8ToUtf16(s, &w);
+		return w;
+	}
+
+	void OnLineDone(const paf::wstring &text, void *userdata)
+	{
+		reinterpret_cast<TextView *>(userdata)->OnLineEntered(text);
 	}
 }
 
-TextView::TextView(ui::Widget *parentRoot, const char *path) : m_parentRoot(parentRoot), m_data(NULL)
+TextView::TextView(ui::Widget *parentRoot, const char *path) :
+	m_parentRoot(parentRoot), m_path(path), m_rows(0), m_focused(-1), m_dirty(false), m_crlf(false), m_truncated(false), m_edit(Edit_Change)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -41,74 +55,87 @@ TextView::TextView(ui::Widget *parentRoot, const char *path) : m_parentRoot(pare
 	back->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
-		reinterpret_cast<TextView *>(userdata)->Close();
+		reinterpret_cast<TextView *>(userdata)->OnBack();
 	}, this);
 
-	// Read and split into rows: newlines, then wrap long lines.
-	int32_t size = 0;
+	ui::Widget *options = m_root->FindChild(button_options_page_text_view);
+	options->SetKeycode(inputdevice::pad::Data::PAD_MENU);
+	options->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<TextView *>(userdata)->OnOptions();
+	}, this);
+
+	m_root->AddEventCallback(OptionMenu::OptionMenuEvent,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		if (e->GetValue(0) == OptionMenu::OptionMenuEvent_Button && e->GetValue(2) == TextView::OptionTag)
+		{
+			reinterpret_cast<TextView *>(userdata)->OnOption(e->GetValue(1));
+		}
+	}, this);
+
+	// Read, split into lines; remember CRLF so saving keeps the file's format.
 	SceUID fd = sceIoOpen(path, SCE_O_RDONLY, 0);
 	if (fd >= 0)
 	{
-		size = sceIoLseek32(fd, 0, SCE_SEEK_END);
+		int32_t size = sceIoLseek32(fd, 0, SCE_SEEK_END);
 		if (size > k_maxFile)
 		{
 			size = k_maxFile;
+			m_truncated = true;
 		}
 		sceIoLseek32(fd, 0, SCE_SEEK_SET);
-		m_data = (char *)malloc(size + 1);
-		if (m_data)
+		char *data = (char *)malloc(size + 1);
+		if (data)
 		{
-			size = sceIoRead(fd, m_data, size);
+			size = sceIoRead(fd, data, size);
 			if (size < 0)
 			{
 				size = 0;
 			}
-			m_data[size] = 0;
+			data[size] = 0;
+			int32_t i = 0;
+			if (size >= 3 && (uint8_t)data[0] == 0xEF && (uint8_t)data[1] == 0xBB && (uint8_t)data[2] == 0xBF)
+			{
+				i = 3;
+			}
+			int32_t start = i;
+			for (; i <= size; i++)
+			{
+				if (i == size || data[i] == '\n')
+				{
+					int32_t end = i;
+					if (end > start && data[end - 1] == '\r')
+					{
+						end--;
+						m_crlf = true;
+					}
+					for (int32_t k = start; k < end; k++)
+					{
+						if (data[k] == '\t')
+						{
+							data[k] = ' ';
+						}
+						else if (data[k] == 0)
+						{
+							data[k] = '.';
+						}
+					}
+					if (i < size || end > start)
+					{
+						m_lines.push_back(paf::string(data + start, end - start));
+					}
+					start = i + 1;
+				}
+			}
+			free(data);
 		}
 		sceIoClose(fd);
 	}
-
-	if (m_data)
+	if (m_lines.empty())
 	{
-		int32_t i = 0;
-		// UTF-8 byte order mark
-		if (size >= 3 && (uint8_t)m_data[0] == 0xEF && (uint8_t)m_data[1] == 0xBB && (uint8_t)m_data[2] == 0xBF)
-		{
-			i = 3;
-		}
-		int32_t start = i, cols = 0;
-		m_lines.push_back(start);
-		for (; i < size; i++)
-		{
-			char c = m_data[i];
-			if (c == '\r')
-			{
-				m_data[i] = 0;
-				continue;
-			}
-			if (c == '\n')
-			{
-				m_data[i] = 0;
-				m_lines.push_back(i + 1);
-				cols = 0;
-				continue;
-			}
-			if (c == '\t')
-			{
-				m_data[i] = ' ';
-			}
-			else if (c == 0)
-			{
-				m_data[i] = '.';  // binary content stays readable
-			}
-			if (!IsContinuation(c) && ++cols > k_wrapColumns)
-			{
-				// Wrapping needs a terminator: shift is impossible in place, so
-				// rows are tracked by start offset and drawn up to the next row.
-				m_lines.push_back(i);
-				cols = 1;
-			}
-		}
+		m_lines.push_back(paf::string());
 	}
 
 	m_list = static_cast<ui::ListView *>(m_root->FindChild(list_view_page_text_view));
@@ -117,10 +144,7 @@ TextView::TextView(ui::Widget *parentRoot, const char *path) : m_parentRoot(pare
 	math::v4 cellSize(960.0f, 32.0f);
 	m_list->SetCellSizeDefault(0, cellSize);
 	m_list->SetSegmentLayoutType(0, ui::ListView::LAYOUT_TYPE_LIST);
-	if (!m_lines.empty())
-	{
-		m_list->InsertCell(0, 0, m_lines.size());
-	}
+	Rebuild();
 }
 
 TextView::~TextView()
@@ -130,14 +154,28 @@ TextView::~TextView()
 	closeParam.fade = true;
 	closeParam.fade_time_ms = 200.0f;
 	g_appPlugin->PageClose(page_text_view, closeParam);
-	free(m_data);
 	m_parentRoot->SetActivate(true);
 }
 
-void TextView::Close()
+void TextView::Rebuild()
 {
-	m_root->SetActivate(false);
-	DeferDelete(this);
+	if (m_rows > 0)
+	{
+		m_list->DeleteCell(0, 0, m_rows);
+	}
+	m_rows = m_lines.size();
+	m_list->InsertCell(0, 0, m_rows);
+}
+
+void TextView::RefreshRow(int32_t row)
+{
+	ui::ListItem *item = m_list->GetListItem(0, row);
+	if (item && row >= 0 && row < (int32_t)m_lines.size())
+	{
+		paf::wstring wide;
+		common::Utf8ToUtf16(m_lines.at(row), &wide);
+		item->FindChild(button_text_line)->SetString(wide);
+	}
 }
 
 ui::ListItem *TextView::CreateLine(ui::listview::ItemFactory::CreateParam &param)
@@ -152,18 +190,185 @@ ui::ListItem *TextView::CreateLine(ui::listview::ItemFactory::CreateParam &param
 	g_appPlugin->TemplateOpen(targetRoot, template_text_line, tmpParam);
 	ui::Widget *item = targetRoot->GetChild(targetRoot->GetChildrenNum() - 1);
 
-	// A row runs to the next row's start, or to the terminator written for a newline.
-	const uint32_t start = m_lines.at(param.cell_index);
-	uint32_t end = param.cell_index + 1 < (int32_t)m_lines.size() ? m_lines.at(param.cell_index + 1) : start + strlen(m_data + start);
-	const char *nul = (const char *)memchr(m_data + start, 0, end - start);
-	if (nul)
-	{
-		end = nul - m_data;
-	}
-	paf::string line(m_data + start, end - start);
+	ui::Widget *button = item->FindChild(button_text_line);
+	button->SetName(param.cell_index);
 	paf::wstring wide;
-	common::Utf8ToUtf16(line, &wide);
-	item->FindChild(button_text_line)->SetString(wide);
+	common::Utf8ToUtf16(m_lines.at(param.cell_index), &wide);
+	button->SetString(wide);
+
+	button->AddEventCallback(ui::Handler::CB_FOCUS_IN,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<TextView *>(userdata)->m_focused = static_cast<ui::Widget *>(self)->GetName().GetIDHash();
+	}, this);
+	button->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		TextView *view = reinterpret_cast<TextView *>(userdata);
+		view->m_focused = static_cast<ui::Widget *>(self)->GetName().GetIDHash();
+		view->OnOption(Option_Edit);
+	}, this);
 
 	return static_cast<ui::ListItem *>(item);
+}
+
+void TextView::OnOptions()
+{
+	paf::vector<OptionMenu::Button> buttons;
+	static const uint32_t k_labels[] = { msg_text_edit_line, msg_text_insert_line, msg_text_delete_line, msg_text_save };
+	for (uint32_t i = 0; i < sizeof(k_labels) / sizeof(k_labels[0]); i++)
+	{
+		OptionMenu::Button bt;
+		bt.label = Str(k_labels[i]);
+		buttons.push_back(bt);
+	}
+	new OptionMenu(g_appPlugin, m_root, &buttons, 0xd098335eu, OptionTag);
+}
+
+void TextView::OnOption(int32_t index)
+{
+	if (m_truncated && index != Option_Save)
+	{
+		dialog::OpenOk(g_appPlugin, NULL, g_appPlugin->GetString(msg_text_too_big));
+		return;
+	}
+	int32_t row = m_focused >= 0 && m_focused < (int32_t)m_lines.size() ? m_focused : 0;
+	switch (index)
+	{
+	case Option_Edit:
+	{
+		m_edit = Edit_Change;
+		paf::wstring current;
+		common::Utf8ToUtf16(m_lines.at(row), &current);
+		new TextInput(m_root, g_appPlugin->GetString(msg_text_edit_line), current, OnLineDone, this);
+		break;
+	}
+	case Option_Insert:
+		m_edit = Edit_Insert;
+		new TextInput(m_root, g_appPlugin->GetString(msg_text_insert_line), paf::wstring(), OnLineDone, this);
+		break;
+	case Option_Delete:
+		if (m_lines.size() > 1)
+		{
+			m_lines.erase(m_lines.begin() + row);
+		}
+		else
+		{
+			m_lines.at(0) = paf::string();
+		}
+		m_dirty = true;
+		Rebuild();
+		break;
+	case Option_Save:
+	{
+		if (m_truncated)
+		{
+			dialog::OpenOk(g_appPlugin, NULL, g_appPlugin->GetString(msg_text_too_big));
+			break;
+		}
+		int32_t ret = Save();
+		if (ret < 0)
+		{
+			dialog::OpenError(g_appPlugin, ret);
+		}
+		else
+		{
+			dialog::OpenOk(g_appPlugin, NULL, g_appPlugin->GetString(msg_text_saved));
+		}
+		break;
+	}
+	}
+}
+
+void TextView::OnLineEntered(const paf::wstring &text)
+{
+	// An empty answer is also how TextInput reports Cancel; an emptied line is
+	// done with Delete line, so keep it simple: nothing changes.
+	if (text.empty() && m_edit == Edit_Change)
+	{
+		return;
+	}
+	paf::string line;
+	common::Utf16ToUtf8(text, &line);
+	int32_t row = m_focused >= 0 && m_focused < (int32_t)m_lines.size() ? m_focused : 0;
+	if (m_edit == Edit_Change)
+	{
+		m_lines.at(row) = line;
+		RefreshRow(row);
+	}
+	else
+	{
+		paf::vector<paf::string> rebuilt;
+		for (int32_t i = 0; i < (int32_t)m_lines.size(); i++)
+		{
+			rebuilt.push_back(m_lines.at(i));
+			if (i == row)
+			{
+				rebuilt.push_back(line);
+			}
+		}
+		m_lines = rebuilt;
+		Rebuild();
+	}
+	m_dirty = true;
+}
+
+int32_t TextView::Save()
+{
+	SceUID fd = sceIoOpen(m_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
+	if (fd < 0)
+	{
+		return fd;
+	}
+	const char *eol = m_crlf ? "\r\n" : "\n";
+	for (uint32_t i = 0; i < m_lines.size(); i++)
+	{
+		const paf::string &l = m_lines.at(i);
+		if (l.length())
+		{
+			int32_t ret = sceIoWrite(fd, l.c_str(), l.length());
+			if (ret < 0)
+			{
+				sceIoClose(fd);
+				return ret;
+			}
+		}
+		if (i + 1 < m_lines.size())
+		{
+			sceIoWrite(fd, eol, strlen(eol));
+		}
+	}
+	sceIoClose(fd);
+	m_dirty = false;
+	return 0;
+}
+
+void TextView::OnSaveAnswer(int32_t choice)
+{
+	if (choice == 0)
+	{
+		int32_t ret = Save();
+		if (ret < 0)
+		{
+			dialog::OpenError(g_appPlugin, ret);
+			return;
+		}
+	}
+	m_dirty = false;
+	OnBack();
+}
+
+void TextView::OnBack()
+{
+	if (m_dirty)
+	{
+		new NoticeMenu(m_root, msg_text_unsaved_title, msg_text_unsaved, msg_text_save, msg_text_discard,
+		[](int32_t choice, void *userdata)
+		{
+			reinterpret_cast<TextView *>(userdata)->OnSaveAnswer(choice);
+		}, this);
+		return;
+	}
+	m_root->SetActivate(false);
+	DeferDelete(this);
 }
