@@ -5,7 +5,7 @@
 
 <p align="center">
   <em>A native file manager for PlayStation Vita, built with Sony's ScePaf interface.<br>
-  The missing piece of PlayStation Vita.</em>
+  Not just a file manager. A true Vita experience.</em>
 </p>
 
 <div align="center">
