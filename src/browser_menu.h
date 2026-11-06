@@ -63,7 +63,7 @@ public:
 
 		void Start(StartParam &param)
 		{
-			param.list_item->Show(paf::common::transition::Type_Popup1);
+			m_parent->StartListItem(param);
 		}
 
 	private:
@@ -110,6 +110,7 @@ public:
 	void OnSearch();
 	void JumpTo(bool end);
 	void OnSelectButton();
+	void SelectAll();
 	void ToggleSearch();
 	void SetSearchVisible(bool visible);
 	void SetRowIcon(BrowserPage *page, int32_t index);
@@ -118,6 +119,8 @@ public:
 	/** The theme changed in the settings page. */
 	void ApplySettings();
 	void UpdateBackground();
+	void UpdateAlphaIndex();
+	void StartListItem(paf::ui::listview::ItemFactory::StartParam &param);
 
 
 private:
@@ -170,7 +173,13 @@ private:
 	paf::ui::TextBox *m_search;
 	paf::ui::Widget *m_searchButton;
 	paf::ui::Widget *m_ftpIndicator;
+	paf::ui::Widget *m_alphaIndex;
+	paf::ui::Widget *m_alphaBubble;
+	paf::ui::Widget *m_alphaLetter;
+	paf::ui::Widget *m_selectionBar;
 	bool m_searchVisible;
+	bool m_alphaTouch;
+	int32_t m_alphaCurrent;
 
 	// Fetching an icon's texture once per list cell is a likely cause of slow lists.
 	struct CachedIcon

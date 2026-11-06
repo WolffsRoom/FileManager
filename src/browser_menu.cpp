@@ -3,6 +3,8 @@
 #include <paf.h>
 #include <string.h>
 #include <strings.h>
+#include <ctype.h>
+#include <psp2/touch.h>
 
 #include "common.h"
 #include "dialog.h"
@@ -131,8 +133,7 @@ namespace {
 		{
 			return true;
 		}
-		const char *dot = strrchr(entry->name.c_str(), '.');
-		return entry->kind == fs::Kind_Video && dot && strcasecmp(dot, ".mp4") == 0;
+		return entry->kind == fs::Kind_Video;
 	}
 
 	bool ContainsNoCase(const char *text, const char *needle)
@@ -164,6 +165,11 @@ namespace {
 		reinterpret_cast<BrowserMenu *>(userdata)->UpdateBackground();
 	}
 
+	void AlphaIndexTask(void *userdata)
+	{
+		reinterpret_cast<BrowserMenu *>(userdata)->UpdateAlphaIndex();
+	}
+
 	// Timings to tell slow storage from slow UI on the real console.
 	void PerfLog(const char *path, uint32_t count, uint32_t usRead)
 	{
@@ -185,7 +191,7 @@ namespace {
 }
 
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_inputAction(Action_Rename),
-	m_iconCount(0), m_searchVisible(false)
+	m_iconCount(0), m_searchVisible(false), m_alphaTouch(false), m_alphaCurrent(-1)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -289,6 +295,36 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 	m_ftpIndicator = m_root->FindChild(plane_ftp_indicator_page_browser);
 	m_ftpIndicator->SetColor(1.0f, 1.0f, 1.0f, 0.5f);
 	m_ftpIndicator->Hide(common::transition::Type_Reset);
+	m_alphaIndex = m_root->FindChild(text_alpha_index_page_browser);
+	m_alphaBubble = m_root->FindChild(plane_alpha_bubble_page_browser);
+	m_alphaLetter = m_root->FindChild(text_alpha_letter_page_browser);
+	m_alphaIndex->SetString(ToWide(paf::string("A\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nK\nL\nM\nN\nO\nP\nQ\nR\nS\nT\nU\nV\nW\nX\nY\nZ\n#")));
+	m_alphaIndex->Hide(common::transition::Type_Reset);
+	m_alphaBubble->Hide(common::transition::Type_Reset);
+	m_selectionBar = m_root->FindChild(plane_selection_bar_page_browser);
+	m_selectionBar->Hide(common::transition::Type_Reset);
+	ui::Widget *selectionCancel = m_root->FindChild(button_cancel_selection_page_browser);
+	ui::Widget *selectionAll = m_root->FindChild(button_all_selection_page_browser);
+	ui::Widget *selectionCopy = m_root->FindChild(button_copy_selection_page_browser);
+	selectionCancel->SetString(g_appPlugin->GetString(msg_cancel));
+	selectionAll->SetString(g_appPlugin->GetString(msg_select_all));
+	selectionCopy->SetString(g_appPlugin->GetString(msg_opt_copy));
+	selectionCancel->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		reinterpret_cast<BrowserMenu *>(userdata)->DoActionPublic(Action_ClearSelection);
+	}, this);
+	selectionAll->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		reinterpret_cast<BrowserMenu *>(userdata)->SelectAll();
+	}, this);
+	selectionCopy->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		reinterpret_cast<BrowserMenu *>(userdata)->DoActionPublic(Action_Copy);
+	}, this);
+	common::MainThreadCallList::Register(AlphaIndexTask, this);
 
 	// Search box: filters the list on Enter.
 	m_search = static_cast<ui::TextBox *>(m_root->FindChild(text_box_search_page_browser));
@@ -319,6 +355,7 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 
 BrowserMenu::~BrowserMenu()
 {
+	common::MainThreadCallList::Unregister(AlphaIndexTask, this);
 	common::MainThreadCallList::Unregister(BackgroundTask, this);
 	while (PopPage())
 	{
@@ -362,8 +399,74 @@ void BrowserMenu::UpdateChrome()
 	}
 
 	m_searchButton->Show(common::transition::Type_Reset);
+	m_selectionBar->Hide(common::transition::Type_Reset);
+	const bool musicFolder = !page->logicalPath.empty() &&
+		strncasecmp(page->logicalPath.c_str(), "ux0:music", 9) == 0;
+	if (musicFolder)
+		m_alphaIndex->Show(common::transition::Type_FadeinFast);
+	else
+	{
+		m_alphaIndex->Hide(common::transition::Type_Reset);
+		m_alphaBubble->Hide(common::transition::Type_Reset);
+		m_alphaTouch = false;
+		m_alphaCurrent = -1;
+	}
 	// Each page starts without the search box; the corner button opens it.
 	SetSearchVisible(false);
+}
+
+void BrowserMenu::StartListItem(ui::listview::ItemFactory::StartParam &param)
+{
+	bool mainMenu = false;
+	for (uint32_t i = 0; i < m_pages.size(); i++)
+	{
+		if (m_pages.at(i)->list == param.list_view)
+		{
+			mainMenu = m_pages.at(i)->path.empty();
+			break;
+		}
+	}
+	param.list_item->Show(mainMenu ? common::transition::Type_SlideFromBottom4 : common::transition::Type_Popup1);
+}
+
+void BrowserMenu::UpdateAlphaIndex()
+{
+	if (!m_alphaIndex || !m_alphaIndex->IsVisible() || m_pages.empty()) return;
+	SceTouchData touch;
+	sce_paf_memset(&touch, 0, sizeof(touch));
+	sceTouchPeek(SCE_TOUCH_PORT_FRONT, &touch, 1);
+	if (!touch.reportNum)
+	{
+		if (m_alphaTouch) m_alphaBubble->Hide(common::transition::Type_FadeinFast);
+		m_alphaTouch = false;
+		m_alphaCurrent = -1;
+		return;
+	}
+	const int x = touch.report[0].x;
+	const int y = touch.report[0].y;
+	if (x > 170 || y < 105 || y > 1015) return;
+	int letter = (y - 105) * 27 / 910;
+	if (letter < 0) letter = 0;
+	if (letter > 26) letter = 26;
+	m_alphaTouch = true;
+	if (letter == m_alphaCurrent) return;
+	m_alphaCurrent = letter;
+	char shown[2] = { letter < 26 ? (char)('A' + letter) : '#', 0 };
+	m_alphaLetter->SetString(ToWide(paf::string(shown)));
+	m_alphaBubble->Show(common::transition::Type_Popup1);
+	BrowserPage *page = Top();
+	for (uint32_t i = 0; i < page->entries.size(); i++)
+	{
+		const char *name = page->entries.at(i)->name.c_str();
+		unsigned char first = name[0] ? (unsigned char)toupper((unsigned char)name[0]) : 0;
+		bool match = letter < 26 ? first == (unsigned char)('A' + letter) : !isalpha(first);
+		if (match)
+		{
+			page->focused = i;
+			page->list->SetFocus(0, i, ui::ListView::FOCUS_ALIGN_TYPE_HEAD, NULL);
+			break;
+		}
+	}
 }
 
 void BrowserMenu::SetSearchVisible(bool visible)
@@ -704,10 +807,13 @@ void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 	if (anyMarked)
 	{
 		check->SetTexture(Icon(entry->marked ? tex_checkbox_on : tex_checkbox_off), 0, 0);
+		button->SetColor(entry->marked ? 0.75f : 1.0f, entry->marked ? 0.42f : 1.0f,
+			entry->marked ? 0.95f : 1.0f, 1.0f);
 	}
 	else
 	{
 		check->Hide(common::transition::Type_Reset);
+		button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 }
 
@@ -1098,12 +1204,34 @@ void BrowserMenu::OnMarkToggle(int32_t index)
 		{
 			check->SetTexture(Icon(page->entries.at(i)->marked ? tex_checkbox_on : tex_checkbox_off), 0, 0);
 			check->Show(common::transition::Type_Reset);
+			item->FindChild(image_button_list_item)->SetColor(page->entries.at(i)->marked ? 0.75f : 1.0f,
+				page->entries.at(i)->marked ? 0.42f : 1.0f, page->entries.at(i)->marked ? 0.95f : 1.0f, 1.0f);
 		}
 		else
 		{
 			check->Hide(common::transition::Type_Reset);
+			item->FindChild(image_button_list_item)->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 		}
 	}
+	if (anyMarked)
+		m_selectionBar->Show(common::transition::Type_SlideFromBottom1);
+	else
+		m_selectionBar->Hide(common::transition::Type_SlideFromBottom1);
+}
+
+void BrowserMenu::SelectAll()
+{
+	BrowserPage *page = Top();
+	if (!page || fs::IsRootStyle(page->path)) return;
+	for (uint32_t i = 0; i < page->entries.size(); i++)
+		page->entries.at(i)->marked = true;
+	// Rebuild visible cells once so checks and the Music-style tint stay in sync.
+	if (page->cellCount)
+	{
+		page->list->DeleteCell(0, 0, page->cellCount);
+		page->list->InsertCell(0, 0, page->cellCount);
+	}
+	m_selectionBar->Show(common::transition::Type_Reset);
 }
 
 void BrowserMenu::OnOptions()

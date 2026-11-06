@@ -58,7 +58,7 @@
   <string src="Plugins" id="msg_shortcut_plugins" />
   <string src="%s livres de %s" id="msg_free_of" />
   <string src="Mais..." id="msg_opt_more" />
-  <string src="Adicionar aos Atalhos" id="msg_opt_add_shortcut" />
+  <string src="Favoritar" id="msg_opt_add_shortcut" />
   <string src="Remover Atalho" id="msg_opt_remove_shortcut" />
   <string src="FTP" id="msg_ftp_server" />
   <string src="Conecte um cliente FTP ao endereço acima." id="msg_ftp_running" />
@@ -79,6 +79,7 @@
   <string src="%s recebidos" id="msg_ftp_received" />
   <string src="OK" id="msg_ok" />
   <string src="Cancelar" id="msg_cancel" />
+  <string src="Selecionar tudo" id="msg_select_all" />
   <string src="Instalar" id="msg_install_title" />
   <string src="Instalar este pacote?" id="msg_install_confirm" />
   <string src="Instalando..." id="msg_installing" />

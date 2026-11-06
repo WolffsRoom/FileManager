@@ -33,6 +33,27 @@
         <layout_hint size="860, 44" pos="0, 174" />
         <focus_hint focus_shape="0" />
       </text_box>
+      <text style="style_text_alpha_index" id="text_alpha_index_page_browser">
+        <layout_hint size="42, 430" pos="-452, -18" />
+      </text>
+      <plane style="style_plane_alpha_bubble" id="plane_alpha_bubble_page_browser">
+        <layout_hint size="68, 68" pos="-382, 0" />
+        <text style="style_text_alpha_letter" id="text_alpha_letter_page_browser">
+          <layout_hint size="68, 68" />
+        </text>
+      </plane>
+      <plane style="style_plane_selection_bar" id="plane_selection_bar_page_browser">
+        <layout_hint size="960, 58" pos="0, -243" />
+        <button style="style_button_selection_action" id="button_cancel_selection_page_browser">
+          <layout_hint size="250, 48" pos="-340, 0" />
+        </button>
+        <button style="style_button_selection_action" id="button_all_selection_page_browser">
+          <layout_hint size="250, 48" pos="0, 0" />
+        </button>
+        <button style="style_button_selection_action" id="button_copy_selection_page_browser">
+          <layout_hint size="250, 48" pos="340, 0" />
+        </button>
+      </plane>
       <button style="_common_default_style_button_transparent" id="button_start_page_browser">
         <layout_hint size="1, 1" pos="-469, 271" />
         <focus_hint enable="0" />
@@ -185,10 +206,10 @@
       </plane>
       <template_ref id="template_ref_top_title_bar_page_music" template="template_top_title_bar" />
       <plane style="_common_default_style_plane" texture="_common_texture_transparent" id="plane_cover_page_music">
-        <layout_hint size="300, 300" pos="-250, -10" />
+        <layout_hint size="330, 270" pos="-250, 0" />
       </plane>
       <text style="style_text_info_title" id="text_song_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="500, 44" pos="440, 110" />
+        <layout_hint anchor="1, 0" align="1, 0" size="500, 44" pos="440, 118" />
       </text>
       <text style="style_text_music_artist" id="text_artist_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="500, 34" pos="440, 68" />
@@ -209,13 +230,13 @@
         <layout_hint anchor="1, 0" align="1, 0" size="200, 30" pos="720, -46" />
       </text>
       <button style="style_button_option_single" id="button_prev_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="100, 50" pos="500, -116" />
+        <layout_hint anchor="1, 0" align="1, 0" size="92, 46" pos="510, -112" />
       </button>
       <button style="style_button_option_single" id="button_play_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="100, 50" pos="610, -116" />
+        <layout_hint anchor="1, 0" align="1, 0" size="92, 46" pos="610, -112" />
       </button>
       <button style="style_button_option_single" id="button_next_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="100, 50" pos="720, -116" />
+        <layout_hint anchor="1, 0" align="1, 0" size="92, 46" pos="710, -112" />
       </button>
       <button style="style_button_music_action" id="button_export_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="170, 48" pos="430, -180" />
@@ -313,6 +334,11 @@
       <textobj font_size="18" bold="1" ellipsis="1" align_y="1" align_x="3" id="label_obj1" />
       <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj2" />
     </style_button>
+    <style_button sound="_common_sound_button_enter" bottom_margin="5" right_margin="10" top_margin="5" left_margin="10" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_selection_action">
+      <planeobj color="0.38, 0.08, 0.55, 0.72" id="plane_obj1" />
+      <textobj font_size="20" bold="1" align_y="1" align_x="1" id="label_obj1" />
+      <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj2" />
+    </style_button>
     <style_button sound="_common_sound_button_enter" bottom_margin="12" right_margin="20" top_margin="12" left_margin="20" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_option_top">
       <planeobj texture0="_common_texture_option_menu_button_top" id="plane_obj1" />
       <textobj font_size="28" bold="1" align_y="1" align_x="3" id="label_obj1" />
@@ -353,6 +379,12 @@
       <planeobj id="plane_obj1" />
     </style_plane>
     <style_plane color="1, 1, 1, 1" planeobj="plane_obj1" id="style_plane_bar_fill">
+      <planeobj id="plane_obj1" />
+    </style_plane>
+    <style_plane color="0.05, 0.05, 0.08, 0.88" planeobj="plane_obj1" id="style_plane_alpha_bubble">
+      <planeobj id="plane_obj1" />
+    </style_plane>
+    <style_plane color="0.28, 0.02, 0.42, 0.88" planeobj="plane_obj1" id="style_plane_selection_bar">
       <planeobj id="plane_obj1" />
     </style_plane>
 
@@ -397,6 +429,12 @@
     </style_text>
     <style_text textobj="text_obj1" id="style_text_music_time_right">
       <textobj font_size="18" align_y="1" align_x="2" font_color="0.75, 0.78, 0.82, 1" id="text_obj1" />
+    </style_text>
+    <style_text textobj="text_obj1" id="style_text_alpha_index">
+      <textobj font_size="14" line_pitch="15" align_y="1" align_x="1" font_color="1, 1, 1, 0.92" id="text_obj1" />
+    </style_text>
+    <style_text textobj="text_obj1" id="style_text_alpha_letter">
+      <textobj font_size="34" bold="1" align_y="1" align_x="1" font_color="1, 1, 1, 1" id="text_obj1" />
     </style_text>
     <style_text textobj="text_obj1" id="style_text_preview_title">
       <textobj font_size="24" align_y="1" align_x="1" ellipsis="1" font_color="1, 1, 1, 1" id="text_obj1" />

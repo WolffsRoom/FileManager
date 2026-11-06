@@ -610,7 +610,9 @@ bool PreviewMenu::StartVideo(const char *path)
 	init.fileReplacement.size = VideoSizeFile;
 	init.basePriority = 0x10000100;
 	init.numOutputVideoFrameBuffers = 16;
-	init.autoStart = SCE_FALSE;
+	// Match VitaShell/FM Vita: retail firmware starts playback from AddSource.
+	// Explicit sceAvPlayerStart with autoStart disabled fails on some firmwares.
+	init.autoStart = SCE_TRUE;
 
 	m_player = sceAvPlayerInit(&init);
 	VideoLog("sceAvPlayerInit: 0x%08X", m_player);
@@ -628,18 +630,10 @@ bool PreviewMenu::StartVideo(const char *path)
 		m_player = 0;
 		return false;
 	}
-	int32_t started = sceAvPlayerStart(m_player);
-	VideoLog("sceAvPlayerStart: 0x%08X", started);
-	if (started < 0)
-	{
-		sceAvPlayerClose(m_player);
-		m_player = 0;
-		return false;
-	}
-
 	// Duration from the video stream, for the progress bar.
 	m_duration = 0;
 	int32_t streams = sceAvPlayerStreamCount(m_player);
+	if (streams <= 0 || streams > 16) streams = 2;
 	VideoLog("streams: %d", streams);
 	for (int32_t i = 0; i < streams; i++)
 	{
