@@ -14,7 +14,7 @@ include("$ENV{VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "File Manager")
 set(VITA_TITLEID  "FILEMGR01")
-set(VITA_VERSION  "00.20")
+set(VITA_VERSION  "00.30")
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
