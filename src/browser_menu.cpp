@@ -374,14 +374,12 @@ void BrowserMenu::SetSearchVisible(bool visible)
 	{
 		m_search->Show(common::transition::Type_Reset);
 		page->list->SetSize(960.0f, 376.0f, 0.0f);
-		page->list->SetPos(0.0f, -308.0f, 0.0f);
 	}
 	else
 	{
 		m_search->ReleaseFocus();
 		m_search->Hide(common::transition::Type_Reset);
 		page->list->SetSize(960.0f, 448.0f, 0.0f);
-		page->list->SetPos(0.0f, -272.0f, 0.0f);
 		if (page->focused >= 0 && page->focused < (int32_t)page->entries.size())
 		{
 			page->list->SetFocus(0, page->focused, ui::ListView::FOCUS_ALIGN_TYPE_CENTER, NULL);

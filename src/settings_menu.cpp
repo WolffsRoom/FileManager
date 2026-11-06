@@ -253,9 +253,9 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	if (m_level == Level_Themes)
 	{
 		const theme::Info &preview = theme::At(row);
-		graph::DrawObj *image = button->GetDrawObj(ui::ImageButton::OBJ_IMAGE);
-		if (image)
-			image->SetColor(math::v4(preview.bg[0], preview.bg[1], preview.bg[2], 0.72f));
+		// Tint through the widget animation layer; touching the internal draw
+		// object directly crashes on some ScePaf firmware revisions.
+		button->SetColor(preview.bg[0], preview.bg[1], preview.bg[2], 0.82f);
 	}
 	else if (m_level == Level_Commands)
 	{

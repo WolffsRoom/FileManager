@@ -23,11 +23,13 @@ public:
 	void TogglePause();
 	void ExportToMusic();
 	void ListenInBackground();
+	void OpenInMusic();
 	void Close();
 
 private:
 
 	void ShowCover(const char *path, int32_t type, int32_t offset, int32_t length);
+	int32_t ExportCurrent(bool notify);
 
 	paf::ui::Widget *m_parentRoot;
 	paf::ui::Scene *m_root;

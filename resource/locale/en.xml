@@ -167,5 +167,6 @@
   <string src="Listen in background" id="msg_music_background" />
   <string src="Export to Music" id="msg_music_export" />
   <string src="Music exported successfully." id="msg_music_export_done" />
+  <string src="Open in Music" id="msg_music_open_native" />
   <string src="Unknown artist" id="msg_music_unknown_artist" />
 </stringset>

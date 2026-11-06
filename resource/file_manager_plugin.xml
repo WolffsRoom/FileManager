@@ -218,10 +218,13 @@
         <layout_hint anchor="1, 0" align="1, 0" size="100, 50" pos="720, -116" />
       </button>
       <button style="style_button_music_action" id="button_export_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="230, 48" pos="490, -180" />
+        <layout_hint anchor="1, 0" align="1, 0" size="170, 48" pos="430, -180" />
       </button>
       <button style="style_button_music_action" id="button_background_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="230, 48" pos="735, -180" />
+        <layout_hint anchor="1, 0" align="1, 0" size="170, 48" pos="610, -180" />
+      </button>
+      <button style="style_button_music_action" id="button_native_music_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="170, 48" pos="790, -180" />
       </button>
       <button style="_common_default_style_button_transparent" id="button_rewind_page_music">
         <layout_hint size="1, 1" pos="-479, 271" />
@@ -307,7 +310,7 @@
     </style_button>
     <style_button sound="_common_sound_button_enter" bottom_margin="8" right_margin="10" top_margin="8" left_margin="10" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_music_action">
       <planeobj texture0="_common_texture_option_menu_button_single" id="plane_obj1" />
-      <textobj font_size="20" bold="1" ellipsis="1" align_y="1" align_x="3" id="label_obj1" />
+      <textobj font_size="18" bold="1" ellipsis="1" align_y="1" align_x="3" id="label_obj1" />
       <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj2" />
     </style_button>
     <style_button sound="_common_sound_button_enter" bottom_margin="12" right_margin="20" top_margin="12" left_margin="20" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_option_top">

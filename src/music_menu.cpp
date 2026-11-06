@@ -74,6 +74,7 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	SetText(m_root->FindChild(button_next_page_music), "▶▶");
 	SetText(m_root->FindChild(button_export_page_music), Utf8(msg_music_export).c_str());
 	SetText(m_root->FindChild(button_background_page_music), Utf8(msg_music_background).c_str());
+	SetText(m_root->FindChild(button_native_music_page_music), Utf8(msg_music_open_native).c_str());
 
 	AddKey(m_root->FindChild(button_back_page_music), inputdevice::pad::Data::PAD_ESCAPE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
@@ -114,6 +115,11 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
 		reinterpret_cast<MusicMenu *>(userdata)->ListenInBackground();
+	}, this);
+	AddKey(m_root->FindChild(button_native_music_page_music), 0,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<MusicMenu *>(userdata)->OpenInMusic();
 	}, this);
 
 	Play(index);
@@ -227,7 +233,7 @@ void MusicMenu::TogglePause()
 	SetText(m_playButton, musicIsPlaying() ? "Ⅱ" : "▶");
 }
 
-void MusicMenu::ExportToMusic()
+int32_t MusicMenu::ExportCurrent(bool notify)
 {
 	const char *path = m_paths.at(m_index).c_str();
 	int32_t res = sceSysmoduleLoadModule(SCE_SYSMODULE_MUSIC_EXPORT);
@@ -249,8 +255,20 @@ void MusicMenu::ExportToMusic()
 	}
 	if (res < 0)
 		dialog::OpenError(g_appPlugin, res);
-	else
+	else if (notify)
 		dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_music_export), g_appPlugin->GetString(msg_music_export_done));
+	return res;
+}
+
+void MusicMenu::ExportToMusic()
+{
+	ExportCurrent(true);
+}
+
+void MusicMenu::OpenInMusic()
+{
+	if (ExportCurrent(false) >= 0)
+		sceAppMgrLaunchAppByName(0x60000, "NPXS10009", NULL);
 }
 
 void MusicMenu::ListenInBackground()
