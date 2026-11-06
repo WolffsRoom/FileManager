@@ -12,6 +12,7 @@ int pfsMount(const char *path);
 int pfsUmount(void);
 const char *pfsMountPoint(void);
 int pfsIsProtectedContainer(const char *path);
+int pfsShouldMount(const char *path);
 
 #ifdef __cplusplus
 }

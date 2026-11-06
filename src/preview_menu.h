@@ -7,7 +7,7 @@
 /**
  * Full-screen preview of images and MP4 videos. L/R go to the previous and next
  * previewable file of the folder, Cross pauses a video, Circle closes. Images
- * support swipe navigation, pinch zoom and one-finger panning while enlarged.
+ * support swipe navigation, pinch zoom, mirroring and vertical inversion.
  */
 class PreviewMenu
 {
@@ -22,6 +22,8 @@ public:
 	/** Runs on the main thread, once per frame, while a video is open. */
 	void OnVideoFrame();
 	void OnImageTouch();
+	void OnOptions();
+	void OnOption(int32_t index);
 
 	/** Closes the page on the next frame. */
 	void Close();
@@ -34,6 +36,8 @@ private:
 	void StopVideo();
 	bool StartVideo(const char *path);
 	void ShowError();
+	void ApplyImageTransform();
+	enum { OptionTag = 0x50525657 };
 
 	paf::ui::Widget *m_parentRoot;
 	paf::ui::Scene *m_root;
@@ -71,8 +75,11 @@ private:
 	float m_pinchStart;
 	float m_pinchScale;
 	float m_imageScale;
+	float m_imageInitialScale;
 	float m_imageX;
 	float m_imageY;
+	bool m_flipX;
+	bool m_flipY;
 };
 
 #endif

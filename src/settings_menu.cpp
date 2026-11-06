@@ -184,9 +184,6 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 
 	ui::Widget *button = item->FindChild(image_button_list_item);
 	button->SetName(row);
-	ui::Widget *lock = button->FindChild(plane_list_item_lock);
-	if (lock)
-		lock->Hide(common::transition::Type_Reset);
 
 	paf::wstring label, info;
 	uint32_t icon = tex_new_settings;

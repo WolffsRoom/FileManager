@@ -157,5 +157,12 @@
   <string src="Next" id="msg_music_next" />
   <string src="Play" id="msg_music_play" />
   <string src="Pause" id="msg_music_pause" />
+  <string src="Sort" id="msg_sort" />
+  <string src="Date" id="msg_sort_date" />
+  <string src="Name" id="msg_sort_name" />
+  <string src="Type" id="msg_sort_type" />
+  <string src="Mirror" id="msg_preview_mirror" />
+  <string src="Flip vertically" id="msg_preview_invert" />
+  <string src="Play in background" id="msg_music_background" />
   <string src="Unknown artist" id="msg_music_unknown_artist" />
 </stringset>

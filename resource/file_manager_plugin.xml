@@ -25,7 +25,7 @@
         <layout_hint size="1, 1" pos="-471, 271" />
         <focus_hint enable="0" />
       </button>
-      <corner_button sound="_common_sound_button_enter" style="style_corner_search" id="button_search_page_browser" />
+      <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_search_page_browser" />
       <plane texture="tex_ui_ftp" id="plane_ftp_indicator_page_browser">
         <layout_hint size="36, 36" pos="-330, 208" />
       </plane>
@@ -117,6 +117,8 @@
       </list_view>
       <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_text_view" />
       <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_options_page_text_view" />
+      <button style="_common_default_style_button_transparent" id="button_first_page_text_view"><layout_hint size="1, 1" /><focus_hint enable="0" /></button>
+      <button style="_common_default_style_button_transparent" id="button_last_page_text_view"><layout_hint size="1, 1" /><focus_hint enable="0" /></button>
     </page>
     <page id="page_info">
       <plane style="style_plane_dim" id="plane_dim_page_info">
@@ -125,13 +127,13 @@
       <plane style="style_plane_panel" id="plane_panel_page_info">
         <layout_hint size="780, 420" />
         <plane style="_common_default_style_plane" texture="_common_texture_transparent" id="plane_picture_page_info">
-          <layout_hint size="150, 150" pos="-275, 70" />
+          <layout_hint size="120, 120" pos="-275, 75" />
         </plane>
         <text style="style_text_info_title" id="text_title_page_info">
-          <layout_hint anchor="1, 0" align="1, 0" size="540, 44" pos="215, 125" />
+          <layout_hint anchor="1, 0" align="1, 0" size="540, 44" pos="215, 105" />
         </text>
         <text style="style_text_info_details" id="text_details_page_info">
-          <layout_hint anchor="1, 0" align="1, 2" size="540, 170" pos="215, 100" />
+          <layout_hint anchor="1, 0" align="1, 2" size="540, 170" pos="215, 75" />
         </text>
         <text style="style_text_ftp_activity" id="text_question_page_info">
           <layout_hint size="720, 34" pos="0, -96" />
@@ -215,6 +217,9 @@
       <button style="style_button_option_single" id="button_next_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="150, 56" pos="770, -120" />
       </button>
+      <button style="style_button_option_single" id="button_background_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="315, 50" pos="605, -190" />
+      </button>
       <button style="_common_default_style_button_transparent" id="button_rewind_page_music">
         <layout_hint size="1, 1" pos="-479, 271" />
         <focus_hint enable="0" />
@@ -274,6 +279,7 @@
         <focus_hint enable="0" />
       </button>
       <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_preview" />
+      <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_options_page_preview" />
     </page>
     <page id="page_text_input">
       <plane style="style_plane_dim" id="plane_dim_page_text_input">
@@ -477,9 +483,6 @@
           <text style="style_text_list_item_info" id="text_list_item_info">
             <layout_hint anchor="2, 0" align="2, 0" size="260, 40" pos="-24, 0" />
           </text>
-          <plane style="_common_default_style_plane" texture="tex_new_lock" id="plane_list_item_lock">
-            <layout_hint anchor="2, 0" align="2, 0" size="34, 34" pos="-58, 0" />
-          </plane>
           <plane style="_common_default_style_plane" texture="_common_texture_check_mark" id="plane_list_item_check">
             <layout_hint anchor="2, 0" align="2, 0" size="40, 40" pos="-4, 0" />
           </plane>
@@ -556,7 +559,6 @@
     <texture src="texture/new/folder.png" type="texture/png" id="tex_new_folder" />
     <texture src="texture/new/open_folder.png" type="texture/png" id="tex_new_open_folder" />
     <texture src="texture/new/trash.png" type="texture/png" id="tex_new_trash" />
-    <texture src="texture/new/lock.png" type="texture/png" id="tex_new_lock" />
     <texture src="texture/buttons/cross.png" type="texture/png" id="tex_button_cross" />
     <texture src="texture/buttons/circle.png" type="texture/png" id="tex_button_circle" />
     <texture src="texture/buttons/triangle.png" type="texture/png" id="tex_button_triangle" />

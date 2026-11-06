@@ -155,7 +155,23 @@ OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button>
 
 	ui::Widget *ruler = m_optPlaneRoot->FindChild(text_option_menu_ruler);
 	ruler->SetString(buttons->at(maxLenIdx).label);
-	ruler->AddEventCallback(ui::Handler::CB_STATE_READY, OnSizeAdjust, this);
+
+	// Size synchronously. The former CB_STATE_READY callback could run after the
+	// menu had already closed, which caused the addcont navigation crash.
+	float len = k_minBtLen + (maxLen > 18 ? (maxLen - 18) * 10.0f : 0.0f);
+	if (len > 520.0f) len = 520.0f;
+	math::v4 btSz(len, 60.0f);
+	math::v4 plSz(len + 12.0f, 12.0f + 60.0f * m_buttonCount);
+	math::v4 plPos(264.0f + ((202.0f - plSz.extract_x()) / 2.0f), 43.0f);
+	for (int i = 0; i < m_buttonCount; i++)
+	{
+		button = optRoot->FindChild(OPTION_MENU_BUTTON_MAGIC + i);
+		button->SetAdjust(ui::Widget::ADJUST_NONE, ui::Widget::ADJUST_NONE, ui::Widget::ADJUST_NONE);
+		button->SetSize(btSz);
+	}
+	m_optPlaneRoot->SetSize(plSz);
+	m_optPlaneRoot->SetPos(plPos);
+	m_optPlaneRoot->Show(common::transition::Type_Popup4, 0.0f);
 }
 
 OptionMenu::~OptionMenu()

@@ -2,11 +2,15 @@
 #include <paf.h>
 #include <stdlib.h>
 #include <string.h>
+#include <psp2/appmgr.h>
+#include <psp2/musicexport.h>
+#include <psp2/sysmodule.h>
 
 #include "common.h"
 #include "settings.h"
 #include "music_menu.h"
 #include "core/music.h"
+#include "dialog.h"
 
 using namespace paf;
 
@@ -68,6 +72,7 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 
 	SetText(m_root->FindChild(button_prev_page_music), Utf8(msg_music_prev).c_str());
 	SetText(m_root->FindChild(button_next_page_music), Utf8(msg_music_next).c_str());
+	SetText(m_root->FindChild(button_background_page_music), Utf8(msg_music_background).c_str());
 
 	AddKey(m_root->FindChild(button_back_page_music), inputdevice::pad::Data::PAD_ESCAPE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
@@ -98,6 +103,11 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
 		reinterpret_cast<MusicMenu *>(userdata)->Seek(10);
+	}, this);
+	AddKey(m_root->FindChild(button_background_page_music), 0,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<MusicMenu *>(userdata)->PlayInBackground();
 	}, this);
 
 	Play(index);
@@ -185,7 +195,7 @@ void MusicMenu::Play(int32_t index)
 	m_seconds = info.seconds;
 	m_playing = true;
 	m_barFill->SetSize(0.0f, 8.0f, 0.0f);
-	SetText(m_playButton, Utf8(msg_music_pause).c_str());
+	SetText(m_playButton, "Ⅱ");
 	ShowCover(path, info.coverType, info.coverOffset, info.coverLength);
 }
 
@@ -208,7 +218,35 @@ void MusicMenu::Seek(int32_t seconds)
 void MusicMenu::TogglePause()
 {
 	musicTogglePause();
-	SetText(m_playButton, Utf8(musicIsPlaying() ? msg_music_pause : msg_music_play).c_str());
+	SetText(m_playButton, musicIsPlaying() ? "Ⅱ" : "▶");
+}
+
+void MusicMenu::PlayInBackground()
+{
+	const char *path = m_paths.at(m_index).c_str();
+	m_playing = false;
+	musicClose();
+	int32_t res = sceSysmoduleLoadModule(SCE_SYSMODULE_MUSIC_EXPORT);
+	if (res >= 0)
+	{
+		void *work = malloc(64 * 1024);
+		if (work)
+		{
+			MusicExportParam param;
+			char out[1024];
+			memset(&param, 0, sizeof(param));
+			memset(out, 0, sizeof(out));
+			res = sceMusicExportFromFile(path, &param, work, NULL, NULL, NULL, out, sizeof(out));
+			// The native library reports this when the song is already present.
+			if ((uint32_t)res == 0x8010530A)
+				res = 0;
+			free(work);
+		}
+	}
+	if (res >= 0)
+		res = sceAppMgrLaunchAppByName(0x60000, "NPXS10009", NULL);
+	if (res < 0)
+		dialog::OpenError(g_appPlugin, res);
 }
 
 void MusicMenu::Update()
@@ -228,7 +266,7 @@ void MusicMenu::Update()
 		{
 			m_playing = false;
 			musicClose();
-			SetText(m_playButton, Utf8(msg_music_play).c_str());
+			SetText(m_playButton, "▶");
 		}
 		return;
 	}

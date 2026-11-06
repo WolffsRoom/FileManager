@@ -1,6 +1,7 @@
 /* PFS mounting derived from VitaShell/FMVita, Copyright (C) TheFloW. */
 #include <psp2/appmgr.h>
 #include <psp2/kernel/modulemgr.h>
+#include <psp2/io/stat.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -42,7 +43,7 @@ int pfsInitModules(void)
 
 int pfsMount(const char *path)
 {
-	static const int ids[] = { 0x6E, 0x12E, 0x12F, 0x3ED };
+	static const int fallbackIds[] = { 0x6E, 0x12E, 0x12F, 0x3E8, 0x3E9, 0x3EA, 0x3ED, 0x3EE };
 	char klicensee[0x10];
 	ShellMountIdArgs args;
 	int res = pfsInitModules();
@@ -57,9 +58,30 @@ int pfsMount(const char *path)
 	args.klicensee = klicensee;
 	args.mount_point = s_mountPoint;
 
-	for (unsigned i = 0; i < sizeof(ids) / sizeof(ids[0]); i++)
+	/* Try the mount class matching the container first.  Some firmware accepts
+	   a different class but exposes an empty mount, notably for addcont. */
+	int preferred = -1;
+	if (!strncasecmp(path, "ux0:addcont/", 12)) preferred = 0x3EA;
+	else if (!strncasecmp(path, "ux0:patch/", 10) || !strncasecmp(path, "grw0:patch/", 11)) preferred = 0x3E9;
+	else if (!strncasecmp(path, "ux0:app/", 8) || !strncasecmp(path, "gro0:app/", 9) || !strncasecmp(path, "vs0:app/", 8)) preferred = 0x3E8;
+	else if (!strncasecmp(path, "ux0:appmeta/", 12)) preferred = 0x6E;
+	else if (!strncasecmp(path, "ux0:user/00/savedata/", 21)) preferred = 0x3ED;
+	else if (!strncasecmp(path, "ur0:user/00/savedata/", 21)) preferred = 0x3EE;
+	else if (!strncasecmp(path, "ur0:user/00/trophy/data/", 24)) preferred = 0x12F;
+
+	if (preferred >= 0)
 	{
-		args.id = ids[i];
+		args.id = preferred;
+		res = shellUserMountById(&args);
+		if (res >= 0)
+			return res;
+	}
+
+	for (unsigned i = 0; i < sizeof(fallbackIds) / sizeof(fallbackIds[0]); i++)
+	{
+		if (fallbackIds[i] == preferred)
+			continue;
+		args.id = fallbackIds[i];
 		res = shellUserMountById(&args);
 		if (res >= 0)
 			return res;
@@ -98,4 +120,15 @@ int pfsIsProtectedContainer(const char *path)
 			return 1;
 	}
 	return 0;
+}
+
+int pfsShouldMount(const char *path)
+{
+	if (!path || !path[0])
+		return 0;
+	char marker[1024];
+	SceIoStat stat;
+	snprintf(marker, sizeof(marker), "%s/sce_pfs", path);
+	memset(&stat, 0, sizeof(stat));
+	return sceIoGetstat(marker, &stat) >= 0 && SCE_S_ISDIR(stat.st_mode);
 }

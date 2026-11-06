@@ -157,5 +157,12 @@
   <string src="Próxima" id="msg_music_next" />
   <string src="Tocar" id="msg_music_play" />
   <string src="Pausar" id="msg_music_pause" />
+  <string src="Ordenação" id="msg_sort" />
+  <string src="Data" id="msg_sort_date" />
+  <string src="Nome" id="msg_sort_name" />
+  <string src="Tipo" id="msg_sort_type" />
+  <string src="Espelhar" id="msg_preview_mirror" />
+  <string src="Inverter" id="msg_preview_invert" />
+  <string src="Tocar em segundo plano" id="msg_music_background" />
   <string src="Artista desconhecido" id="msg_music_unknown_artist" />
 </stringset>

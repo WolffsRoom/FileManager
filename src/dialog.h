@@ -61,6 +61,7 @@ namespace dialog
 	void OpenProgress(Plugin *workPlugin, const wchar_t *titleText, const wchar_t *messageText);
 
 	void SetProgress(float percent);
+	void SetProgressIcon(paf::intrusive_ptr<paf::graph::Surface> texture);
 
 	void Close();
 

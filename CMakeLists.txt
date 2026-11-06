@@ -145,6 +145,7 @@ target_link_libraries(FileManager
   SceAudio_stub
   SceRtc_stub
   SceAvPlayer_stub
+  SceMusicExport_stub
   ftpvita
   archive
   vorbisfile

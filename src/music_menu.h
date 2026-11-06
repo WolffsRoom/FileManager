@@ -21,6 +21,7 @@ public:
 	void Step(int32_t delta);
 	void Seek(int32_t seconds);
 	void TogglePause();
+	void PlayInBackground();
 	void Close();
 
 private:

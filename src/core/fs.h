@@ -29,6 +29,7 @@ namespace fs {
 		bool marked;
 		uint64_t size;         // file size, or free space for a device
 		uint64_t capacity;     // device capacity
+		uint64_t modified;     // packed modification date for sorting
 		uint32_t labelHash;    // display name in the string table, 0 for plain files
 		uint32_t iconHash;     // icon texture for root entries
 		paf::string target;    // what opening this entry shows

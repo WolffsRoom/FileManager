@@ -66,6 +66,21 @@ TextView::TextView(ui::Widget *parentRoot, const char *path) :
 		reinterpret_cast<TextView *>(userdata)->OnOptions();
 	}, this);
 
+	ui::Widget *first = m_root->FindChild(button_first_page_text_view);
+	first->SetKeycode(inputdevice::pad::Data::PAD_L);
+	first->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<TextView *>(userdata)->JumpTo(false);
+	}, this);
+	ui::Widget *last = m_root->FindChild(button_last_page_text_view);
+	last->SetKeycode(inputdevice::pad::Data::PAD_R);
+	last->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<TextView *>(userdata)->JumpTo(true);
+	}, this);
+
 	m_root->AddEventCallback(OptionMenu::OptionMenuEvent,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
@@ -173,7 +188,8 @@ void TextView::RefreshRow(int32_t row)
 	if (item && row >= 0 && row < (int32_t)m_lines.size())
 	{
 		paf::wstring wide;
-		common::Utf8ToUtf16(m_lines.at(row), &wide);
+		paf::string numbered = common::FormatString("%5d  %s", row + 1, m_lines.at(row).c_str());
+		common::Utf8ToUtf16(numbered, &wide);
 		item->FindChild(button_text_line)->SetString(wide);
 	}
 }
@@ -193,7 +209,8 @@ ui::ListItem *TextView::CreateLine(ui::listview::ItemFactory::CreateParam &param
 	ui::Widget *button = item->FindChild(button_text_line);
 	button->SetName(param.cell_index);
 	paf::wstring wide;
-	common::Utf8ToUtf16(m_lines.at(param.cell_index), &wide);
+	paf::string numbered = common::FormatString("%5d  %s", param.cell_index + 1, m_lines.at(param.cell_index).c_str());
+	common::Utf8ToUtf16(numbered, &wide);
 	button->SetString(wide);
 
 	button->AddEventCallback(ui::Handler::CB_FOCUS_IN,
@@ -210,6 +227,13 @@ ui::ListItem *TextView::CreateLine(ui::listview::ItemFactory::CreateParam &param
 	}, this);
 
 	return static_cast<ui::ListItem *>(item);
+}
+
+void TextView::JumpTo(bool end)
+{
+	if (m_rows <= 0) return;
+	m_focused = end ? m_rows - 1 : 0;
+	m_list->SetFocus(0, m_focused, end ? ui::ListView::FOCUS_ALIGN_TYPE_TAIL : ui::ListView::FOCUS_ALIGN_TYPE_HEAD, NULL);
 }
 
 void TextView::OnOptions()

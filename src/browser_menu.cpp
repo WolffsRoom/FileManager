@@ -22,10 +22,12 @@
 #include "music_menu.h"
 #include "core/music.h"
 #include "core/install.h"
+#include "core/bubble.h"
 #include "core/pfs.h"
 
 // Second option menu ("More..."): its own page, since the first is still fading out.
 #define page_option_menu_sub (0xcd2afa0du)
+#define page_option_menu_sort (0x9d6a31c2u)
 
 using namespace paf;
 
@@ -246,17 +248,13 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 		reinterpret_cast<BrowserMenu *>(userdata)->OnSelectButton();
 	}, this);
 
-	// Start opens the settings; L and R jump to the first and last item.
+	// Start opens search; L and R jump to the first and last item.
 	ui::Widget *startButton = m_root->FindChild(button_start_page_browser);
 	startButton->SetKeycode(inputdevice::pad::Data::PAD_START);
 	startButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
-		BrowserMenu *menu = reinterpret_cast<BrowserMenu *>(userdata);
-		if (!dialog::IsActive())
-		{
-			menu->DoActionPublic(BrowserMenu::Action_Settings);
-		}
+		reinterpret_cast<BrowserMenu *>(userdata)->ToggleSearch();
 	}, this);
 	ui::Widget *lButton = m_root->FindChild(button_l_page_browser);
 	lButton->SetKeycode(inputdevice::pad::Data::PAD_L);
@@ -273,12 +271,12 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 		reinterpret_cast<BrowserMenu *>(userdata)->JumpTo(true);
 	}, this);
 
-	// Lower-right corner: available inside folders only. Triangle still opens Options.
+	// Lower-right corner always opens Options. Triangle uses the same action.
 	m_searchButton = m_root->FindChild(button_search_page_browser);
 	m_searchButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
-		reinterpret_cast<BrowserMenu *>(userdata)->ToggleSearch();
+		reinterpret_cast<BrowserMenu *>(userdata)->OnOptions();
 	}, this);
 
 	m_ftpIndicator = m_root->FindChild(plane_ftp_indicator_page_browser);
@@ -350,14 +348,7 @@ void BrowserMenu::UpdateChrome()
 		m_backButton->Hide(common::transition::Type_Reset);
 	}
 
-	if (fs::IsRootStyle(page->path))
-	{
-		m_searchButton->Hide(common::transition::Type_Reset);
-	}
-	else
-	{
-		m_searchButton->Show(common::transition::Type_Reset);
-	}
+	m_searchButton->Show(common::transition::Type_Reset);
 	// Each page starts without the search box; the corner button opens it.
 	SetSearchVisible(false);
 }
@@ -452,7 +443,7 @@ void BrowserMenu::PushPage(const paf::string &path)
 			logicalPath += path.c_str() + current->path.size();
 		}
 
-		if (settings::Get().autoDecrypt && pfsIsProtectedContainer(current->logicalPath.c_str()))
+		if (settings::Get().autoDecrypt && pfsIsProtectedContainer(current->logicalPath.c_str()) && pfsShouldMount(path.c_str()))
 		{
 			int32_t mountResult = pfsMount(path.c_str());
 			if (mountResult < 0 &&
@@ -465,13 +456,11 @@ void BrowserMenu::PushPage(const paf::string &path)
 				if (mountResult < 0)
 					mountResult = pfsMount((paf::string("gro0:app/") + title).c_str());
 			}
-			if (mountResult < 0)
+			if (mountResult >= 0)
 			{
-				dialog::OpenError(g_appPlugin, mountResult);
-				return;
+				physicalPath = pfsMountPoint();
+				ownsMount = true;
 			}
-			physicalPath = pfsMountPoint();
-			ownsMount = true;
 		}
 	}
 
@@ -686,15 +675,6 @@ void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 		infoWide = ToWide(format::Size(entry->size));
 	}
 	button->FindChild(text_list_item_info)->SetString(infoWide);
-
-	ui::Widget *lock = button->FindChild(plane_list_item_lock);
-	if (lock)
-	{
-		if (entry->isDir && pfsIsProtectedContainer(page->logicalPath.c_str()))
-			lock->Show(common::transition::Type_Reset);
-		else
-			lock->Hide(common::transition::Type_Reset);
-	}
 
 	// Selection mode: every row shows a check box once anything is marked.
 	ui::Widget *check = button->FindChild(plane_list_item_check);
@@ -1135,6 +1115,7 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		}
 		m_optionActions.push_back(Action_Ftp);
 		m_optionActions.push_back(Action_Qr);
+		m_optionActions.push_back(Action_Sort);
 		m_optionActions.push_back(Action_Settings);
 	}
 	else if (atRoot)
@@ -1150,6 +1131,7 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		}
 		m_optionActions.push_back(Action_Ftp);
 		m_optionActions.push_back(Action_Qr);
+		m_optionActions.push_back(Action_Sort);
 		m_optionActions.push_back(Action_Settings);
 	}
 	else
@@ -1179,7 +1161,8 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 	static const uint32_t k_labels[] = {
 		msg_opt_select, msg_opt_clear_selection, msg_opt_copy, msg_opt_move, msg_opt_paste,
 		msg_opt_delete, msg_opt_rename, msg_opt_new_folder, msg_opt_info, msg_opt_settings,
-		msg_opt_more, msg_opt_add_shortcut, msg_opt_remove_shortcut, msg_ftp_server, msg_qr_code
+		msg_opt_more, msg_opt_add_shortcut, msg_opt_remove_shortcut, msg_ftp_server, msg_qr_code,
+		msg_sort, msg_sort_date, msg_sort_name, msg_sort_type
 	};
 
 	paf::vector<OptionMenu::Button> buttons;
@@ -1191,6 +1174,23 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 	}
 
 	new OptionMenu(g_appPlugin, m_root, &buttons, submenu ? page_option_menu_sub : 0xd098335eu);
+}
+
+void BrowserMenu::OpenSortMenu()
+{
+	m_optionActions.clear();
+	m_optionActions.push_back(Action_SortDate);
+	m_optionActions.push_back(Action_SortName);
+	m_optionActions.push_back(Action_SortType);
+	static const uint32_t labels[] = { msg_sort_date, msg_sort_name, msg_sort_type };
+	paf::vector<OptionMenu::Button> buttons;
+	for (uint32_t i = 0; i < 3; i++)
+	{
+		OptionMenu::Button button;
+		button.label = g_appPlugin->GetString(labels[i]);
+		buttons.push_back(button);
+	}
+	new OptionMenu(g_appPlugin, m_root, &buttons, page_option_menu_sort);
 }
 
 void BrowserMenu::OnOption(int32_t index)
@@ -1336,6 +1336,18 @@ void BrowserMenu::DoAction(Action action)
 		dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_qr_code), g_appPlugin->GetString(msg_qr_unavailable));
 		break;
 
+	case Action_Sort:
+		OpenSortMenu();
+		break;
+
+	case Action_SortDate:
+	case Action_SortName:
+	case Action_SortType:
+		settings::Get().sortMode = action == Action_SortDate ? 1 : (action == Action_SortType ? 2 : 0);
+		settings::Save();
+		Refresh();
+		break;
+
 	case Action_Info:
 		if (!fs::IsRootStyle(page->path) && page->focused >= 0 && !page->entries.at(page->focused)->isDir)
 		{
@@ -1441,6 +1453,25 @@ void BrowserMenu::StartOperation(int32_t type)
 	s_lastPercent = 0;
 
 	dialog::OpenProgress(g_appPlugin, NULL, g_appPlugin->GetString(title));
+	if (type == Op_Install && !m_opSources.empty())
+	{
+		VpkInfo info;
+		memset(&info, 0, sizeof(info));
+		if (readVpkInfo(m_opSources.at(0).c_str(), &info) >= 0 && info.icon)
+		{
+			void *bubble = NULL;
+			uint32_t bubbleSize = 0;
+			if (makeBubblePng(info.icon, info.iconSize, &bubble, &bubbleSize) >= 0)
+			{
+				int32_t res = -1;
+				common::SharedPtr<MemFile> file = MemFile::Open(bubble, bubbleSize, &res);
+				if (res == SCE_PAF_OK)
+					dialog::SetProgressIcon(graph::Surface::Load(gutil::GetDefaultSurfacePool(), (common::SharedPtr<File> &)file));
+				free(bubble);
+			}
+			free(info.icon);
+		}
+	}
 	Enqueue(new CallJob(this, &BrowserMenu::RunOperation));
 }
 

@@ -31,7 +31,11 @@ public:
 		Action_AddShortcut,
 		Action_RemoveShortcut,
 		Action_Ftp,
-		Action_Qr
+		Action_Qr,
+		Action_Sort,
+		Action_SortDate,
+		Action_SortName,
+		Action_SortType
 	};
 
 	enum PendingDialog
@@ -128,6 +132,7 @@ private:
 	void OnBack();
 	void OnForward();
 	void OpenOptionMenu(bool submenu);
+	void OpenSortMenu();
 	void StartFtp();
 	void ReloadRoot();
 	void OnOptions();

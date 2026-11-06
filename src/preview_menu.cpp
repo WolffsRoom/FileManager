@@ -19,6 +19,7 @@ extern "C" int sceAvPlayerStreamCount(SceAvPlayerHandle handle);
 
 #include "common.h"
 #include "preview_menu.h"
+#include "option_menu.h"
 
 using namespace paf;
 
@@ -274,7 +275,7 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_loadId(0), m_jobId(0),
 	m_player(0), m_videoActive(false), m_imageActive(false), m_paused(false), m_frameShown(false), m_rgba(NULL), m_videoW(0), m_videoH(0),
 	m_touchActive(false), m_pinchActive(false), m_touchStartX(0), m_touchStartY(0), m_touchLastX(0), m_touchLastY(0),
-	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageX(0), m_imageY(0)
+	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -300,6 +301,20 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	{
 		PreviewMenu *menu = reinterpret_cast<PreviewMenu *>(userdata);
 		menu->Close();
+	}, this);
+
+	ui::Widget *options = m_root->FindChild(button_options_page_preview);
+	options->SetKeycode(inputdevice::pad::Data::PAD_MENU);
+	options->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<PreviewMenu *>(userdata)->OnOptions();
+	}, this);
+	m_root->AddEventCallback(OptionMenu::OptionMenuEvent,
+	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
+	{
+		if (e->GetValue(0) == OptionMenu::OptionMenuEvent_Button && e->GetValue(2) == PreviewMenu::OptionTag)
+			reinterpret_cast<PreviewMenu *>(userdata)->OnOption(e->GetValue(1));
 	}, this);
 
 	AddKey(m_root->FindChild(button_prev_page_preview), inputdevice::pad::Data::PAD_L,
@@ -408,8 +423,11 @@ void PreviewMenu::Open(int32_t index)
 	m_touchActive = false;
 	m_pinchActive = false;
 	m_imageScale = 1.0f;
+	m_imageInitialScale = 1.0f;
 	m_imageX = 0.0f;
 	m_imageY = 0.0f;
+	m_flipX = false;
+	m_flipY = false;
 	m_plane->SetScale(1.0f, 1.0f, 1.0f);
 	m_plane->SetPos(0.0f, 0.0f, 0.0f);
 	m_index = index;
@@ -467,6 +485,9 @@ void PreviewMenu::LoadImageJob()
 		{
 			m_plane->SetTexture(tex, 0, 0);
 			m_plane->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+			m_imageInitialScale = (tex->GetWidth() >= 960 || tex->GetHeight() >= 544) ? 0.7f : 1.0f;
+			m_imageScale = m_imageInitialScale;
+			ApplyImageTransform();
 			m_imageActive = true;
 		}
 		else
@@ -475,6 +496,31 @@ void PreviewMenu::LoadImageJob()
 		}
 	}
 	thread::RMutex::MainThreadMutex()->Unlock();
+}
+
+void PreviewMenu::ApplyImageTransform()
+{
+	m_plane->SetScale(m_flipX ? -m_imageScale : m_imageScale,
+		m_flipY ? -m_imageScale : m_imageScale, 1.0f);
+}
+
+void PreviewMenu::OnOptions()
+{
+	if (!m_imageActive || m_videoActive) return;
+	paf::vector<OptionMenu::Button> buttons;
+	OptionMenu::Button mirror, invert;
+	mirror.label = g_appPlugin->GetString(msg_preview_mirror);
+	invert.label = g_appPlugin->GetString(msg_preview_invert);
+	buttons.push_back(mirror);
+	buttons.push_back(invert);
+	new OptionMenu(g_appPlugin, m_root, &buttons, 0xd098335eu, OptionTag);
+}
+
+void PreviewMenu::OnOption(int32_t index)
+{
+	if (index == 0) m_flipX = !m_flipX;
+	else if (index == 1) m_flipY = !m_flipY;
+	ApplyImageTransform();
 }
 
 void PreviewMenu::OnImageTouch()
@@ -487,11 +533,11 @@ void PreviewMenu::OnImageTouch()
 	sceTouchPeek(SCE_TOUCH_PORT_FRONT, &touch, 1);
 	if (touch.reportNum == 0)
 	{
-		if (m_touchActive && !m_pinchActive && m_imageScale <= 1.05f)
+		if (m_touchActive && !m_pinchActive)
 		{
 			float dx = m_touchLastX - m_touchStartX;
 			float dy = m_touchLastY - m_touchStartY;
-			if (fabsf(dx) > 140.0f && fabsf(dy) < 90.0f)
+			if (fabsf(dx) > 140.0f && fabsf(dy) < 100.0f)
 			{
 				int32_t n = m_paths.size();
 				Open(dx < 0 ? (m_index + 1) % n : (m_index + n - 1) % n);
@@ -530,16 +576,10 @@ void PreviewMenu::OnImageTouch()
 		if (m_pinchStart > 1.0f)
 		{
 			m_imageScale = m_pinchScale * distance / m_pinchStart;
-			if (m_imageScale < 1.0f) m_imageScale = 1.0f;
+			if (m_imageScale < 0.3f) m_imageScale = 0.3f;
 			if (m_imageScale > 5.0f) m_imageScale = 5.0f;
-			m_plane->SetScale(m_imageScale, m_imageScale, 1.0f);
+			ApplyImageTransform();
 		}
-	}
-	else if (!m_pinchActive && m_imageScale > 1.05f)
-	{
-		m_imageX += x - m_touchLastX;
-		m_imageY += y - m_touchLastY;
-		m_plane->SetPos(m_imageX, m_imageY, 0.0f);
 	}
 	m_touchLastX = x;
 	m_touchLastY = y;

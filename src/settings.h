@@ -24,6 +24,7 @@ namespace settings {
 		int32_t selectFunction;  // 0 FTP server, 1 QR code
 		int32_t fontSize;        // 0 small, 1 normal (original), 2 large
 		int32_t autoDecrypt;     // mount protected application data automatically
+		int32_t sortMode;        // 0 name, 1 date, 2 type
 	};
 
 	float FileFontSize();

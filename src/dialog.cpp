@@ -309,3 +309,14 @@ void dialog::SetProgress(float percent)
 	if (!isMainThread)
 		thread::RMutex::MainThreadMutex()->Unlock();
 }
+
+void dialog::SetProgressIcon(intrusive_ptr<graph::Surface> texture)
+{
+	if (s_currentDialog == CURRENT_DIALOG_NONE || !texture.get()) return;
+	ui::Widget *icon = CommonGuiDialog::Dialog::GetWidget(s_currentDialog, CommonGuiDialog::REGISTER_ID_PLANE_ICON);
+	if (icon)
+	{
+		icon->SetTexture(texture, 0, 0);
+		icon->Show(common::transition::Type_Reset);
+	}
+}

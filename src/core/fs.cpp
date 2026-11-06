@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "core/fs.h"
+#include "settings.h"
 extern "C" {
 #include "legacy/strnatcmp.h"
 }
@@ -106,6 +107,11 @@ namespace {
 		{
 			return a->isDir;
 		}
+		int mode = settings::Get().sortMode;
+		if (mode == 1 && a->modified != b->modified)
+			return a->modified > b->modified;
+		if (mode == 2 && a->kind != b->kind)
+			return a->kind < b->kind;
 		return strnatcasecmp(a->name.c_str(), b->name.c_str()) < 0;
 	}
 
@@ -253,6 +259,7 @@ static void AddDevices(fs::EntryList *out, bool system)
 		e->isShortcut = false;
 		e->size = 0;
 		e->capacity = 0;
+		e->modified = 0;
 
 		SceIoDevInfo info;
 		sce_paf_memset(&info, 0, sizeof(info));
@@ -282,6 +289,7 @@ static fs::Entry *NewRootEntry(const char *name, const char *target, uint32_t la
 	e->iconHash = icon;
 	e->size = 0;
 	e->capacity = 0;
+	e->modified = 0;
 	e->isShortcut = false;
 	return e;
 }
@@ -316,6 +324,7 @@ void fs::ListRoot(EntryList *out)
 		e->isShortcut = false;
 		e->size = 0;
 		e->capacity = 0;
+		e->modified = 0;
 		out->push_back(e);
 	}
 
@@ -331,6 +340,7 @@ void fs::ListRoot(EntryList *out)
 	e->iconHash = tex_ui_encrypted;
 	e->size = 0;
 	e->capacity = 0;
+	e->modified = 0;
 	out->push_back(e);
 }
 
@@ -364,6 +374,10 @@ int32_t fs::ListDirectory(const char *path, EntryList *out)
 		e->marked = false;
 		e->size = dir.d_stat.st_size;
 		e->capacity = 0;
+		e->modified = ((uint64_t)dir.d_stat.st_mtime.year << 48) |
+			((uint64_t)dir.d_stat.st_mtime.month << 40) | ((uint64_t)dir.d_stat.st_mtime.day << 32) |
+			((uint64_t)dir.d_stat.st_mtime.hour << 24) | ((uint64_t)dir.d_stat.st_mtime.minute << 16) |
+			((uint64_t)dir.d_stat.st_mtime.second << 8);
 		e->labelHash = 0;
 		e->iconHash = 0;
 		e->isShortcut = false;
@@ -372,6 +386,19 @@ int32_t fs::ListDirectory(const char *path, EntryList *out)
 
 	sceIoDclose(dfd);
 	Sort(out);
+	if (!strcasecmp(path, "ur0:tai") || !strcasecmp(path, "ux0:tai"))
+	{
+		for (uint32_t i = 0; i < out->size(); i++)
+		{
+			if (!strcasecmp(out->at(i)->name.c_str(), "config.txt"))
+			{
+				fs::Entry *config = out->at(i);
+				for (uint32_t j = i; j > 0; j--) out->at(j) = out->at(j - 1);
+				out->at(0) = config;
+				break;
+			}
+		}
+	}
 	return 0;
 }
 

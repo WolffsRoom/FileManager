@@ -33,6 +33,7 @@ public:
 
 	void OnOption(int32_t index);
 	void OnLineEntered(const paf::wstring &text);
+	void JumpTo(bool end);
 	void OnSaveAnswer(int32_t choice);
 
 private:

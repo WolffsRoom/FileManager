@@ -11,7 +11,7 @@ using namespace paf;
 
 namespace {
 
-	settings::Config s_config = { 0, settings::View_List, 0, 0, 1, 1 };
+	settings::Config s_config = { 0, settings::View_List, 0, 0, 1, 1, 0 };
 
 	const theme::Info k_themes[] = {
 		{ msg_theme_default,  { 1.00f, 1.00f, 1.00f }, { 1.00f, 1.00f, 1.00f } },
@@ -101,6 +101,12 @@ void settings::Load()
 			s_config.autoDecrypt = v;
 		}
 	}
+	p = strstr(buf, "sort=");
+	if (p)
+	{
+		int32_t v = atoi(p + 5);
+		if (v >= 0 && v <= 2) s_config.sortMode = v;
+	}
 }
 
 void settings::Save()
@@ -111,9 +117,9 @@ void settings::Save()
 		return;
 	}
 	char buf[128];
-	int32_t n = snprintf(buf, sizeof(buf), "theme=%d\nview=%d\nlanguage=%d\nselect=%d\nfont=%d\nauto_decrypt=%d\n",
+	int32_t n = snprintf(buf, sizeof(buf), "theme=%d\nview=%d\nlanguage=%d\nselect=%d\nfont=%d\nauto_decrypt=%d\nsort=%d\n",
 		(int)s_config.theme, (int)s_config.view, (int)s_config.language, (int)s_config.selectFunction,
-		(int)s_config.fontSize, (int)s_config.autoDecrypt);
+		(int)s_config.fontSize, (int)s_config.autoDecrypt, (int)s_config.sortMode);
 	sceIoWrite(fd, buf, n);
 	sceIoClose(fd);
 }
