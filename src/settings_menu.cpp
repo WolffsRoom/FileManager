@@ -16,7 +16,7 @@ namespace {
 	enum MainRow { Main_Themes, Main_FontSize, Main_Language, Main_Select, Main_AutoDecrypt, Main_Shortcuts, Main_Commands, Main_About, Main_Count };
 
 	const uint32_t k_mainLabels[Main_Count] = { msg_set_themes, msg_set_font_size, msg_set_language, msg_set_select, msg_set_auto_decrypt, msg_set_shortcuts, msg_set_commands, msg_set_about };
-	const uint32_t k_mainIcons[Main_Count] = { tex_ui_image, tex_ui_text, tex_ui_text, tex_ui_ftp, tex_ui_encrypted, tex_ui_bookmark, tex_new_gears, tex_about };
+	const uint32_t k_mainIcons[Main_Count] = { tex_new_theme, tex_ui_text, tex_ui_text, tex_ui_ftp, tex_ui_encrypted, tex_ui_bookmark, tex_new_gears, tex_about };
 
 	const uint32_t k_languages[] = { msg_lang_system, msg_lang_ptbr, msg_lang_en, msg_lang_es, msg_lang_fr, msg_lang_de };
 	const uint32_t k_selectFunctions[] = { msg_ftp_server, msg_qr_code };
@@ -118,7 +118,7 @@ int32_t SettingsMenu::RowCount(Level level)
 	case Level_Language: return sizeof(k_languages) / sizeof(k_languages[0]);
 	case Level_Select: return 2;
 	case Level_AutoDecrypt: return 2;
-	case Level_Shortcuts: return m_shortcuts.size();
+	case Level_Shortcuts: return m_shortcuts.empty() ? 1 : m_shortcuts.size();
 	case Level_Commands: return k_commandCount;
 	}
 	return 0;
@@ -203,7 +203,7 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		break;
 	case Level_Themes:
 		label = Str(theme::At(row).nameHash);
-		icon = tex_ui_image;
+		icon = row == (int32_t)theme::CustomIndex() ? tex_ui_image : tex_new_theme;
 		break;
 	case Level_FontSize:
 		label = Str(k_fontSizes[row]);
@@ -222,7 +222,9 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		icon = tex_ui_encrypted;
 		break;
 	case Level_Shortcuts:
-		label = Wide(m_shortcuts.at(row).c_str());
+		label = m_shortcuts.empty()
+			? Str(msg_shortcuts_empty)
+			: Wide(m_shortcuts.at(row).c_str());
 		icon = tex_ui_bookmark;
 		break;
 	case Level_Commands:
@@ -255,7 +257,8 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		const theme::Info &preview = theme::At(row);
 		// Tint through the widget animation layer; touching the internal draw
 		// object directly crashes on some ScePaf firmware revisions.
-		button->SetColor(preview.bg[0], preview.bg[1], preview.bg[2], 0.82f);
+		graph::DrawObj *image = button->GetDrawObj(ui::ImageButton::OBJ_IMAGE);
+		if (image) image->SetColor(math::v4(preview.bg[0], preview.bg[1], preview.bg[2], 0.88f));
 	}
 	else if (m_level == Level_Commands)
 	{
@@ -334,7 +337,7 @@ void SettingsMenu::OnRow(int32_t row)
 		c.autoDecrypt = row;
 		break;
 	case Level_Shortcuts:
-		if (row < (int32_t)m_shortcutKept.size())
+		if (!m_shortcuts.empty() && row < (int32_t)m_shortcutKept.size())
 		{
 			m_shortcutKept.at(row) = !m_shortcutKept.at(row);
 			if (m_shortcutKept.at(row))

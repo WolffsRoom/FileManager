@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <stringset>
   <string src="File Manager" id="msg_app_title" />
-  <string src="This folder is empty" id="msg_empty_folder" />
+  <string src="No results found" id="msg_empty_folder" />
   <string src="Memory Card" id="msg_dev_ux0" />
   <string src="System Memory" id="msg_dev_ur0" />
   <string src="USB Storage" id="msg_dev_uma0" />
@@ -21,7 +21,7 @@
   <string src="New Folder" id="msg_opt_new_folder" />
   <string src="Details" id="msg_opt_info" />
   <string src="Decrypt" id="msg_decrypt" />
-  <string src="Undo last action" id="msg_undo" />
+  <string src="Undo" id="msg_undo" />
 
   <string src="Delete" id="msg_confirm_delete_title" />
   <string src="Delete the selected items? This cannot be undone." id="msg_confirm_delete" />
@@ -100,6 +100,7 @@
   <string src="Language" id="msg_set_language" />
   <string src="Select Button" id="msg_set_select" />
   <string src="Shortcuts" id="msg_set_shortcuts" />
+  <string src="No shortcuts registered. To add one, select a folder and choose Favorite." id="msg_shortcuts_empty" />
   <string src="Controls" id="msg_set_commands" />
   <string src="System Language" id="msg_lang_system" />
   <string src="Português (Brasil)" id="msg_lang_ptbr" />
@@ -176,8 +177,8 @@
   <string src="Type" id="msg_sort_type" />
   <string src="Mirror" id="msg_preview_mirror" />
   <string src="Flip vertically" id="msg_preview_invert" />
-  <string src="Listen in background" id="msg_music_background" />
-  <string src="Export to Music" id="msg_music_export" />
+  <string src="Minimize" id="msg_music_background" />
+  <string src="Export" id="msg_music_export" />
   <string src="Music exported successfully." id="msg_music_export_done" />
   <string src="Open in Music" id="msg_music_open_native" />
   <string src="Unknown artist" id="msg_music_unknown_artist" />

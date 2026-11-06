@@ -5,6 +5,7 @@
 #include <psp2/appmgr.h>
 #include <psp2/musicexport.h>
 #include <psp2/sysmodule.h>
+#include <psp2/touch.h>
 
 #include "common.h"
 #include "settings.h"
@@ -48,7 +49,7 @@ namespace {
 }
 
 MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &paths, int32_t index) :
-	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false)
+	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false), m_barTouch(false), m_barTouchX(0)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -284,6 +285,25 @@ void MusicMenu::ListenInBackground()
 
 void MusicMenu::Update()
 {
+	SceTouchData touch;
+	memset(&touch, 0, sizeof(touch));
+	sceTouchPeek(SCE_TOUCH_PORT_FRONT, &touch, 1);
+	if (touch.reportNum)
+	{
+		float x = touch.report[0].x * (960.0f / 1920.0f);
+		float y = touch.report[0].y * (544.0f / 1088.0f);
+		m_barTouch = x >= 420.0f && x <= 920.0f && y >= 272.0f && y <= 320.0f;
+		if (m_barTouch) m_barTouchX = x;
+	}
+	else if (m_barTouch)
+	{
+		// Use the last touch position retained by the touch service.
+		float pct = (m_barTouchX - 440.0f) / k_barWidth;
+		if (pct < 0.0f) pct = 0.0f;
+		if (pct > 1.0f) pct = 1.0f;
+		musicSeek(pct * m_seconds);
+		m_barTouch = false;
+	}
 	if (!m_playing || m_frame++ % 15 != 0)
 	{
 		return;

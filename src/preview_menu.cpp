@@ -289,6 +289,13 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	m_busy = static_cast<ui::BusyIndicator *>(m_root->FindChild(busyindicator_page_preview));
 	m_title = static_cast<ui::Text *>(m_root->FindChild(text_title_page_preview));
 	m_error = static_cast<ui::Text *>(m_root->FindChild(text_error_page_preview));
+	ui::Widget *leftArrow = m_root->FindChild(plane_arrow_left_page_preview);
+	ui::Widget *rightArrow = m_root->FindChild(plane_arrow_right_page_preview);
+	if (m_paths.size() < 2)
+	{
+		leftArrow->Hide(common::transition::Type_Reset);
+		rightArrow->Hide(common::transition::Type_Reset);
+	}
 
 	paf::wstring errorText = g_appPlugin->GetString(msg_preview_error);
 	m_error->SetString(errorText);
@@ -341,12 +348,16 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	AddKey(m_root->FindChild(button_rewind_page_preview), inputdevice::pad::Data::PAD_LEFT,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
-		reinterpret_cast<PreviewMenu *>(userdata)->SeekVideo(-10000);
+		PreviewMenu *menu = reinterpret_cast<PreviewMenu *>(userdata);
+		if (menu->m_videoActive) menu->SeekVideo(-10000);
+		else if (menu->m_paths.size() > 1) menu->Open((menu->m_index + menu->m_paths.size() - 1) % menu->m_paths.size());
 	}, this);
 	AddKey(m_root->FindChild(button_forward_page_preview), inputdevice::pad::Data::PAD_RIGHT,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
-		reinterpret_cast<PreviewMenu *>(userdata)->SeekVideo(10000);
+		PreviewMenu *menu = reinterpret_cast<PreviewMenu *>(userdata);
+		if (menu->m_videoActive) menu->SeekVideo(10000);
+		else if (menu->m_paths.size() > 1) menu->Open((menu->m_index + 1) % menu->m_paths.size());
 	}, this);
 
 	AddKey(m_root->FindChild(button_pause_page_preview), inputdevice::pad::Data::PAD_ENTER,
@@ -486,7 +497,18 @@ void PreviewMenu::LoadImageJob()
 		{
 			m_plane->SetTexture(tex, 0, 0);
 			m_plane->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-			m_imageInitialScale = (tex->GetWidth() >= 960 || tex->GetHeight() >= 544) ? 0.7f : 1.0f;
+			float displayW = (float)tex->GetWidth();
+			float displayH = (float)tex->GetHeight();
+			if (displayW >= 960.0f || displayH >= 544.0f)
+			{
+				float fit = fminf(960.0f / displayW, 544.0f / displayH) * 0.70f;
+				displayW *= fit;
+				displayH *= fit;
+			}
+			m_plane->SetSize(displayW, displayH, 0.0f);
+			graph::PlaneObj *obj = static_cast<graph::PlaneObj *>(m_plane->GetDrawObj(ui::Plane::OBJ_PLANE));
+			obj->SetScaleMode(graph::PlaneObj::SCALE_ASPECT_SIZE, graph::PlaneObj::SCALE_ASPECT_SIZE);
+			m_imageInitialScale = 1.0f;
 			m_imageScale = m_imageInitialScale;
 			ApplyImageTransform();
 			m_imageActive = true;
@@ -501,8 +523,10 @@ void PreviewMenu::LoadImageJob()
 
 void PreviewMenu::ApplyImageTransform()
 {
-	m_plane->SetScale(m_flipX ? -m_imageScale : m_imageScale,
-		m_flipY ? -m_imageScale : m_imageScale, 1.0f);
+	graph::PlaneObj *obj = static_cast<graph::PlaneObj *>(m_plane->GetDrawObj(ui::Plane::OBJ_PLANE));
+	obj->SetTexRegion(math::v4(m_flipX ? 1.0f : 0.0f, m_flipY ? 1.0f : 0.0f,
+		m_flipX ? -1.0f : 1.0f, m_flipY ? -1.0f : 1.0f));
+	m_plane->SetScale(m_imageScale, m_imageScale, 1.0f);
 }
 
 void PreviewMenu::OnOptions()
@@ -627,8 +651,21 @@ bool PreviewMenu::StartVideo(const char *path)
 	if (added < 0)
 	{
 		sceAvPlayerClose(m_player);
-		m_player = 0;
-		return false;
+		VideoCloseFile(NULL);
+		// Some firmware revisions reject custom file callbacks for MP4 sources.
+		// Retry once with AvPlayer's native filesystem path handling.
+		sce_paf_memset(&init.fileReplacement, 0, sizeof(init.fileReplacement));
+		m_player = sceAvPlayerInit(&init);
+		VideoLog("native sceAvPlayerInit: 0x%08X", m_player);
+		if (m_player < 0) { m_player = 0; return false; }
+		added = sceAvPlayerAddSource(m_player, path);
+		VideoLog("native sceAvPlayerAddSource: 0x%08X", added);
+		if (added < 0)
+		{
+			sceAvPlayerClose(m_player);
+			m_player = 0;
+			return false;
+		}
 	}
 	// Duration from the video stream, for the progress bar.
 	m_duration = 0;

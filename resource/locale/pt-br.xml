@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <stringset>
   <string src="Gerenciador de Arquivos" id="msg_app_title" />
-  <string src="Esta pasta está vazia" id="msg_empty_folder" />
+  <string src="Nenhum resultado encontrado" id="msg_empty_folder" />
   <string src="Cartão de Memória" id="msg_dev_ux0" />
   <string src="Memória do Sistema" id="msg_dev_ur0" />
   <string src="Armazenamento USB" id="msg_dev_uma0" />
@@ -21,7 +21,7 @@
   <string src="Nova Pasta" id="msg_opt_new_folder" />
   <string src="Detalhes" id="msg_opt_info" />
   <string src="Descriptografar" id="msg_decrypt" />
-  <string src="Desfazer última ação" id="msg_undo" />
+  <string src="Desfazer" id="msg_undo" />
 
   <string src="Excluir" id="msg_confirm_delete_title" />
   <string src="Excluir os itens selecionados? Não é possível desfazer." id="msg_confirm_delete" />
@@ -100,6 +100,7 @@
   <string src="Idioma" id="msg_set_language" />
   <string src="Função do Select" id="msg_set_select" />
   <string src="Atalhos" id="msg_set_shortcuts" />
+  <string src="Nenhum atalho registrado. Para registrar atalhos, selecione uma pasta e clique em Favoritar." id="msg_shortcuts_empty" />
   <string src="Comandos" id="msg_set_commands" />
   <string src="Idioma do sistema" id="msg_lang_system" />
   <string src="Português (Brasil)" id="msg_lang_ptbr" />
@@ -176,8 +177,8 @@
   <string src="Tipo" id="msg_sort_type" />
   <string src="Espelhar" id="msg_preview_mirror" />
   <string src="Inverter" id="msg_preview_invert" />
-  <string src="Ouvir em segundo plano" id="msg_music_background" />
-  <string src="Exportar pra Música" id="msg_music_export" />
+  <string src="Minimizar" id="msg_music_background" />
+  <string src="Exportar" id="msg_music_export" />
   <string src="Música exportada com sucesso." id="msg_music_export_done" />
   <string src="Abrir no Música" id="msg_music_open_native" />
   <string src="Artista desconhecido" id="msg_music_unknown_artist" />

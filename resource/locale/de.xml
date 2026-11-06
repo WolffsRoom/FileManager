@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <stringset>
   <string src="File Manager" id="msg_app_title" />
-  <string src="This folder is empty" id="msg_empty_folder" />
+  <string src="Keine Ergebnisse gefunden" id="msg_empty_folder" />
   <string src="Memory Card" id="msg_dev_ux0" />
   <string src="System Memory" id="msg_dev_ur0" />
   <string src="USB Storage" id="msg_dev_uma0" />
@@ -98,6 +98,7 @@
   <string src="Sprache" id="msg_set_language" />
   <string src="SELECT Knopf" id="msg_set_select" />
   <string src="Shortcuts" id="msg_set_shortcuts" />
+  <string src="Keine Verknüpfungen gespeichert. Ordner auswählen und Favorit wählen." id="msg_shortcuts_empty" />
   <string src="Controls" id="msg_set_commands" />
   <string src="System Language" id="msg_lang_system" />
   <string src="Portugu&#xEA;s (Brasil)" id="msg_lang_ptbr" />

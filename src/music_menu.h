@@ -47,6 +47,8 @@ private:
 	uint32_t m_frame;
 	bool m_playing;
 	bool m_closing;
+	bool m_barTouch;
+	float m_barTouchX;
 };
 
 #endif

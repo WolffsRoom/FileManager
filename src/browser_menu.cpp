@@ -28,6 +28,10 @@
 #include "core/bubble.h"
 #include "core/pfs.h"
 #include "core/psarc.h"
+#include "core/download.h"
+#include <psp2/net/http.h>
+#include <psp2/libssl.h>
+#include <psp2/sysmodule.h>
 
 // Second option menu ("More..."): its own page, since the first is still fading out.
 #define page_option_menu_sub (0xcd2afa0du)
@@ -192,7 +196,7 @@ namespace {
 }
 
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_inputAction(Action_Rename),
-	m_iconCount(0), m_searchVisible(false), m_alphaTouch(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
+	m_iconCount(0), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -299,9 +303,17 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 	m_alphaIndex = m_root->FindChild(text_alpha_index_page_browser);
 	m_alphaBubble = m_root->FindChild(plane_alpha_bubble_page_browser);
 	m_alphaLetter = m_root->FindChild(text_alpha_letter_page_browser);
+	m_alphaButton = m_root->FindChild(button_alpha_page_browser);
+	m_alphaButton->SetString(ToWide(paf::string("Superior")));
+	m_alphaButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		reinterpret_cast<BrowserMenu *>(userdata)->ToggleAlphaIndex();
+	}, this);
 	m_alphaIndex->SetString(ToWide(paf::string("A\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nK\nL\nM\nN\nO\nP\nQ\nR\nS\nT\nU\nV\nW\nX\nY\nZ\n#")));
 	m_alphaIndex->Hide(common::transition::Type_Reset);
 	m_alphaBubble->Hide(common::transition::Type_Reset);
+	m_alphaButton->Hide(common::transition::Type_Reset);
 	m_selectionBar = m_root->FindChild(plane_selection_bar_page_browser);
 	m_selectionBar->Hide(common::transition::Type_Reset);
 	ui::Widget *selectionCancel = m_root->FindChild(button_cancel_selection_page_browser);
@@ -407,13 +419,19 @@ void BrowserMenu::UpdateChrome()
 	const bool musicFolder = !page->logicalPath.empty() &&
 		strncasecmp(page->logicalPath.c_str(), "ux0:music", 9) == 0;
 	if (musicFolder)
-		m_alphaIndex->Show(common::transition::Type_FadeinFast);
+	{
+		m_alphaButton->Show(common::transition::Type_FadeinFast);
+		m_alphaIndex->Hide(common::transition::Type_Reset);
+		m_alphaVisible = false;
+	}
 	else
 	{
+		m_alphaButton->Hide(common::transition::Type_Reset);
 		m_alphaIndex->Hide(common::transition::Type_Reset);
 		m_alphaBubble->Hide(common::transition::Type_Reset);
 		m_alphaTouch = false;
 		m_alphaCurrent = -1;
+		m_alphaVisible = false;
 	}
 	// Each page starts without the search box; the corner button opens it.
 	SetSearchVisible(false);
@@ -430,12 +448,36 @@ void BrowserMenu::StartListItem(ui::listview::ItemFactory::StartParam &param)
 			break;
 		}
 	}
-	param.list_item->Show(mainMenu ? common::transition::Type_SlideFromBottom4 : common::transition::Type_Popup1);
+	BrowserPage *owner = NULL;
+	for (uint32_t i = 0; i < m_pages.size(); i++)
+		if (m_pages.at(i)->list == param.list_view) owner = m_pages.at(i);
+	// ListView recycles cells. Replaying SlideFromBottom on a recycled cell leaves
+	// several transition layers visible, which looked like duplicated rows.
+	param.list_item->Hide(common::transition::Type_Reset);
+	param.list_item->Show(mainMenu && owner && owner->openingAnimation
+		? common::transition::Type_SlideFromBottom4 : common::transition::Type_Reset);
+}
+
+void BrowserMenu::ToggleAlphaIndex()
+{
+	BrowserPage *page = Top();
+	if (!page || !page->loaded) return;
+	m_alphaVisible = !m_alphaVisible;
+	if (m_alphaVisible) m_alphaIndex->Show(common::transition::Type_FadeinFast);
+	else
+	{
+		m_alphaIndex->Hide(common::transition::Type_Reset);
+		m_alphaBubble->Hide(common::transition::Type_Reset);
+		m_alphaTouch = false;
+		m_alphaCurrent = -1;
+	}
 }
 
 void BrowserMenu::UpdateAlphaIndex()
 {
-	if (!m_alphaIndex || !m_alphaIndex->IsVisible() || m_pages.empty()) return;
+	if (!m_alphaVisible || !m_alphaIndex || !m_alphaIndex->IsVisible() || m_pages.empty()) return;
+	BrowserPage *page = Top();
+	if (!page || !page->loaded || page->entries.empty()) return;
 	SceTouchData touch;
 	sce_paf_memset(&touch, 0, sizeof(touch));
 	sceTouchPeek(SCE_TOUCH_PORT_FRONT, &touch, 1);
@@ -458,7 +500,6 @@ void BrowserMenu::UpdateAlphaIndex()
 	char shown[2] = { letter < 26 ? (char)('A' + letter) : '#', 0 };
 	m_alphaLetter->SetString(ToWide(paf::string(shown)));
 	m_alphaBubble->Show(common::transition::Type_Popup1);
-	BrowserPage *page = Top();
 	for (uint32_t i = 0; i < page->entries.size(); i++)
 	{
 		const char *name = page->entries.at(i)->name.c_str();
@@ -480,13 +521,17 @@ void BrowserMenu::SetSearchVisible(bool visible)
 	if (m_searchVisible)
 	{
 		m_search->Show(common::transition::Type_Reset);
-		page->list->SetSize(960.0f, 376.0f, 0.0f);
+		page->list->SetSize(960.0f, 368.0f, 0.0f);
+		page->list->SetPos(0.0f, -232.0f, 0.0f);
+		m_search->SetFocusedState(true);
+		m_search->BeginEdit();
 	}
 	else
 	{
 		m_search->ReleaseFocus();
 		m_search->Hide(common::transition::Type_Reset);
 		page->list->SetSize(960.0f, 448.0f, 0.0f);
+		page->list->SetPos(0.0f, -272.0f, 0.0f);
 		if (page->focused >= 0 && page->focused < (int32_t)page->entries.size())
 		{
 			page->list->SetFocus(0, page->focused, ui::ListView::FOCUS_ALIGN_TYPE_CENTER, NULL);
@@ -601,6 +646,7 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	page->cellCount = 0;
 	page->focused = -1;
 	page->loaded = false;
+	page->openingAnimation = path.empty();
 
 	g_appPlugin->TemplateOpen(m_browserRoot, template_list_view_generic, tmpParam);
 	page->list = static_cast<ui::ListView *>(m_browserRoot->GetChild(m_browserRoot->GetChildrenNum() - 1));
@@ -777,6 +823,7 @@ void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 	thread::RMutex::MainThreadMutex()->Unlock();
 
 	page->loaded = true;
+	page->openingAnimation = false;
 }
 
 intrusive_ptr<graph::Surface> BrowserMenu::Icon(uint32_t hash)
@@ -1069,6 +1116,7 @@ void BrowserMenu::OnSearch()
 	m_search->GetString(text);
 	paf::string query;
 	common::Utf16ToUtf8(text, &query);
+	m_search->EndEdit();
 
 	if (page->cellCount > 0)
 	{
@@ -1925,6 +1973,10 @@ void BrowserMenu::OnQrResult(const paf::string &payload)
 	m_scratch = payload;
 	if (!strncasecmp(payload.c_str(), "http://", 7) || !strncasecmp(payload.c_str(), "https://", 8))
 	{
+		const char *end = strchr(payload.c_str(), '?');
+		const char *slash = strrchr(payload.c_str(), '/');
+		const char *dot = slash ? strrchr(slash, '.') : NULL;
+		m_qrDownload = dot && (!end || dot < end) && strncasecmp(dot, ".html", 5) && strncasecmp(dot, ".htm", 4);
 		m_pending = Pending_QrOpen;
 		paf::wstring text = ToWide(payload);
 		dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_qr_open_title), text.c_str());
@@ -1934,6 +1986,48 @@ void BrowserMenu::OnQrResult(const paf::string &payload)
 		paf::wstring text = ToWide(payload);
 		dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_qr_result), text.c_str());
 	}
+}
+
+void BrowserMenu::RunQrDownload()
+{
+	const char *url = m_scratch.c_str();
+	const char *slash = strrchr(url, '/');
+	const char *sourceName = slash && slash[1] ? slash + 1 : "download.bin";
+	char nameBuf[256];
+	size_t nameLen = strcspn(sourceName, "?#");
+	if (nameLen == 0) { sourceName = "download.bin"; nameLen = strlen(sourceName); }
+	if (nameLen >= sizeof(nameBuf)) nameLen = sizeof(nameBuf) - 1;
+	memcpy(nameBuf, sourceName, nameLen);
+	nameBuf[nameLen] = 0;
+	for (size_t i = 0; i < nameLen; i++)
+		if (nameBuf[i] == ':' || nameBuf[i] == '*' || nameBuf[i] == '"' || nameBuf[i] == '<' || nameBuf[i] == '>' || nameBuf[i] == '|') nameBuf[i] = '_';
+	paf::string name(nameBuf);
+	sceIoMkdir("ux0:download", 0777);
+	paf::string destination = paf::string("ux0:download/") + name;
+	SceIoStat stat;
+	for (int n = 1; sceIoGetstat(destination.c_str(), &stat) >= 0; n++)
+	{
+		const char *dot = strrchr(name.c_str(), '.');
+		paf::string stem = dot ? paf::string(name.c_str(), dot - name.c_str()) : name;
+		destination = common::FormatString("ux0:download/%s (%d)%s", stem.c_str(), n, dot ? dot : "");
+	}
+	int network = ftp::EnsureNetwork();
+	if (network < 0)
+	{
+		dialog::Close();
+		dialog::OpenError(g_appPlugin, network);
+		return;
+	}
+	sceSysmoduleLoadModule(SCE_SYSMODULE_HTTPS);
+	sceSslInit(300 * 1024);
+	sceHttpInit(40 * 1024);
+	sceHttpsDisableOption(SCE_HTTPS_FLAG_SERVER_VERIFY);
+	int result = downloadUrl(url, destination.c_str(), OnProgress);
+	sceHttpTerm();
+	sceSslTerm();
+	dialog::Close();
+	if (result < 0) dialog::OpenError(g_appPlugin, result);
+	else dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_qr_result), ToWide(destination).c_str());
 }
 
 void BrowserMenu::ReloadRoot()
@@ -1967,7 +2061,14 @@ void BrowserMenu::OnDialog(int32_t buttonCode)
 	case Pending_QrOpen:
 		m_pending = Pending_None;
 		if (buttonCode == dialog::ButtonCode_Yes && !m_scratch.empty())
-			sceAppMgrLaunchAppByUri(0xFFFFF, m_scratch.c_str());
+		{
+			if (m_qrDownload)
+			{
+				dialog::OpenProgress(g_appPlugin, NULL, ToWide(paf::string("Baixando arquivo..." )).c_str());
+				Enqueue(new CallJob(this, &BrowserMenu::RunQrDownload));
+			}
+			else sceAppMgrLaunchAppByUri(0xFFFFF, m_scratch.c_str());
+		}
 		break;
 
 	case Pending_Operation:

@@ -87,6 +87,7 @@ public:
 		int32_t opened;             // row whose folder is open above this page
 		float width;                // current list width
 		volatile bool loaded;
+		bool openingAnimation;
 	};
 
 	BrowserMenu();
@@ -103,6 +104,7 @@ public:
 
 	/** Worker-thread side of the information dialog. */
 	void RunInfo();
+	void RunQrDownload();
 
 	void OnNameEntered(const paf::wstring &text);
 
@@ -124,6 +126,7 @@ public:
 	void ApplySettings();
 	void UpdateBackground();
 	void UpdateAlphaIndex();
+	void ToggleAlphaIndex();
 	void StartListItem(paf::ui::listview::ItemFactory::StartParam &param);
 
 
@@ -190,9 +193,12 @@ private:
 	paf::ui::Widget *m_alphaIndex;
 	paf::ui::Widget *m_alphaBubble;
 	paf::ui::Widget *m_alphaLetter;
+	paf::ui::Widget *m_alphaButton;
 	paf::ui::Widget *m_selectionBar;
 	bool m_searchVisible;
 	bool m_alphaTouch;
+	bool m_alphaVisible;
+	bool m_qrDownload;
 	int32_t m_alphaCurrent;
 
 	// Fetching an icon's texture once per list cell is a likely cause of slow lists.

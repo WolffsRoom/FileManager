@@ -255,6 +255,11 @@ extern "C" {
 	}
 }
 
+int32_t ftp::EnsureNetwork()
+{
+	return InitNetwork();
+}
+
 int32_t ftp::Start()
 {
 	if (s_running)

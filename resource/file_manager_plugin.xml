@@ -36,6 +36,9 @@
       <text style="style_text_alpha_index" id="text_alpha_index_page_browser">
         <layout_hint size="42, 430" pos="-452, -18" />
       </text>
+	  <button style="style_button_alpha_toggle" id="button_alpha_page_browser">
+		<layout_hint size="46, 46" pos="-452, 190" />
+	  </button>
       <plane style="style_plane_alpha_bubble" id="plane_alpha_bubble_page_browser">
         <layout_hint size="68, 68" pos="-382, 0" />
         <text style="style_text_alpha_letter" id="text_alpha_letter_page_browser">
@@ -134,7 +137,7 @@
       </plane>
       <template_ref id="template_ref_top_title_bar_page_text_view" template="template_top_title_bar" />
       <list_view style="style_list_view_generic" id="list_view_page_text_view">
-        <layout_hint align="0, 1" size="960, 448" pos="0, -272" />
+		<layout_hint align="0, 1" size="960, 384" pos="0, -240" />
       </list_view>
       <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_text_view" />
       <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_options_page_text_view" />
@@ -205,6 +208,9 @@
         <layout_hint size="960, 544" />
       </plane>
       <template_ref id="template_ref_top_title_bar_page_music" template="template_top_title_bar" />
+	  <plane style="style_plane_cover_shadow" id="plane_cover_shadow_page_music">
+		<layout_hint size="342, 282" pos="-242, -10" />
+	  </plane>
       <plane style="_common_default_style_plane" texture="_common_texture_transparent" id="plane_cover_page_music">
         <layout_hint size="330, 270" pos="-250, 0" />
       </plane>
@@ -273,6 +279,12 @@
       <text style="style_text_preview_title" auto_scroll="1" id="text_title_page_preview">
         <layout_hint align="0, 2" anchor="0, 2" size="900, 44" pos="0, -6" />
       </text>
+	  <plane texture="tex_preview_arrow_left" id="plane_arrow_left_page_preview">
+		<layout_hint size="42, 72" pos="-438, 0" />
+	  </plane>
+	  <plane texture="tex_preview_arrow_right" id="plane_arrow_right_page_preview">
+		<layout_hint size="42, 72" pos="438, 0" />
+	  </plane>
       <button style="_common_default_style_button_transparent" id="button_prev_page_preview">
         <layout_hint size="1, 1" pos="-479, 271" />
         <focus_hint enable="0" />
@@ -349,6 +361,11 @@
       <textobj font_size="18" bold="1" ellipsis="1" align_y="1" align_x="3" id="label_obj1" />
       <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj2" />
     </style_button>
+	<style_button sound="_common_sound_button_enter" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_alpha_toggle">
+	  <planeobj color="0.08, 0.08, 0.12, 0.82" id="plane_obj1" />
+	  <textobj font_size="24" bold="1" align_y="1" align_x="1" id="label_obj1" />
+	  <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj2" />
+	</style_button>
     <style_button sound="_common_sound_button_enter" bottom_margin="5" right_margin="10" top_margin="5" left_margin="10" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_selection_action">
       <planeobj color="0.38, 0.08, 0.55, 0.72" id="plane_obj1" />
       <textobj font_size="20" bold="1" align_y="1" align_x="1" id="label_obj1" />
@@ -399,6 +416,9 @@
     <style_plane color="0.05, 0.05, 0.08, 0.88" planeobj="plane_obj1" id="style_plane_alpha_bubble">
       <planeobj id="plane_obj1" />
     </style_plane>
+	<style_plane color="0, 0, 0, 0.48" planeobj="plane_obj1" id="style_plane_cover_shadow">
+	  <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj1" />
+	</style_plane>
     <style_plane color="0.28, 0.02, 0.42, 0.88" planeobj="plane_obj1" id="style_plane_selection_bar">
       <planeobj id="plane_obj1" />
     </style_plane>
@@ -458,7 +478,7 @@
       <textobj font_size="22" bold="1" align_y="1" align_x="1" ellipsis="1" font_color="1, 1, 1, 1" id="text_obj1" />
     </style_text>
     <style_text textobj="text_obj1" id="style_text_preview_title">
-      <textobj font_size="24" align_y="1" align_x="1" ellipsis="1" font_color="1, 1, 1, 1" id="text_obj1" />
+	  <textobj font_size="18" align_y="1" align_x="1" ellipsis="1" font_color="1, 1, 1, 1" id="text_obj1" />
     </style_text>
     <style_text textobj="text_obj1" id="style_text_device_name">
       <textobj font_size="28" bold="1" align_y="1" align_x="0" ellipsis="1" font_color="1, 1, 1, 1" id="text_obj1" />
@@ -643,6 +663,9 @@
     <texture src="texture/new/gears.png" type="texture/png" id="tex_new_gears" />
     <texture src="texture/new/settings.png" type="texture/png" id="tex_new_settings" />
     <texture src="texture/new/search.png" type="texture/png" id="tex_new_search" />
+	<texture src="ui/New/theme.png" type="texture/png" id="tex_new_theme" />
+	<texture src="ui/New/arrow left.png" type="texture/png" id="tex_preview_arrow_left" />
+	<texture src="ui/New/arrow - right.png" type="texture/png" id="tex_preview_arrow_right" />
     <texture src="texture/new/arrow.png" type="texture/png" id="tex_new_arrow" />
     <texture src="texture/new/done.png" type="texture/png" id="tex_new_done" />
     <texture src="texture/new/cancell.png" type="texture/png" id="tex_new_cancell" />

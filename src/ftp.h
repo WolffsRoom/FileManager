@@ -38,6 +38,7 @@ namespace ftp {
 
 	/** Starts the server. Fails with a negative error, for example without Wi-Fi. */
 	int32_t Start();
+	int32_t EnsureNetwork();
 
 	void Stop();
 

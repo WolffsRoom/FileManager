@@ -111,6 +111,7 @@ add_executable(FileManager
   src/core/pfs.c
   src/core/psarc.c
   src/core/fileops.c
+	  src/core/download.c
   legacy/strnatcmp.c
 )
 add_dependencies(FileManager file_manager_rco)
@@ -170,6 +171,8 @@ target_link_libraries(FileManager
   ScePromoterUtil_stub
   SceNet_stub
   SceNetCtl_stub
+	  SceHttp_stub
+	  SceSsl_stub
   SceKernelModulemgr_stub
   taihen_stub
   ${CMAKE_BINARY_DIR}/modules/user/libVitaShellUser_stub_weak.a
