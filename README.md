@@ -9,7 +9,7 @@
 </p>
 
 <div align="center">
-  <a href="https://github.com/WolffsRoom/FileManager/releases/tag/v0.30-beta"><img src="https://img.shields.io/badge/RELEASE-v0.30--beta-377bb5?style=for-the-badge" alt="File Manager v0.30 Beta"></a>
+  <a href="https://github.com/WolffsRoom/FileManager/releases/tag/v0.1.0-alpha"><img src="https://img.shields.io/badge/RELEASE-v0.30--beta-377bb5?style=for-the-badge" alt="File Manager v0.10 Beta"></a>
   <img src="https://img.shields.io/badge/STATUS-BETA-4c9aff?style=for-the-badge" alt="Beta status">
   <img src="https://img.shields.io/badge/PLATFORM-PS%20VITA-6f42c1?style=for-the-badge&amp;logo=playstation&amp;logoColor=white" alt="PlayStation Vita">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/WolffsRoom/FileManager?style=for-the-badge&amp;color=2ea44f" alt="GPL-3.0 license"></a>
