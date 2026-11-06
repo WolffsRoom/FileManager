@@ -33,6 +33,7 @@
 
 - [Building from Source](#building-from-source)
 - [Architecture](#architecture)
+- [Version History](#version-history)
 - [Current Status and Limitations](#current-status-and-limitations)
 - [Credits](#credits)
 
@@ -168,6 +169,101 @@ modules/              VitaShell kernel/user modules retained for future work
 ```
 
 The custom RCO compiler was validated by recompiling NetStream resources and comparing the generated tag and hash ownership data with the original RCO. Its schema was also checked against firmware RCO files. No Sony `acdc.exe` is required.
+
+## Version History
+
+### v0.30 Beta - Native Media and File Management Update
+
+[Download v0.30 Beta](https://github.com/WolffsRoom/FileManager/releases/tag/v0.30-beta)
+
+The v0.30 beta expands the original file browser into a more complete Vita-native file-management and media experience. This release remains a hardware-testing build: back up important data before using destructive operations.
+
+#### Interface and Navigation
+
+- Added an animated main menu in which entries rise into view and stack into position.
+- Refined list navigation, page transitions and return positioning so previous pages remain centered correctly.
+- Added a Music-style multi-selection interface with check boxes, highlighted rows and a lower action bar for **Cancel**, **Select All** and **Copy**.
+- Added an A-Z/# touch index to the Music folder. Dragging over the index jumps to the first matching entry and displays the selected letter.
+- Added configurable file-name sizing while preserving the original size as the default.
+- Moved folder search to the Start button and corrected the search bar layout so it no longer overlaps the first item.
+- Added sorting by name, date and type, with `config.txt` kept first inside the Plugins folder.
+- Renamed interface actions for clarity, including **FTP**, **Details**, **Adjustments** and **Favorite**.
+- Added dedicated entries and icons for Music, Saves, Plugins, system partitions, opened folders and active FTP status.
+
+#### Music and Video
+
+- Introduced an MP3 and OGG player inspired by the original PlayStation Vita Music application.
+- Added embedded cover-art loading, title, artist and album metadata, elapsed/total time and a progress bar.
+- Added compact previous, play/pause and next controls, plus seek and playlist navigation.
+- Added continuous playback of the next supported track in the current folder.
+- Added **Listen in Background**, allowing playback to continue while returning to the file browser.
+- Added **Export to Music** and direct opening of the native Vita Music application.
+- Added A-Z/# navigation for exported tracks stored under `ux0:music`.
+- Reworked video playback around `SceAvPlayer`, following the VitaShell/FMVita initialization flow and adding pause, seek, sound and progress information.
+- Video files using MP4, M4V, MOV, MKV and AVI extensions are now sent to the native player. Actual playback still depends on codecs and containers supported by the Vita firmware.
+- Added diagnostic output at `ux0:data/FileManager/video.log` when video initialization fails.
+
+#### Preview and Editing
+
+- Added touch image navigation: swipe with one finger to move between images and pinch to zoom.
+- Large images initially open at a reduced scale to fit the Vita display more naturally.
+- Added image preview options for horizontal mirroring and vertical inversion.
+- Expanded text viewing into a line-based editor with line numbers, insert, edit, delete and save actions.
+- Added L/R shortcuts for jumping to the beginning or end of a text file.
+- Added PSARC browsing so supported archives can be opened similarly to folders.
+
+#### Protected Content, VPK and FTP
+
+- Ported protected-content mounting from FMVita/VitaShell for application and savedata directories that actually contain PFS metadata.
+- Added optional automatic decryption and a manual **Decrypt** action for protected folders.
+- Corrected detection so ordinary folders under `app`, `addcont` and related locations are not treated as encrypted containers.
+- Redesigned VPK information and installation screens with a smaller application icon and tighter name, version and Title ID layout.
+- Added a completion screen with the installed application name and options to close or launch it.
+- Improved FTP completion messages for sent, received and deleted files.
+- Prevented the FTP action from continuing when Wi-Fi is disabled and added choices to open network settings or cancel.
+
+#### Themes and Stability
+
+- Added eight color themes with softly tinted preview icons.
+- Added custom backgrounds through `ux0:data/FileManager/background.png`.
+- Added multiple-background rotation with fade transitions through `ux0:data/FileManager/backgrounds/`.
+- Fixed the Themes screen crash and several navigation, protected-folder and preview regressions reported during console testing.
+
+### v0.1.0 Alpha - First Public Release
+
+[Download v0.1.0 Alpha](https://github.com/WolffsRoom/FileManager/releases/tag/v0.1.0-alpha)
+
+The first public alpha established File Manager as a separate native ScePaf application for PlayStation Vita. It introduced the new interface and the initial set of everyday file operations while retaining FMVita and VitaShell components as implementation references.
+
+#### Foundation
+
+- First public build using Sony's ScePaf interface, native widgets, system sounds, transitions and dialogs.
+- Introduced the independent `FILEMGR01` Title ID, allowing installation alongside VitaShell and FMVita.
+- Added English and Brazilian Portuguese interfaces.
+- Added a reproducible VitaSDK/Docker build and open RCO compilation workflow.
+- Added the LiveArea assets, application icon and initial PC interface viewer for layout validation.
+
+#### Browser and File Operations
+
+- Added storage-device and partition browsing with capacity, free-space and usage information.
+- Added quick access to Downloads, Images, Music, PSP, Trash, Saves, applications, application data and Plugins.
+- Added folder-first natural sorting, focus navigation, touch input and multi-selection.
+- Added copy, move, paste, delete, rename and folder creation.
+- Added native progress dialogs, cancellation and operation confirmation.
+- Added folder search, user shortcuts and file-detail dialogs.
+- Added configurable Select-button behavior and the initial commands/settings pages.
+
+#### Files, Packages and Network
+
+- Added image and text previews plus the first MP4 preview implementation.
+- Added initial MP3/OGG playback, metadata and embedded-cover support.
+- Added VPK metadata reading, icon preview and installation through `ScePromoterUtil`.
+- Added the FTP server powered by `ftpvita`, including address, activity and transfer progress.
+- Added initial PFS detection and mounting work for protected application data.
+- Added the first eight themes and custom-background support.
+
+> [!NOTE]
+> v0.1.0 is preserved as a historical alpha. It lacks many stability fixes, protected-folder corrections, media controls and interface improvements introduced by v0.30 Beta.
 
 ## Current Status and Limitations
 
