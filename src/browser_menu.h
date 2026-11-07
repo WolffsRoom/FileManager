@@ -65,7 +65,11 @@ public:
 
 		void Start(StartParam &param)
 		{
-			param.list_item->Show(paf::common::transition::Type_Popup1);
+			// Never add a Popup1 transition to every recycled Music-file row.
+			// Large directories have many recycled cells; only root menus
+			// keep the v0.2 row-entry effect.
+			param.list_item->Show(m_parent->AnimateRows(param.list_view)
+				? paf::common::transition::Type_Popup1 : paf::common::transition::Type_Reset);
 		}
 
 		void Stop(StopParam &param)
@@ -94,6 +98,7 @@ public:
 		int32_t opened;             // row whose folder is open above this page
 		float width;                // current list width
 		volatile bool loaded;
+		uint32_t retireFrames;
 	};
 
 	BrowserMenu();
@@ -103,6 +108,10 @@ public:
 
 	/** Worker-thread side of opening or refreshing a page. */
 	void LoadPage(BrowserPage *page, bool refresh);
+	/** Commit ListView changes on the real PAF UI frame; I/O is done by LoadJob. */
+	void CommitLoad(BrowserPage *page, fs::EntryList *fresh, int32_t result);
+	bool AnimateRows(paf::ui::ListView *list) const;
+	void UpdateRetired();
 
 	/** Worker-thread side of a file operation. */
 	void RunOperation();
@@ -122,6 +131,7 @@ public:
 	void OnSearch();
 	void JumpTo(bool end);
 	void OnSelectButton();
+	void ApplySelectButton();
 	void SelectAll();
 	void ToggleSearch();
 	void SetSearchVisible(bool visible);
@@ -140,6 +150,7 @@ private:
 
 	void PushPage(const paf::string &path, bool forceDecrypt = false, bool ownsPsarc = false);
 	bool PopPage();
+	void FreePage(BrowserPage *page);
 	void RestoreListGeometry(BrowserPage *page);
 	void Refresh();
 	BrowserPage *Top() { return m_pages.back(); }
@@ -157,6 +168,8 @@ private:
 	void ReloadRoot();
 	void OnOptions();
 	void OnItemDecide(paf::ui::Widget *wdg);
+	void RequestItemDecide(int32_t index);
+	void ApplyItemDecide(int32_t index);
 	void OnItemFocus(paf::ui::Widget *wdg);
 	void OnMarkToggle(int32_t index);
 	void ApplyMarkToggle(int32_t index);
@@ -208,6 +221,11 @@ private:
 	int32_t m_markIndex;
 	bool m_selectAllPending;
 	BrowserPage *m_selectAllPage;
+	bool m_itemPending;
+	BrowserPage *m_itemPage;
+	int32_t m_itemIndex;
+	bool m_optionsPending;
+	bool m_selectButtonPending;
 	paf::ui::Widget *m_musicIndicator;
 	paf::ui::Widget *m_alphaIndex;
 	paf::ui::Widget *m_alphaBubble;
@@ -230,6 +248,8 @@ private:
 	uint32_t m_iconCount;
 
 	paf::vector<BrowserPage *> m_pages;
+	paf::vector<BrowserPage *> m_retiredPages;
+	uint32_t m_transitionFrames;
 	paf::vector<Action> m_optionActions;
 
 	paf::vector<paf::string> m_clipboard;

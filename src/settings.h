@@ -27,6 +27,7 @@ namespace settings {
 		int32_t fontSize;        // 0 small, 1 normal (original), 2 large
 		int32_t autoDecrypt;     // mount protected application data automatically
 		int32_t sortMode;        // 0 name, 1 date, 2 type
+		int32_t navigation3D;    // 1 original Vita 3D, 0 simple fade
 	};
 
 	float FileFontSize();

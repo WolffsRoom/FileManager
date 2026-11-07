@@ -95,6 +95,9 @@
   <string src="Normal" id="msg_font_normal" />
   <string src="Large" id="msg_font_large" />
   <string src="Decrypt automatically" id="msg_set_auto_decrypt" />
+  <string src="Navigation animation" id="msg_set_navigation" />
+  <string src="Native 3D (default)" id="msg_navigation_native" />
+  <string src="Simple fade" id="msg_navigation_simple" />
   <string src="Disabled" id="msg_disabled" />
   <string src="Enabled" id="msg_enabled" />
   <string src="Language" id="msg_set_language" />

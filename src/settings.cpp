@@ -12,7 +12,7 @@ using namespace paf;
 
 namespace {
 
-	settings::Config s_config = { 0, settings::View_List, 0, 0, -1, 1, 1, 0 };
+	settings::Config s_config = { 0, settings::View_List, 0, 0, -1, 1, 1, 0, 1 };
 
 	const theme::Info k_themes[] = {
 		{ msg_theme_default,  { 1.00f, 1.00f, 1.00f }, { 1.00f, 1.00f, 1.00f } },
@@ -71,7 +71,7 @@ void settings::Load()
 		return;
 	}
 
-	char buf[128];
+	char buf[256];
 	int32_t size = sceIoRead(fd, buf, sizeof(buf) - 1);
 	sceIoClose(fd);
 	if (size <= 0)
@@ -146,6 +146,12 @@ void settings::Load()
 		int32_t v = atoi(p + 5);
 		if (v >= 0 && v <= 2) s_config.sortMode = v;
 	}
+	p = strstr(buf, "navigation_3d=");
+	if (p)
+	{
+		int32_t v = atoi(p + 14);
+		if (v == 0 || v == 1) s_config.navigation3D = v;
+	}
 }
 
 void settings::Save()
@@ -155,10 +161,10 @@ void settings::Save()
 	{
 		return;
 	}
-	char buf[160];
-	int32_t n = snprintf(buf, sizeof(buf), "theme=%d\nview=%d\nlanguage=%d\nselect=%d\nusb_device=%d\nfont=%d\nauto_decrypt=%d\nsort=%d\n",
+	char buf[256];
+	int32_t n = snprintf(buf, sizeof(buf), "theme=%d\nview=%d\nlanguage=%d\nselect=%d\nusb_device=%d\nfont=%d\nauto_decrypt=%d\nsort=%d\nnavigation_3d=%d\n",
 		(int)s_config.theme, (int)s_config.view, (int)s_config.language, (int)s_config.selectFunction,
-		(int)s_config.usbDevice, (int)s_config.fontSize, (int)s_config.autoDecrypt, (int)s_config.sortMode);
+		(int)s_config.usbDevice, (int)s_config.fontSize, (int)s_config.autoDecrypt, (int)s_config.sortMode, (int)s_config.navigation3D);
 	sceIoWrite(fd, buf, n);
 	sceIoClose(fd);
 }

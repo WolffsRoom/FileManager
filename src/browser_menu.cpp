@@ -176,7 +176,10 @@ namespace {
 
 	void BackgroundTask(void *userdata)
 	{
-		reinterpret_cast<BrowserMenu *>(userdata)->UpdateBackground();
+		BrowserMenu *menu = reinterpret_cast<BrowserMenu *>(userdata);
+		if (!menu) return;
+		menu->UpdateBackground();
+		menu->UpdateRetired();
 	}
 
 	void AlphaIndexTask(void *userdata)
@@ -205,7 +208,7 @@ namespace {
 }
 
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_inputAction(Action_Rename),
-	m_iconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
+	m_iconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_transitionFrames(0), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -233,7 +236,7 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 	}, this);
 
 	m_optionsButton = m_root->FindChild(button_options_page_browser);
-	m_optionsButton->SetKeycode(inputdevice::pad::Data::PAD_MENU);
+	m_optionsButton->SetKeycode(inputdevice::pad::Data::PAD_START);
 	m_optionsButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
@@ -275,9 +278,9 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 		reinterpret_cast<BrowserMenu *>(userdata)->OnSelectButton();
 	}, this);
 
-	// Start opens search; L and R jump to the first and last item.
+	// Triangle opens search; L and R jump to the first and last item.
 	ui::Widget *startButton = m_root->FindChild(button_start_page_browser);
-	startButton->SetKeycode(inputdevice::pad::Data::PAD_START);
+	startButton->SetKeycode(inputdevice::pad::Data::PAD_MENU);
 	startButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
@@ -298,7 +301,7 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 		reinterpret_cast<BrowserMenu *>(userdata)->JumpTo(true);
 	}, this);
 
-	// Lower-right corner always opens Options. Triangle uses the same action.
+	// Lower-right corner and Start open Options; Triangle searches.
 	m_searchButton = m_root->FindChild(button_search_page_browser);
 	m_searchButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
@@ -387,8 +390,18 @@ BrowserMenu::~BrowserMenu()
 	if (usb::IsActive()) usb::Stop();
 	// Index worker not registered.
 	common::MainThreadCallList::Unregister(BackgroundTask, this);
-	while (PopPage())
+	// Force immediate cleanup on shutdown, including still-animating pages.
+	while (!m_pages.empty())
 	{
+		BrowserPage *page = m_pages.back();
+		m_pages.pop_back();
+		FreePage(page);
+	}
+	while (!m_retiredPages.empty())
+	{
+		BrowserPage *page = m_retiredPages.back();
+		m_retiredPages.pop_back();
+		FreePage(page);
 	}
 	g_appPlugin->PageClose(page_browser, Plugin::PageCloseParam());
 }
@@ -589,6 +602,7 @@ void BrowserMenu::UpdateFtpIndicator()
 
 void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool ownsPsarc)
 {
+	if (m_transitionFrames && !m_pages.empty()) return;
 	Plugin::TemplateOpenParam tmpParam;
 	paf::string physicalPath = path;
 	paf::string logicalPath = path;
@@ -604,9 +618,19 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 			logicalPath += path.c_str() + current->path.size();
 		}
 
-		if ((forceDecrypt || settings::Get().autoDecrypt) && pfsIsProtectedContainer(current->logicalPath.c_str()) && pfsShouldMount(path.c_str()))
+		// Manual Open decrypted is not gated by a sce_pfs marker; the old
+		// condition skipped valid game containers without that directory.
+		const bool supportedPfsRoot = pfsIsProtectedContainer(current->logicalPath.c_str()) != 0;
+		if (forceDecrypt && !supportedPfsRoot)
+		{
+			dialog::OpenError(g_appPlugin, SCE_ERROR_ERRNO_EINVAL);
+			return;
+		}
+		if (supportedPfsRoot && (forceDecrypt ||
+			(settings::Get().autoDecrypt && pfsShouldMount(path.c_str()))))
 		{
 			int32_t mountResult = pfsMount(path.c_str());
+			// VitaShell patch fallback: use the base game mount for this title.
 			if (mountResult < 0 &&
 				(!strncasecmp(current->logicalPath.c_str(), "ux0:patch", 9) ||
 				 !strncasecmp(current->logicalPath.c_str(), "grw0:patch", 10)))
@@ -617,10 +641,17 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 				if (mountResult < 0)
 					mountResult = pfsMount((paf::string("gro0:app/") + title).c_str());
 			}
-			if (mountResult >= 0)
+			if (mountResult >= 0 && pfsMountPoint()[0])
 			{
 				physicalPath = pfsMountPoint();
 				ownsMount = true;
+			}
+			else if (forceDecrypt)
+			{
+				// Never pretend that an unsuccessful PFS mount is decrypted.
+				dialog::OpenError(g_appPlugin,
+					mountResult < 0 ? mountResult : SCE_ERROR_ERRNO_EINVAL);
+				return;
 			}
 		}
 	}
@@ -642,6 +673,7 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	page->cellCount = 0;
 	page->focused = -1;
 	page->loaded = false;
+	page->retireFrames = 0;
 
 	g_appPlugin->TemplateOpen(m_browserRoot, template_list_view_generic, tmpParam);
 	page->list = static_cast<ui::ListView *>(m_browserRoot->GetChild(m_browserRoot->GetChildrenNum() - 1));
@@ -651,16 +683,26 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	page->list->SetCellSizeDefault(0, cellSize);
 	page->list->SetSegmentLayoutType(0, ui::ListView::LAYOUT_TYPE_LIST);
 
-	// Only the newest folder may be drawn. The old 3D transition re-showed
-	// the parent while another list was already displayed, leaving layers
-	// overlapped after back -> enter. A short native fade is stable.
+	const bool native3D = settings::Get().navigation3D != 0 && !m_pages.empty();
+	// Hide all grandparent lists; keep only the immediate parent as the
+	// 3D background. The old code re-showed every page and left ghost lists.
 	for (uint32_t i = 0; i < m_pages.size(); ++i)
 	{
-		m_pages.at(i)->list->SetActivate(false);
-		m_pages.at(i)->list->Hide(common::transition::Type_Reset);
+		BrowserPage *previous = m_pages.at(i);
+		previous->list->SetActivate(false);
+		if (native3D && i + 1 == m_pages.size())
+		{
+			RestoreListGeometry(previous);
+			previous->list->Show(common::transition::Type_3D_SlideToBack1);
+		}
+		else
+			previous->list->Hide(common::transition::Type_Reset);
 	}
-	page->list->SetTransitionComplete(true);
-	page->list->Show(common::transition::Type_FadeinFast);
+	// Do not expose a freshly created PAF list until its cells are committed
+	// on the real UI thread. Otherwise the factory may run on the worker.
+	page->list->SetActivate(false);
+	page->list->Hide(common::transition::Type_Reset);
+	if (native3D) m_transitionFrames = 20;
 
 	m_pages.push_back(page);
 	UpdateChrome();
@@ -670,66 +712,85 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	Enqueue(new LoadJob(this, page, false));
 }
 
-bool BrowserMenu::PopPage()
+void BrowserMenu::FreePage(BrowserPage *page)
 {
-	if (m_pages.empty())
+	if (!page) return;
+	if (page->list)
 	{
-		return false;
+		page->list->SetName(static_cast<uint32_t>(0));
+		page->list->SetActivate(false);
+		page->list->Hide(common::transition::Type_Reset);
+		page->list->DestroyWidget();
 	}
-
-	bool isLast = m_pages.size() == 1;
-	BrowserPage *page = m_pages.back();
-
-	// The worker fills the entries of this page, so wait for it before freeing them.
-	while (!page->loaded)
-	{
-		thread::Sleep(10);
-	}
-
-	// TemplateOpen created a real child widget. Explicitly release it on pop.
-	page->list->SetName(static_cast<uint32_t>(0));
-	page->list->SetActivate(false);
-	page->list->Hide(common::transition::Type_Reset);
-	page->list->DestroyWidget();
-
 	fs::FreeList(&page->all);
 	page->entries.clear();
-	if (page->ownsMount)
-	{
-		pfsUmount();
-	}
-	if (page->ownsPsarc)
-	{
-		psarcClose();
-	}
+	if (page->ownsMount) pfsUmount();
+	if (page->ownsPsarc) psarcClose();
 	delete page;
+}
+
+void BrowserMenu::UpdateRetired()
+{
+	if (m_transitionFrames > 0) --m_transitionFrames;
+	for (uint32_t i = 0; i < m_retiredPages.size();)
+	{
+		BrowserPage *old = m_retiredPages.at(i);
+		if (old->retireFrames > 0) --old->retireFrames;
+		if (old->retireFrames == 0)
+		{
+			FreePage(old);
+			m_retiredPages.erase(m_retiredPages.begin() + i);
+		}
+		else ++i;
+	}
+}
+
+bool BrowserMenu::PopPage()
+{
+	if (m_pages.empty()) return false;
+	BrowserPage *outgoing = m_pages.back();
+	if (!outgoing->loaded) return false;
+	const bool isLast = m_pages.size() == 1;
+	const bool native3D = !isLast && settings::Get().navigation3D != 0;
 	m_pages.pop_back();
+
+	if (native3D)
+	{
+		// Keep the front page alive until its reverse 3D animation finishes.
+		// Destroying the widget inside this animation was the original overlap
+		// and dangling-callback regression.
+		outgoing->list->SetActivate(false);
+		common::transition::DoReverse(-100.0f, outgoing->list,
+			common::transition::Type_3D_SlideFromFront, true, false);
+		outgoing->retireFrames = 24;
+		m_retiredPages.push_back(outgoing);
+		m_transitionFrames = 24;
+	}
+	else
+		FreePage(outgoing);
 
 	if (!isLast)
 	{
 		BrowserPage *current = m_pages.back();
-		const int32_t opened = current->opened;
+		const int32_t wasOpened = current->opened;
 		current->opened = -1;
-		SetRowIcon(current, opened);
-		// Preserve one ListView per stack page. Destroying and recreating a
-		// cached parent every time led to duplicate PAF widgets and stale events.
+		SetRowIcon(current, wasOpened);
 		for (uint32_t i = 0; i + 1 < m_pages.size(); ++i)
 			m_pages.at(i)->list->Hide(common::transition::Type_Reset);
 		RestoreListGeometry(current);
-		current->list->SetTransitionComplete(true);
-		current->list->Show(common::transition::Type_FadeinFast);
-		current->list->SetActivate(true);
-		UpdateChrome();
-		if (current->entries.empty())
+		if (native3D)
 		{
-			m_emptyText->Show(common::transition::Type_Reset);
+			// The parent is behind the outgoing page and returns to full size.
+			current->list->Hide(common::transition::Type_3D_SlideToBack1);
+			current->list->Show(common::transition::Type_Reset);
 		}
 		else
-		{
-			m_emptyText->Hide(common::transition::Type_Reset);
-		}
+			current->list->Show(common::transition::Type_FadeinFast);
+		current->list->SetActivate(true);
+		UpdateChrome();
+		if (current->entries.empty()) m_emptyText->Show(common::transition::Type_Reset);
+		else m_emptyText->Hide(common::transition::Type_Reset);
 	}
-
 	return true;
 }
 
@@ -750,24 +811,60 @@ void BrowserMenu::Refresh()
 	Enqueue(new LoadJob(this, page, true));
 }
 
+bool BrowserMenu::AnimateRows(ui::ListView *list) const
+{
+	for (uint32_t i = 0; i < m_pages.size(); ++i)
+		if (m_pages.at(i)->list == list)
+			return m_pages.at(i)->path.empty(); // only the small device menu
+	return false;
+}
+
 void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 {
-	// Stage I/O outside the main-thread UI lock. Old Entry pointers must stay
-	// valid until the ListView has discarded every old cell.
+	// Worker thread does filesystem I/O only. Previously InsertCell/DeleteCell,
+	// animations and PAF widget creation ran on FM::JobQueue under a mutex.
+	// PAF still saw a foreign thread and crashed in Music and Select.
 	fs::EntryList fresh;
 	const uint32_t startTime = sceKernelGetProcessTimeLow();
 	int32_t ret = 0;
-	if (page->path.empty())
-		fs::ListRoot(&fresh);
-	else if (fs::IsRootStyle(page->path))
-		fs::ListSystem(&fresh);
-	else
-		ret = fs::ListDirectory(page->path.c_str(), &fresh);
+	if (page->path.empty()) fs::ListRoot(&fresh);
+	else if (fs::IsRootStyle(page->path)) fs::ListSystem(&fresh);
+	else ret = fs::ListDirectory(page->path.c_str(), &fresh);
 	PerfLog(page->path.c_str(), fresh.size(), sceKernelGetProcessTimeLow() - startTime);
 
-	thread::RMutex::MainThreadMutex()->Lock();
-	// The page is still owned by the stack until loaded is set. Retain the old
-	// data during DeleteCell, then swap the staged list in a single UI update.
+	struct PendingLoad
+	{
+		BrowserMenu *menu;
+		BrowserPage *page;
+		fs::EntryList fresh;
+		int32_t result;
+	};
+	PendingLoad *state = new (std::nothrow) PendingLoad();
+	if (!state)
+	{
+		fs::FreeList(&fresh);
+		return;
+	}
+	state->menu = this;
+	state->page = page;
+	state->fresh = fresh;
+	state->result = ret;
+	DeferCall([](void *userdata)
+	{
+		PendingLoad *state = static_cast<PendingLoad *>(userdata);
+		if (!state) return;
+		bool stillOwned = false;
+		for (uint32_t i = 0; i < state->menu->m_pages.size(); ++i)
+			if (state->menu->m_pages.at(i) == state->page) { stillOwned = true; break; }
+		if (stillOwned) state->menu->CommitLoad(state->page, &state->fresh, state->result);
+		fs::FreeList(&state->fresh);
+		delete state;
+	}, state);
+}
+
+void BrowserMenu::CommitLoad(BrowserPage *page, fs::EntryList *fresh, int32_t ret)
+{
+	// Runs on PAF MainThreadCallList, after the previous button callback.
 	paf::string previous;
 	if (page->focused >= 0 && page->focused < (int32_t)page->entries.size())
 		previous = page->entries.at(page->focused)->name;
@@ -778,24 +875,25 @@ void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 	}
 	page->entries.clear();
 	fs::FreeList(&page->all);
-	page->all = fresh;
+	page->all = *fresh;
+	fresh->clear(); // ownership of Entry* transferred
 	page->entries = page->all;
 	page->focused = -1;
 
-	if (page == m_pages.back() && !m_focusAfterRefresh.empty())
+	if (!m_pages.empty() && page == m_pages.back() && !m_focusAfterRefresh.empty())
 	{
 		previous = m_focusAfterRefresh;
 		m_focusAfterRefresh.clear();
 	}
 	if (!previous.empty())
-	{
 		for (uint32_t i = 0; i < page->entries.size(); ++i)
 			if (!strcasecmp(page->entries.at(i)->name.c_str(), previous.c_str()))
 			{ page->focused = i; break; }
-	}
+
 	if (ret < 0)
 	{
-		if (page == m_pages.back()) dialog::OpenError(g_appPlugin, ret);
+		if (!m_pages.empty() && page == m_pages.back())
+			dialog::OpenError(g_appPlugin, ret);
 	}
 	else if (!page->entries.empty())
 	{
@@ -804,15 +902,23 @@ void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 		if (page->focused >= 0)
 			page->list->SetFocus(0, page->focused, ui::ListView::FOCUS_ALIGN_TYPE_CENTER, NULL);
 	}
-	if (page == m_pages.back())
+	if (!m_pages.empty() && page == m_pages.back())
 	{
 		m_busy->Stop();
 		if (ret >= 0 && page->entries.empty())
 			m_emptyText->Show(common::transition::Type_Reset);
 		else m_emptyText->Hide(common::transition::Type_Reset);
+		if (!page->loaded)
+		{
+			RestoreListGeometry(page);
+			const bool native3D = settings::Get().navigation3D && m_pages.size() > 1;
+			page->list->Show(native3D
+				? common::transition::Type_3D_SlideFromFront
+				: common::transition::Type_FadeinFast);
+			page->list->SetActivate(true);
+		}
 	}
 	page->loaded = true;
-	thread::RMutex::MainThreadMutex()->Unlock();
 }
 
 intrusive_ptr<graph::Surface> BrowserMenu::Icon(uint32_t hash)
@@ -1061,7 +1167,7 @@ void BrowserMenu::OnBack()
 {
 	// The button itself belongs to a PAF dispatch in progress. Destroying the
 	// outgoing ListView within that callback can invalidate its current handler.
-	if (m_backPending || m_pages.size() <= 1 || !Top()->loaded) return;
+	if (m_backPending || m_transitionFrames || m_pages.size() <= 1 || !Top()->loaded) return;
 	m_backPending = true;
 	m_backPage = Top();
 	DeferCall([](void *userdata)
@@ -1081,6 +1187,18 @@ void BrowserMenu::DoActionPublic(Action action)
 }
 
 void BrowserMenu::OnSelectButton()
+{
+	if (m_selectButtonPending) return;
+	m_selectButtonPending = true;
+	DeferCall([](void *userdata)
+	{
+		BrowserMenu *menu = static_cast<BrowserMenu *>(userdata);
+		menu->m_selectButtonPending = false;
+		if (!menu->m_pages.empty()) menu->ApplySelectButton();
+	}, this);
+}
+
+void BrowserMenu::ApplySelectButton()
 {
 	if (dialog::IsActive())
 	{
@@ -1166,10 +1284,7 @@ void BrowserMenu::OnForward()
 		return;
 	}
 	fs::Entry *entry = page->entries.at(page->focused);
-	if (entry->isDir)
-	{
-		PushPage(fs::IsRootStyle(page->path) ? entry->target : fs::Join(page->path, entry->name));
-	}
+	if (entry->isDir) RequestItemDecide(page->focused);
 }
 
 void BrowserMenu::OnItemFocus(ui::Widget *wdg)
@@ -1184,17 +1299,39 @@ void BrowserMenu::OnItemFocus(ui::Widget *wdg)
 
 void BrowserMenu::OnItemDecide(ui::Widget *wdg)
 {
+	if (m_pages.empty() || !wdg || !Top()->loaded) return;
 	BrowserPage *page = Top();
-	if (!page->loaded)
-	{
-		return;
-	}
-
 	ui::Widget *owner = wdg;
 	while (owner && owner != page->list) owner = owner->GetParent();
 	if (owner != page->list) return;
 	int32_t index = wdg->GetName().GetIDHash();
-	if (index < 0 || index >= (int32_t)page->entries.size()) return;
+	RequestItemDecide(index);
+}
+
+void BrowserMenu::RequestItemDecide(int32_t index)
+{
+	if (m_itemPending || m_pages.empty() || !Top()->loaded ||
+		index < 0 || index >= (int32_t)Top()->entries.size()) return;
+	m_itemPending = true;
+	m_itemPage = Top();
+	m_itemIndex = index;
+	DeferCall([](void *userdata)
+	{
+		BrowserMenu *menu = static_cast<BrowserMenu *>(userdata);
+		BrowserPage *expected = menu->m_itemPage;
+		const int32_t index = menu->m_itemIndex;
+		menu->m_itemPending = false;
+		menu->m_itemPage = NULL;
+		if (!menu->m_pages.empty() && menu->Top() == expected &&
+			expected->loaded && !menu->m_transitionFrames)
+			menu->ApplyItemDecide(index);
+	}, this);
+}
+
+void BrowserMenu::ApplyItemDecide(int32_t index)
+{
+	BrowserPage *page = Top();
+	if (!page->loaded || index < 0 || index >= (int32_t)page->entries.size()) return;
 	page->focused = index;
 	fs::Entry *entry = page->entries.at(index);
 	if (entry->isShortcut && !entry->target.empty())
@@ -1383,12 +1520,15 @@ void BrowserMenu::ApplySelectAll()
 
 void BrowserMenu::OnOptions()
 {
-	BrowserPage *page = Top();
-	if (!page->loaded || dialog::IsActive())
+	if (m_optionsPending || m_pages.empty() || !Top()->loaded) return;
+	m_optionsPending = true;
+	DeferCall([](void *userdata)
 	{
-		return;
-	}
-	OpenOptionMenu(false);
+		BrowserMenu *menu = static_cast<BrowserMenu *>(userdata);
+		menu->m_optionsPending = false;
+		if (menu->m_pages.empty() || !menu->Top()->loaded) return;
+		menu->OpenOptionMenu(false);
+	}, this);
 }
 
 void BrowserMenu::OpenOptionMenu(bool submenu)
@@ -1457,7 +1597,8 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		{
 			m_optionActions.push_back(Action_Rename);
 		}
-		if (target && target->isDir && !anyMarked && pfsShouldMount(fs::Join(page->path, target->name).c_str()))
+		if (target && target->isDir && !anyMarked &&
+			pfsIsProtectedContainer(page->logicalPath.c_str()))
 		{
 			m_optionActions.push_back(Action_Decrypt);
 		}

@@ -11,8 +11,12 @@ if ($rco -match '<plane texture="tex_new_theme" id="plane_theme_preview">') {
 if ($settings -notmatch 'themePreview->SetTexture\(g_appPlugin->GetTexture\(tex_new_theme\)') {
     throw 'theme texture is not scoped to the Themes screen'
 }
-if ($browser -notmatch 'Type_FadeinFast' -or $browser -notmatch 'm_pages.at\(i\)->list->Hide\(common::transition::Type_Reset\)' -or $browser -match 'Type_3D_SlideToBack1') {
-    throw 'folder navigation must hide all inactive lists and use native fade during the stability fix'
+if ($browser -notmatch 'Type_3D_SlideToBack1' -or
+    $browser -notmatch 'Type_3D_SlideFromFront' -or
+    $browser -notmatch 'DoReverse\(-100.0f, outgoing->list' -or
+    $browser -notmatch 'm_retiredPages.push_back\(outgoing\)' -or
+    $browser -notmatch 'Type_FadeinFast') {
+    throw 'navigating forward/back must support native Vita 3D and simple fade'
 }
 if ($browser -match 'Type_SlideFromRight2' -or $browser -match 'Type_SlideFromLeft2') {
     throw 'generic lateral transitions still replace the native folder navigation'

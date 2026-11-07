@@ -24,6 +24,7 @@ public:
 		Level_Select,
 		Level_UsbDevice,
 		Level_AutoDecrypt,
+		Level_Navigation,
 		Level_Shortcuts,
 		Level_Commands
 	};

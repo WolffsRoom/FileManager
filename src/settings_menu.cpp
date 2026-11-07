@@ -17,25 +17,26 @@ using namespace paf;
 namespace {
 
 	// Main level rows
-	enum MainRow { Main_Themes, Main_FontSize, Main_Language, Main_Select, Main_AutoDecrypt, Main_Shortcuts, Main_Commands, Main_About, Main_Count };
+	enum MainRow { Main_Themes, Main_FontSize, Main_Language, Main_Select, Main_AutoDecrypt, Main_Navigation, Main_Shortcuts, Main_Commands, Main_About, Main_Count };
 
-	const uint32_t k_mainLabels[Main_Count] = { msg_set_themes, msg_set_font_size, msg_set_language, msg_set_select, msg_set_auto_decrypt, msg_set_shortcuts, msg_set_commands, msg_set_about };
-	const uint32_t k_mainIcons[Main_Count] = { tex_new_theme, tex_ui_text, tex_ui_text, tex_ui_ftp, tex_ui_encrypted, tex_ui_bookmark, tex_new_gears, tex_about };
+	const uint32_t k_mainLabels[Main_Count] = { msg_set_themes, msg_set_font_size, msg_set_language, msg_set_select, msg_set_auto_decrypt, msg_set_navigation, msg_set_shortcuts, msg_set_commands, msg_set_about };
+	const uint32_t k_mainIcons[Main_Count] = { tex_new_theme, tex_ui_text, tex_ui_text, tex_ui_ftp, tex_ui_encrypted, tex_new_arrow, tex_ui_bookmark, tex_new_gears, tex_about };
 
 	const uint32_t k_languages[] = { msg_lang_system, msg_lang_ptbr, msg_lang_en, msg_lang_es, msg_lang_fr, msg_lang_de };
 	const uint32_t k_selectFunctions[] = { msg_ftp_server, msg_qr_code, msg_usb };
 	const uint32_t k_usbDevices[] = { msg_usb_memory_card, msg_usb_game_card, msg_usb_sd2vita, msg_usb_psvsd };
 	const uint32_t k_fontSizes[] = { msg_font_small, msg_font_normal, msg_font_large };
 	const uint32_t k_enabled[] = { msg_disabled, msg_enabled };
+	const uint32_t k_navigation[] = { msg_navigation_simple, msg_navigation_native };
 
 	// Button, then what it does
 	const uint32_t k_commands[][3] = {
 		{ msg_btn_cross, msg_cmd_open, tex_button_cross },
 		{ msg_btn_circle, msg_cmd_back, tex_button_circle },
-		{ msg_btn_triangle, msg_cmd_options, tex_button_triangle },
+		{ msg_btn_triangle, msg_cmd_settings, tex_button_triangle },
 		{ msg_btn_square, msg_cmd_mark, tex_button_square },
 		{ msg_btn_select, msg_cmd_select, tex_button_select },
-		{ msg_btn_start, msg_cmd_settings, tex_button_start },
+		{ msg_btn_start, msg_cmd_options, tex_button_start },
 		{ msg_btn_l, msg_cmd_first, tex_button_l },
 		{ msg_btn_r, msg_cmd_last, tex_button_r },
 		{ msg_btn_left, msg_cmd_parent, tex_button_left },
@@ -195,6 +196,7 @@ int32_t SettingsMenu::RowCount(Level level)
 	case Level_Select: return 3;
 	case Level_UsbDevice: return 4;
 	case Level_AutoDecrypt: return 2;
+	case Level_Navigation: return 2;
 	case Level_Shortcuts: return m_shortcuts.size();
 	case Level_Commands: return k_commandCount;
 	}
@@ -238,7 +240,7 @@ void SettingsMenu::ShowLevel(Level level)
 		}
 	}
 
-	static const uint32_t k_titles[] = { msg_opt_settings, msg_set_themes, msg_set_font_size, msg_set_language, msg_set_select, msg_usb_device, msg_set_auto_decrypt, msg_set_shortcuts, msg_set_commands };
+	static const uint32_t k_titles[] = { msg_opt_settings, msg_set_themes, msg_set_font_size, msg_set_language, msg_set_select, msg_usb_device, msg_set_auto_decrypt, msg_set_navigation, msg_set_shortcuts, msg_set_commands };
 	m_root->FindChild(text_top)->SetString(Str(k_titles[level]));
 
 	if (level == Level_Shortcuts && m_shortcuts.empty())
@@ -263,6 +265,7 @@ bool SettingsMenu::IsSelected(int32_t row)
 	case Level_Select: return c.selectFunction == row;
 	case Level_UsbDevice: return c.usbDevice == row;
 	case Level_AutoDecrypt: return c.autoDecrypt == row;
+	case Level_Navigation: return c.navigation3D == row;
 	case Level_Shortcuts: return row >= 0 && row < (int32_t)m_shortcuts.size() &&
 		shortcuts::Contains(m_shortcuts.at(row));
 	default: return false;
@@ -300,6 +303,7 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		else if (row == Main_Select) icon = c.selectFunction == 2 ? tex_ui_usb :
 			(c.selectFunction == 1 ? tex_ui_qr : tex_ui_ftp);
 		else if (row == Main_AutoDecrypt) icon = c.autoDecrypt ? tex_ui_unlock : tex_ui_locked;
+		else if (row == Main_Navigation) icon = tex_new_arrow;
 		else if (row == Main_Shortcuts) icon = tex_ui_favorite_folder;
 		if (row == Main_Themes) info = Str(theme::At(c.theme).nameHash);
 		else if (row == Main_FontSize) info = Str(k_fontSizes[c.fontSize]);
@@ -314,6 +318,7 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 			}
 		}
 		else if (row == Main_AutoDecrypt) info = Str(k_enabled[c.autoDecrypt]);
+		else if (row == Main_Navigation) info = Str(k_navigation[c.navigation3D]);
 		else if (row == Main_Shortcuts) info = Wide(common::FormatString("%u", (uint32_t)shortcuts::List().size()).c_str());
 		break;
 	case Level_Themes:
@@ -339,6 +344,10 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	case Level_AutoDecrypt:
 		label = Str(k_enabled[row]);
 		icon = row ? tex_ui_unlock : tex_ui_locked;
+		break;
+	case Level_Navigation:
+		label = Str(k_navigation[row]);
+		icon = tex_new_arrow;
 		break;
 	case Level_Shortcuts:
 		label = Wide(m_shortcuts.at(row).c_str());
@@ -436,6 +445,7 @@ void SettingsMenu::OnRow(int32_t row)
 		else if (row == Main_Language) QueueLevel(Level_Language);
 		else if (row == Main_Select) QueueLevel(Level_Select);
 		else if (row == Main_AutoDecrypt) QueueLevel(Level_AutoDecrypt);
+		else if (row == Main_Navigation) QueueLevel(Level_Navigation);
 		else if (row == Main_Shortcuts) QueueLevel(Level_Shortcuts);
 		else if (row == Main_Commands) QueueLevel(Level_Commands);
 		else new AboutMenu(m_root);
@@ -462,6 +472,9 @@ void SettingsMenu::OnRow(int32_t row)
 		break;
 	case Level_AutoDecrypt:
 		c.autoDecrypt = row;
+		break;
+	case Level_Navigation:
+		c.navigation3D = row;
 		break;
 	case Level_Shortcuts:
 		if (row >= 0 && row < (int32_t)m_shortcuts.size())
