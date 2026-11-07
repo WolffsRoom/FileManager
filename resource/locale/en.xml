@@ -119,6 +119,7 @@
     <string src="Restart" id="msg_power_restart" />
     <string src="Power off" id="msg_power_off" />
     <string src="USB connected." id="msg_usb_connected" />
+    <string src="Starting USB connection..." id="msg_usb_starting" />
     <string src="Eject on the computer before disconnecting." id="msg_usb_eject" />
     <string src="Disconnect" id="msg_usb_disconnect" />
   <string src="USB Device" id="msg_usb_device" />

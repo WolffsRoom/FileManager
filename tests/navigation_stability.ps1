@@ -9,8 +9,11 @@ $browserHeader = Get-Content -Raw "$PSScriptRoot\..\src\browser_menu.h"
 if ($browserHeader -notmatch 'Stop\(StopParam') {
     throw 'recycled list rows do not reset their Popup1 transition'
 }
-if ($browserCpp -notmatch 'RestoreListGeometry\(current\)' -or $browserCpp -notmatch 'RecreateList\(current\)' -or $browserCpp -notmatch 'DestroyWidget\(\)') {
-    throw 'back navigation does not restore canonical list geometry'
+if ($browserCpp -notmatch 'RestoreListGeometry\(current\)' -or $browserCpp -notmatch 'current->list->Show\(common::transition::Type_FadeinFast\)' -or $browserCpp -notmatch 'page->list->DestroyWidget\(\)') {
+    throw 'back navigation does not reuse and restore the parent list safely'
+}
+if ($browserCpp -match 'RecreateList\(current\)' -or $browserCpp -match 'Type_3D_SlideToBack1') {
+    throw 'old list recreation or overlapping 3D transition is still used'
 }
 if ($browserCpp -notmatch 'OptionMenu::Create') {
     throw 'OptionMenu creation is not guarded'

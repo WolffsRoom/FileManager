@@ -20,5 +20,7 @@ private:
     bool m_closing;
     int32_t m_stopResult;
     int32_t m_startResult;
+    usb::Device m_device;
+    void StartConnection();
 };
 #endif

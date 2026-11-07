@@ -117,6 +117,7 @@
     <string src="Redémarrer" id="msg_power_restart" />
     <string src="Éteindre" id="msg_power_off" />
     <string src="USB connecté." id="msg_usb_connected" />
+    <string src="Connexion USB en cours..." id="msg_usb_starting" />
     <string src="Éjectez sur l'ordinateur avant de déconnecter." id="msg_usb_eject" />
     <string src="Déconnecter" id="msg_usb_disconnect" />
   <string src="Périphérique USB" id="msg_usb_device" />

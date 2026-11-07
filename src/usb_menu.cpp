@@ -27,7 +27,7 @@ bool UsbMenu::Open(ui::Widget *parentRoot, usb::Device device)
 }
 
 UsbMenu::UsbMenu(ui::Widget *parentRoot, usb::Device device) :
-    m_parentRoot(parentRoot), m_root(NULL), m_closing(false), m_stopResult(0), m_startResult(0)
+    m_parentRoot(parentRoot), m_root(NULL), m_closing(false), m_stopResult(0), m_startResult(0), m_device(device)
 {
     Plugin::PageOpenParam param;
     param.graphics_flag = 0x80;
@@ -64,14 +64,29 @@ UsbMenu::UsbMenu(ui::Widget *parentRoot, usb::Device device) :
             static_cast<UsbMenu *>(userdata)->Disconnect();
         }, this);
 
-    // Read and create all PAF resources before exposing the app's storage.
-    m_startResult = usb::Toggle(device);
+    // Never start a kernel USB session inside a button/PAF widget callback.
+    // The next-frame task runs on the actual PAF main thread.
+    SetText(m_root->FindChild(text_connection_page_ftp),
+        g_appPlugin->GetString(msg_usb_starting));
+    DeferCall([](void *userdata)
+    {
+        static_cast<UsbMenu *>(userdata)->StartConnection();
+    }, this);
+}
+
+void UsbMenu::StartConnection()
+{
+    if (m_closing || !m_root) return;
+    m_startResult = usb::Toggle(m_device);
     if (m_startResult < 0)
     {
         SetText(m_root->FindChild(text_connection_page_ftp),
             g_appPlugin->GetString(msg_usb_failed));
         dialog::OpenError(g_appPlugin, m_startResult);
     }
+    else
+        SetText(m_root->FindChild(text_connection_page_ftp),
+            g_appPlugin->GetString(msg_usb_connected));
 }
 
 UsbMenu::~UsbMenu()
@@ -88,12 +103,12 @@ void UsbMenu::Disconnect()
 {
     if (m_closing) return;
     m_closing = true;
-    m_stopResult = usb::Stop();
     m_root->SetActivate(false);
     DeferCall([](void *ptr)
     {
         UsbMenu *menu = static_cast<UsbMenu *>(ptr);
-        int32_t result = menu->m_stopResult;
+        // Stop the mass-storage service outside the PAF button callback.
+        const int32_t result = usb::Stop();
         delete menu;
         if (result < 0) dialog::OpenError(g_appPlugin, result);
     }, this);

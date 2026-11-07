@@ -22,7 +22,7 @@ Check ($optionMenu -match 'closeParam.fade = false') 'OptionMenu releases its pa
 Check ($browser -match 'OptionMenu::Create') 'Browser bypasses checked option menu factory'
 
 Check ($browser -match 'page->list->DestroyWidget\(\)') 'Closed folder retains its ListView'
-Check ($browser -match 'RecreateList\(current\)') 'Parent list not recreated on back'
+Check ($browser -match 'current->list->Show\(common::transition::Type_FadeinFast\)' -and $browser -notmatch 'RecreateList\(current\)') 'Back should safely reuse the single parent list'
 Check ($browser -match 'm_backPending = true') 'Back may destroy a ListView inside its own button handler'
 Check ($browser -match 'fs::EntryList fresh') 'List refresh is not safely staged'
 Check ($browser -match 'while \(owner && owner != page->list\)') 'Stale row callback can target another page'
@@ -61,7 +61,7 @@ foreach ($lang in @('pt-br','en','es','fr','de')) {
 foreach ($icon in @('turn-off.png','restart.png','standbye.png')) {
     Check (Test-Path (Join-Path $root ('resource/ui/' + $icon))) ('Missing power icon ' + $icon)
 }
-Check ($usbMenu -match 'm_startResult = usb::Toggle\(device\)') 'USB not started after modal creation'
+Check ($usbMenu -match 'm_startResult = usb::Toggle\(m_device\)' -and $usbMenu -match 'DeferCall\(') 'USB not started after modal creation'
 Check ($browser -match 'UsbMenu::Open') 'Select not opening USB modal'
 Check ($usb -match 'sceAppMgrDestroyOtherApp\(') 'USB not preparing mounts'
 Check ($usb -match 'USB_ACTIVE' -and $usb -match 'FM_DATA_DIR "/usb.log"') 'USB phase logging missing'

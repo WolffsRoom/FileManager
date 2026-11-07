@@ -323,3 +323,5 @@ File Manager is possible because of the following developers, libraries, applica
 - **OpenAI Codex** - development support, repository review and release preparation.
 
 All third-party components remain under their respective licenses. File Manager is distributed under the [GNU General Public License v3.0](LICENSE).
+
+Latest hardware follow-up (November 7): [v0.4 crash-fix 2 validation notes](docs/v0.4-test-crash-followup-20261107-2.md).

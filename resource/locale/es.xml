@@ -117,6 +117,7 @@
     <string src="Reiniciar" id="msg_power_restart" />
     <string src="Apagar" id="msg_power_off" />
     <string src="USB conectado." id="msg_usb_connected" />
+    <string src="Iniciando conexión USB..." id="msg_usb_starting" />
     <string src="Expulsa en el ordenador antes de desconectar." id="msg_usb_eject" />
     <string src="Desconectar" id="msg_usb_disconnect" />
   <string src="Dispositivo USB" id="msg_usb_device" />

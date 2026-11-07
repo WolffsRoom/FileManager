@@ -141,7 +141,6 @@ private:
 	void PushPage(const paf::string &path, bool forceDecrypt = false, bool ownsPsarc = false);
 	bool PopPage();
 	void RestoreListGeometry(BrowserPage *page);
-	void RecreateList(BrowserPage *page);
 	void Refresh();
 	BrowserPage *Top() { return m_pages.back(); }
 	void UpdateChrome();
@@ -160,6 +159,8 @@ private:
 	void OnItemDecide(paf::ui::Widget *wdg);
 	void OnItemFocus(paf::ui::Widget *wdg);
 	void OnMarkToggle(int32_t index);
+	void ApplyMarkToggle(int32_t index);
+	void ApplySelectAll();
 	void OnOption(int32_t index);
 	void OnDialog(int32_t buttonCode);
 
@@ -202,6 +203,11 @@ private:
 	bool m_musicShown;
 	bool m_backPending;
 	BrowserPage *m_backPage;
+	bool m_markPending;
+	BrowserPage *m_markPage;
+	int32_t m_markIndex;
+	bool m_selectAllPending;
+	BrowserPage *m_selectAllPage;
 	paf::ui::Widget *m_musicIndicator;
 	paf::ui::Widget *m_alphaIndex;
 	paf::ui::Widget *m_alphaBubble;

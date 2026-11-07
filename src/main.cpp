@@ -16,32 +16,48 @@ Plugin *g_appPlugin = nullptr;
 job::JobQueue *g_jobQueue = nullptr;
 
 namespace {
-	class DeferJob : public job::JobItem
-	{
-	public:
-		DeferJob(void (*fn)(void *), void *obj) : job::JobItem("FM::DeferJob", NULL), m_fn(fn), m_obj(obj) {}
-
-		int32_t Run()
-		{
-			// The worker gets the mutex only once the main thread has left the callback.
-			thread::RMutex::MainThreadMutex()->Lock();
-			m_fn(m_obj);
-			thread::RMutex::MainThreadMutex()->Unlock();
-			return SCE_PAF_OK;
-		}
-
-		void Finish(int32_t result) {}
-
-	private:
-		void (*m_fn)(void *);
-		void *m_obj;
+	// UI callbacks must run on the actual PAF main thread. The old DeferJob
+	// ran on FM::JobQueue, merely locking the main-thread mutex, which is NOT
+	// the same thing and caused widget-event corruption and crashes.
+	struct DeferredUiCall {
+		void (*fn)(void *);
+		void *userdata;
 	};
+	static DeferredUiCall s_uiCalls[128];
+	static uint32_t s_uiCount = 0;
+	static SceUID s_uiMutex = -1;
+
+	void DrainDeferredUi(void *)
+	{
+		if (s_uiMutex < 0) return;
+		DeferredUiCall ready[128];
+		uint32_t count = 0;
+		sceKernelLockMutex(s_uiMutex, 1, NULL);
+		count = s_uiCount;
+		for (uint32_t i = 0; i < count; ++i) ready[i] = s_uiCalls[i];
+		s_uiCount = 0;
+		sceKernelUnlockMutex(s_uiMutex, 1);
+		// Dispatch outside the queue lock, so further DeferCalls run next frame.
+		for (uint32_t i = 0; i < count; ++i)
+			if (ready[i].fn) ready[i].fn(ready[i].userdata);
+	}
 }
 
-void DeferCall(void (*fn)(void *), void *obj)
+void DeferCall(void (*fn)(void *), void *userdata)
 {
-	common::SharedPtr<job::JobItem> param(new DeferJob(fn, obj));
-	g_jobQueue->Enqueue(param);
+	if (!fn || s_uiMutex < 0) return;
+	sceKernelLockMutex(s_uiMutex, 1, NULL);
+	if (s_uiCount < sizeof(s_uiCalls) / sizeof(s_uiCalls[0]))
+	{
+		s_uiCalls[s_uiCount].fn = fn;
+		s_uiCalls[s_uiCount].userdata = userdata;
+		++s_uiCount;
+	}
+	else
+	{
+		sceClibPrintf("[FM] deferred UI queue overflow\n");
+	}
+	sceKernelUnlockMutex(s_uiMutex, 1);
 }
 
 static void PluginStart(Plugin *plugin)
@@ -63,6 +79,9 @@ static void PluginStart(Plugin *plugin)
 	queueOpt.priority = SCE_KERNEL_COMMON_QUEUE_HIGHEST_PRIORITY;
 	queueOpt.stack_size = SCE_KERNEL_256KiB;
 	g_jobQueue = new job::JobQueue("FM::JobQueue", &queueOpt);
+
+	s_uiMutex = sceKernelCreateMutex("FM::UiDeferred", 0, 0, NULL);
+	if (s_uiMutex >= 0) common::MainThreadCallList::Register(DrainDeferredUi, NULL);
 
 	new BrowserMenu();
 }

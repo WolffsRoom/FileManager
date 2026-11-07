@@ -205,7 +205,7 @@ namespace {
 }
 
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_inputAction(Action_Rename),
-	m_iconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
+	m_iconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -651,16 +651,16 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	page->list->SetCellSizeDefault(0, cellSize);
 	page->list->SetSegmentLayoutType(0, ui::ListView::LAYOUT_TYPE_LIST);
 
-	if (!m_pages.empty())
+	// Only the newest folder may be drawn. The old 3D transition re-showed
+	// the parent while another list was already displayed, leaving layers
+	// overlapped after back -> enter. A short native fade is stable.
+	for (uint32_t i = 0; i < m_pages.size(); ++i)
 	{
-		if (m_pages.size() > 1)
-		{
-			BrowserPage *older = m_pages.rbegin()[1];
-			older->list->Hide(common::transition::Type_Reset);
-		}
-		BrowserPage *current = m_pages.back();
-		current->list->Show(common::transition::Type_3D_SlideToBack1);
+		m_pages.at(i)->list->SetActivate(false);
+		m_pages.at(i)->list->Hide(common::transition::Type_Reset);
 	}
+	page->list->SetTransitionComplete(true);
+	page->list->Show(common::transition::Type_FadeinFast);
 
 	m_pages.push_back(page);
 	UpdateChrome();
@@ -708,10 +708,18 @@ bool BrowserMenu::PopPage()
 	if (!isLast)
 	{
 		BrowserPage *current = m_pages.back();
+		const int32_t opened = current->opened;
 		current->opened = -1;
-		RecreateList(current);
-		UpdateChrome();
+		SetRowIcon(current, opened);
+		// Preserve one ListView per stack page. Destroying and recreating a
+		// cached parent every time led to duplicate PAF widgets and stale events.
+		for (uint32_t i = 0; i + 1 < m_pages.size(); ++i)
+			m_pages.at(i)->list->Hide(common::transition::Type_Reset);
 		RestoreListGeometry(current);
+		current->list->SetTransitionComplete(true);
+		current->list->Show(common::transition::Type_FadeinFast);
+		current->list->SetActivate(true);
+		UpdateChrome();
 		if (current->entries.empty())
 		{
 			m_emptyText->Show(common::transition::Type_Reset);
@@ -723,35 +731,6 @@ bool BrowserMenu::PopPage()
 	}
 
 	return true;
-}
-
-void BrowserMenu::RecreateList(BrowserPage *page)
-{
-	if (!page || !page->list) return;
-	// Rebuilding the parent ListView clears the PAF 3D transform left by
-	// Type_3D_SlideToBack1; merely calling Show(Reset) did not clear it.
-	page->list->SetName(static_cast<uint32_t>(0));
-	page->list->SetActivate(false);
-	page->list->Hide(common::transition::Type_Reset);
-	page->list->DestroyWidget();
-
-	Plugin::TemplateOpenParam tmp;
-	g_appPlugin->TemplateOpen(m_browserRoot, template_list_view_generic, tmp);
-	page->list = static_cast<ui::ListView *>(m_browserRoot->GetChild(m_browserRoot->GetChildrenNum() - 1));
-	page->list->SetItemFactory(new ListViewCb(this));
-	page->list->InsertSegment(0, 1);
-	page->list->SetCellSizeDefault(0,
-		math::v4(960.0f, fs::IsRootStyle(page->path) ? k_rowRoot : k_rowFile));
-	page->list->SetSegmentLayoutType(0, ui::ListView::LAYOUT_TYPE_LIST);
-	RestoreListGeometry(page);
-	if (page->loaded && page->cellCount > 0)
-	{
-		page->list->InsertCell(0, 0, page->cellCount);
-		if (page->focused >= 0 && page->focused < (int32_t)page->cellCount)
-			page->list->SetFocus(0, page->focused, ui::ListView::FOCUS_ALIGN_TYPE_CENTER, NULL);
-	}
-	page->list->SetTransitionComplete(true);
-	page->list->Show(common::transition::Type_Reset);
 }
 
 void BrowserMenu::RestoreListGeometry(BrowserPage *page)
@@ -1045,12 +1024,14 @@ ui::ListItem *BrowserMenu::CreateListItem(ui::listview::ItemFactory::CreateParam
 	button->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
+		if (!userdata || !self) return;
 		reinterpret_cast<BrowserMenu *>(userdata)->OnItemDecide(static_cast<ui::Widget *>(self));
 	}, this);
 
 	button->AddEventCallback(ui::Handler::CB_FOCUS_IN,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
+		if (!userdata || !self) return;
 		reinterpret_cast<BrowserMenu *>(userdata)->OnItemFocus(static_cast<ui::Widget *>(self));
 	}, this);
 
@@ -1058,6 +1039,7 @@ ui::ListItem *BrowserMenu::CreateListItem(ui::listview::ItemFactory::CreateParam
 	button->AddEventCallback(ui::Button::CB_BTN_PRESS,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
+		if (!userdata || !self) return;
 		reinterpret_cast<BrowserMenu *>(userdata)->OnItemFocus(static_cast<ui::Widget *>(self));
 	}, this);
 
@@ -1065,6 +1047,7 @@ ui::ListItem *BrowserMenu::CreateListItem(ui::listview::ItemFactory::CreateParam
 	button->AddEventCallback(ui::Button::CB_BTN_LONG_PRESS,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
+		if (!userdata || !self) return;
 		ui::Widget *wdg = static_cast<ui::Widget *>(self);
 		reinterpret_cast<BrowserMenu *>(userdata)->OnMarkToggle(wdg->GetName().GetIDHash());
 	}, this);
@@ -1297,6 +1280,24 @@ void BrowserMenu::OnItemDecide(ui::Widget *wdg)
 
 void BrowserMenu::OnMarkToggle(int32_t index)
 {
+	if (m_markPending || m_pages.empty() || !Top()->loaded) return;
+	m_markPending = true;
+	m_markPage = Top();
+	m_markIndex = index;
+	DeferCall([](void *userdata)
+	{
+		BrowserMenu *menu = static_cast<BrowserMenu *>(userdata);
+		BrowserPage *original = menu->m_markPage;
+		const int32_t requested = menu->m_markIndex;
+		menu->m_markPending = false;
+		menu->m_markPage = NULL;
+		if (!menu->m_pages.empty() && menu->Top() == original && original->loaded)
+			menu->ApplyMarkToggle(requested);
+	}, this);
+}
+
+void BrowserMenu::ApplyMarkToggle(int32_t index)
+{
 	BrowserPage *page = Top();
 	if (index < 0)
 	{
@@ -1350,6 +1351,22 @@ void BrowserMenu::OnMarkToggle(int32_t index)
 }
 
 void BrowserMenu::SelectAll()
+{
+	if (m_selectAllPending || m_pages.empty() || !Top()->loaded) return;
+	m_selectAllPending = true;
+	m_selectAllPage = Top();
+	DeferCall([](void *userdata)
+	{
+		BrowserMenu *menu = static_cast<BrowserMenu *>(userdata);
+		BrowserPage *original = menu->m_selectAllPage;
+		menu->m_selectAllPending = false;
+		menu->m_selectAllPage = NULL;
+		if (!menu->m_pages.empty() && menu->Top() == original && original->loaded)
+			menu->ApplySelectAll();
+	}, this);
+}
+
+void BrowserMenu::ApplySelectAll()
 {
 	BrowserPage *page = Top();
 	if (!page || fs::IsRootStyle(page->path)) return;

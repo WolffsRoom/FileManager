@@ -85,6 +85,7 @@ OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button>
 	closeButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
+		if (!userdata || !self) return; // Vita coredumps: PAF dispatched with userdata == NULL
 		reinterpret_cast<OptionMenu *>(userdata)->OnButton(static_cast<ui::Widget *>(self));
 	}, this);
 
@@ -146,7 +147,8 @@ OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button>
 		button->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 		[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 		{
-			reinterpret_cast<OptionMenu *>(userdata)->OnButton(static_cast<ui::Widget *>(self));
+			if (!userdata || !self) return; // Vita coredumps: PAF dispatched with userdata == NULL
+		reinterpret_cast<OptionMenu *>(userdata)->OnButton(static_cast<ui::Widget *>(self));
 		}, this);
 
 		curLen = btItem.label.length();
