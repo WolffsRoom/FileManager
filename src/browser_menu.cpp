@@ -23,6 +23,8 @@
 #include "notice_menu.h"
 #include "music_menu.h"
 #include "qr_menu.h"
+#include "usb.h"
+#include "usb_menu.h"
 #include "core/music.h"
 #include "core/install.h"
 #include "core/bubble.h"
@@ -112,23 +114,28 @@ namespace {
 		g_jobQueue->Enqueue(param);
 	}
 
-	uint32_t IconFor(const fs::Entry *entry)
+	uint32_t IconFor(const fs::Entry *entry, const paf::string &parent)
 	{
-		if (entry->iconHash)
-		{
-			return entry->iconHash;
-		}
+		if (entry->iconHash) return entry->iconHash;
+		if (!fs::IsRootStyle(parent) && shortcuts::Contains(fs::Join(parent, entry->name)))
+			return entry->isDir ? tex_ui_favorite_folder : tex_ui_favorite_file;
+		const char *ext = strrchr(entry->name.c_str(), '.');
+		if (!entry->isDir && ext && strcasecmp(ext, ".suprx") == 0) return tex_ui_suprx;
+		if (!entry->isDir && entry->kind != fs::Kind_Image && entry->kind != fs::Kind_Vpk &&
+			entry->kind != fs::Kind_Sfo && fs::IsGameFormat(entry->name.c_str()))
+			return tex_ui_game_iso;
 		switch (entry->kind)
 		{
 		case fs::Kind_Folder:
 			// FMVita marks download folders with their own icon
 			return tex_new_folder;
 		case fs::Kind_Image:   return tex_ui_image;
-		case fs::Kind_Music:   return tex_ui_audio;
+		case fs::Kind_Music:   return tex_ui_musical;
 		case fs::Kind_Video:   return tex_file_icon_video;
 		case fs::Kind_Text:    return tex_ui_text;
 		case fs::Kind_Package: return tex_ui_archive;
 		case fs::Kind_Vpk:     return tex_ui_vpk;
+		case fs::Kind_Game:    return tex_ui_game_iso;
 		case fs::Kind_Sfo:     return tex_ui_sfo;
 		default:               return tex_ui_file;
 		}	}
@@ -375,6 +382,7 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 
 BrowserMenu::~BrowserMenu()
 {
+	if (usb::IsActive()) usb::Stop();
 	common::MainThreadCallList::Unregister(AlphaIndexTask, this);
 	common::MainThreadCallList::Unregister(BackgroundTask, this);
 	while (PopPage())
@@ -562,7 +570,7 @@ void BrowserMenu::SetRowIcon(BrowserPage *page, int32_t index)
 	{
 		return;
 	}
-	intrusive_ptr<graph::Surface> tex = Icon(page->opened == index ? tex_ui_parent : IconFor(page->entries.at(index)));
+	intrusive_ptr<graph::Surface> tex = Icon(page->opened == index ? tex_ui_parent : IconFor(page->entries.at(index), page->path));
 	if (tex.get())
 	{
 		button->SetTexture(tex);
@@ -1028,7 +1036,7 @@ ui::ListItem *BrowserMenu::CreateListItem(ui::listview::ItemFactory::CreateParam
 		FillFileItem(page, button, entry);
 	}
 
-	intrusive_ptr<graph::Surface> tex = Icon(page->opened == param.cell_index ? tex_ui_parent : IconFor(entry));
+	intrusive_ptr<graph::Surface> tex = Icon(page->opened == param.cell_index ? tex_ui_parent : IconFor(entry, page->path));
 	if (tex.get())
 	{
 		button->SetTexture(tex);
@@ -1087,7 +1095,20 @@ void BrowserMenu::OnSelectButton()
 	{
 		return;
 	}
-	DoAction(settings::Get().selectFunction == 1 ? Action_Qr : Action_Ftp);
+	settings::Config &config = settings::Get();
+	if (config.selectFunction == 2)
+	{
+		if (config.usbDevice < 0)
+		{
+			new SettingsMenu(m_root, OnSettingsChanged, this, true);
+			return;
+		}
+		int32_t result = usb::Toggle((usb::Device)config.usbDevice);
+		if (result < 0) dialog::OpenError(g_appPlugin, result);
+		else if (usb::IsActive()) new UsbMenu(m_root, (usb::Device)config.usbDevice);
+		return;
+	}
+	DoAction(config.selectFunction == 1 ? Action_Qr : Action_Ftp);
 }
 
 void BrowserMenu::JumpTo(bool end)
@@ -1175,6 +1196,19 @@ void BrowserMenu::OnItemDecide(ui::Widget *wdg)
 	if (strcmp(entry->target.c_str(), fs::k_ftpPath) == 0)
 	{
 		StartFtp();
+	}
+	else if (fs::IsRootStyle(page->path) && entry->isShortcut && !entry->isDir)
+	{
+		paf::vector<paf::string> single;
+		single.push_back(entry->target);
+		if (Previewable(entry)) new PreviewMenu(m_root, single, 0);
+		else if (entry->kind == fs::Kind_Music && musicSupported(entry->name.c_str()))
+			new MusicMenu(m_root, single, 0);
+		else if (entry->kind == fs::Kind_Vpk)
+			new InfoMenu(m_root, InfoMenu::Mode_Install, entry->target, entry, OnInstallAnswerCb, this);
+		else if (entry->kind == fs::Kind_Text || entry->kind == fs::Kind_Sfo ||
+			entry->kind == fs::Kind_Plugin) new TextView(m_root, entry->target.c_str());
+		else new InfoMenu(m_root, InfoMenu::Mode_Info, entry->target, entry, NULL, NULL);
 	}
 	else if (entry->isDir)
 	{
@@ -1332,7 +1366,7 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		{
 			m_optionActions.push_back(Action_ClearSelection);
 		}
-		if (target && target->isDir)
+		if (target && !target->isShortcut)
 		{
 			m_optionActions.push_back(Action_AddShortcut);
 		}

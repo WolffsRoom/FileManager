@@ -687,7 +687,7 @@ void PreviewMenu::OnRenameEntered(const paf::wstring &text)
 	if (!slash) return;
 	char renamed[1024];
 	int32_t parentLen = slash - oldPath.c_str() + 1;
-	if (parentLen + (int32_t)name.length() >= (int32_t)sizeof(renamed)) { dialog::OpenError(g_appPlugin, SCE_ERROR_ERRNO_ENAMETOOLONG); return; }
+	if (parentLen + (int32_t)name.length() >= (int32_t)sizeof(renamed)) { dialog::OpenError(g_appPlugin, (int32_t)0x80010024); return; }
 	memcpy(renamed, oldPath.c_str(), parentLen);
 	strcpy(renamed + parentLen, name.c_str());
 	int32_t ret = sceIoRename(oldPath.c_str(), renamed);

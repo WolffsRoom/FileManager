@@ -22,6 +22,7 @@ public:
 		Level_FontSize,
 		Level_Language,
 		Level_Select,
+		Level_UsbDevice,
 		Level_AutoDecrypt,
 		Level_Shortcuts,
 		Level_Commands
@@ -49,7 +50,7 @@ public:
 		SettingsMenu *m_parent;
 	};
 
-	SettingsMenu(paf::ui::Widget *parentRoot, ChangeCallback cb, void *userdata);
+	SettingsMenu(paf::ui::Widget *parentRoot, ChangeCallback cb, void *userdata, bool openUsbDevice = false);
 	~SettingsMenu();
 
 	paf::ui::ListItem *CreateItem(paf::ui::listview::ItemFactory::CreateParam &param);
@@ -67,6 +68,7 @@ private:
 
 	paf::ui::Widget *m_parentRoot;
 	paf::ui::ListView *m_list;
+	paf::ui::Widget *m_emptyShortcuts;
 	ChangeCallback m_cb;
 	void *m_userdata;
 	Level m_level;

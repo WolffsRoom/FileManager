@@ -39,7 +39,7 @@
 	  <button style="style_button_alpha_toggle" id="button_alpha_page_browser">
 		<layout_hint size="46, 46" pos="-452, 190" />
 		<plane style="style_plane_index_icon" texture="tex_new_search" id="plane_alpha_icon_page_browser">
-		  <layout_hint size="30, 30" />
+		  <layout_hint size="24, 24" />
 		</plane>
 	  </button>
       <plane style="style_plane_alpha_bubble" id="plane_alpha_bubble_page_browser">
@@ -88,7 +88,7 @@
       <button style="_common_default_style_button_transparent" id="button_music_indicator_page_browser">
         <layout_hint size="52, 52" pos="356, -165" />
         <focus_hint enable="0" />
-        <plane style="style_plane_music_indicator" texture="tex_ui_music" id="plane_music_indicator_page_browser">
+        <plane style="style_plane_music_indicator" texture="tex_ui_musical" id="plane_music_indicator_page_browser">
           <layout_hint size="42, 42" />
         </plane>
       </button>
@@ -101,6 +101,9 @@
       <list_view style="style_list_view_generic" id="list_view_page_settings">
         <layout_hint align="0, 1" size="960, 448" pos="0, -272" />
       </list_view>
+      <text style="style_text_empty" id="text_shortcuts_empty_page_settings">
+        <layout_hint size="800, 100" pos="0, 12" />
+      </text>
       <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_settings" />
     </page>
     <page id="page_ftp">
@@ -690,11 +693,11 @@
 
   <texturetable>
     <texture src="texture/about.png" type="texture/png" id="tex_about" />
-    <texture src="texture/new/saves.png" type="texture/png" id="tex_new_saves" />
+    <texture src="ui/saves_new.png" type="texture/png" id="tex_new_saves" />
     <texture src="texture/new/search_corner.png" type="texture/png" id="tex_new_search_corner" />
-    <texture src="texture/new/folder.png" type="texture/png" id="tex_new_folder" />
-    <texture src="texture/new/open_folder.png" type="texture/png" id="tex_new_open_folder" />
-    <texture src="texture/new/trash.png" type="texture/png" id="tex_new_trash" />
+    <texture src="ui/folder_new.png" type="texture/png" id="tex_new_folder" />
+    <texture src="ui/folder_open_new.png" type="texture/png" id="tex_new_open_folder" />
+    <texture src="ui/trash_new.png" type="texture/png" id="tex_new_trash" />
     <texture src="texture/buttons/cross.png" type="texture/png" id="tex_button_cross" />
     <texture src="texture/buttons/circle.png" type="texture/png" id="tex_button_circle" />
     <texture src="texture/buttons/triangle.png" type="texture/png" id="tex_button_triangle" />
@@ -706,17 +709,29 @@
     <texture src="texture/buttons/left.png" type="texture/png" id="tex_button_left" />
     <texture src="texture/buttons/touchpad.png" type="texture/png" id="tex_button_touch" />
     <texture src="texture/new/gear.png" type="texture/png" id="tex_new_gear" />
-    <texture src="texture/new/gears.png" type="texture/png" id="tex_new_gears" />
-    <texture src="texture/new/settings.png" type="texture/png" id="tex_new_settings" />
-    <texture src="texture/new/search.png" type="texture/png" id="tex_new_search" />
-	<texture src="ui/New/theme.png" type="texture/png" id="tex_new_theme" />
-	<texture src="ui/New/arrow left.png" type="texture/png" id="tex_preview_arrow_left" />
-	<texture src="ui/New/arrow - right.png" type="texture/png" id="tex_preview_arrow_right" />
+    <texture src="ui/gears_new.png" type="texture/png" id="tex_new_gears" />
+    <texture src="ui/settings_new.png" type="texture/png" id="tex_new_settings" />
+    <texture src="ui/search.png" type="texture/png" id="tex_new_search" />
+	<texture src="ui/theme_color.png" type="texture/png" id="tex_new_theme" />
+	<texture src="ui/preview_arrow_left.png" type="texture/png" id="tex_preview_arrow_left" />
+	<texture src="ui/preview_arrow_right.png" type="texture/png" id="tex_preview_arrow_right" />
     <texture src="texture/new/arrow.png" type="texture/png" id="tex_new_arrow" />
     <texture src="texture/new/done.png" type="texture/png" id="tex_new_done" />
     <texture src="texture/new/cancell.png" type="texture/png" id="tex_new_cancell" />
     <texture src="texture/tex_checkbox_on.png" type="texture/png" id="tex_checkbox_on" />
     <texture src="texture/tex_checkbox_off.png" type="texture/png" id="tex_checkbox_off" />
+    <texture src="ui/favorite_folder.png" type="texture/png" id="tex_ui_favorite_folder" />
+    <texture src="ui/favorite_file.png" type="texture/png" id="tex_ui_favorite_file" />
+    <texture src="ui/game_iso.png" type="texture/png" id="tex_ui_game_iso" />
+    <texture src="ui/language.png" type="texture/png" id="tex_ui_language" />
+    <texture src="ui/locked.png" type="texture/png" id="tex_ui_locked" />
+    <texture src="ui/musical.png" type="texture/png" id="tex_ui_musical" />
+    <texture src="ui/psp.png" type="texture/png" id="tex_ui_psp" />
+    <texture src="ui/qr.png" type="texture/png" id="tex_ui_qr" />
+    <texture src="ui/suprx.png" type="texture/png" id="tex_ui_suprx" />
+    <texture src="ui/font_size.png" type="texture/png" id="tex_ui_font_size" />
+    <texture src="ui/unlock.png" type="texture/png" id="tex_ui_unlock" />
+    <texture src="ui/usb.png" type="texture/png" id="tex_ui_usb" />
     <texture src="ui/archive_icon.png" type="texture/png" id="tex_ui_archive" />
     <texture src="ui/audio_icon.png" type="texture/png" id="tex_ui_audio" />
     <texture src="ui/file_icon.png" type="texture/png" id="tex_ui_file" />

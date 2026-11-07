@@ -12,7 +12,7 @@ using namespace paf;
 
 namespace {
 
-	settings::Config s_config = { 0, settings::View_List, 0, 0, 1, 1, 0 };
+	settings::Config s_config = { 0, settings::View_List, 0, 0, -1, 1, 1, 0 };
 
 	const theme::Info k_themes[] = {
 		{ msg_theme_default,  { 1.00f, 1.00f, 1.00f }, { 1.00f, 1.00f, 1.00f } },
@@ -102,10 +102,16 @@ void settings::Load()
 	if (p)
 	{
 		int32_t v = atoi(p + 7);
-		if (v >= 0 && v <= 1)
+		if (v >= 0 && v <= 2)
 		{
 			s_config.selectFunction = v;
 		}
+	}
+	p = strstr(buf, "usb_device=");
+	if (p)
+	{
+		int32_t v = atoi(p + 11);
+		if (v >= -1 && v <= 3) s_config.usbDevice = v;
 	}
 	p = strstr(buf, "view=");
 	if (p)
@@ -149,10 +155,10 @@ void settings::Save()
 	{
 		return;
 	}
-	char buf[128];
-	int32_t n = snprintf(buf, sizeof(buf), "theme=%d\nview=%d\nlanguage=%d\nselect=%d\nfont=%d\nauto_decrypt=%d\nsort=%d\n",
+	char buf[160];
+	int32_t n = snprintf(buf, sizeof(buf), "theme=%d\nview=%d\nlanguage=%d\nselect=%d\nusb_device=%d\nfont=%d\nauto_decrypt=%d\nsort=%d\n",
 		(int)s_config.theme, (int)s_config.view, (int)s_config.language, (int)s_config.selectFunction,
-		(int)s_config.fontSize, (int)s_config.autoDecrypt, (int)s_config.sortMode);
+		(int)s_config.usbDevice, (int)s_config.fontSize, (int)s_config.autoDecrypt, (int)s_config.sortMode);
 	sceIoWrite(fd, buf, n);
 	sceIoClose(fd);
 }

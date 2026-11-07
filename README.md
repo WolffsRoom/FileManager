@@ -178,6 +178,8 @@ v0.4 is developed and distributed from the `test` branch only; it does not have 
 
 Every successful build is preserved under `scripts/build/vpk/v0.4-test/` with a timestamped filename. The build script never replaces an earlier archived VPK.
 
+The current v0.4 test package includes USB with a native blocking connection screen, UI/media changes, new icons and game formats. See [v0.4 testing notes](docs/v0.4-test-validation.md) before installing on a Vita. USB and large Music folders still require hardware confirmation.
+
 ### v0.30 Beta - Native Media and File Management Update
 
 [Download v0.30 Beta](https://github.com/WolffsRoom/FileManager/releases/tag/v0.30-beta)

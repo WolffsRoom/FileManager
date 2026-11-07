@@ -61,7 +61,7 @@ namespace {
 		{ "ur0:tai", msg_shortcut_plugins },
 	};
 	const uint32_t k_shortcutIcons[] = {
-		tex_ui_download, tex_ui_image, tex_ui_music, tex_new_open_folder, tex_new_trash, tex_new_saves,
+		tex_ui_download, tex_ui_image, tex_ui_musical, tex_ui_psp, tex_new_trash, tex_new_saves,
 		tex_new_open_folder, tex_new_open_folder, tex_ui_sfo,
 	};
 
@@ -69,6 +69,37 @@ namespace {
 	{
 		const char *ext;
 		fs::Kind kind;
+	};
+
+	// Icons for game images/ROMs and game distribution formats. Media and
+	// specialized Vita file kinds retain their opening behavior.
+	const char *const k_gameExtensions[] = {
+		".iso", ".bin", ".cue", ".img", ".chd", ".cso", ".zso", ".gcz", ".rvz",
+		".ciso", ".mdf", ".mds", ".ccd", ".sub", ".nrg", ".isz", ".ecm", ".gdi",
+		".cdi", ".m3u", ".m3u8", ".nes", ".unf", ".unif", ".nez", ".fds", ".sfc",
+		".smc", ".fig", ".snes", ".n64", ".z64", ".v64", ".ndd", ".gb", ".gbc",
+		".gba", ".agb", ".srl", ".dmg", ".sgb", ".nds", ".ids", ".dsi", ".3ds",
+		".3dz", ".cci", ".cia", ".cxi", ".cfa", ".3dsx", ".gcm", ".tgc", ".wbfs",
+		".wad", ".wud", ".wux", ".wua", ".rpx", ".wup", ".app", ".tmd", ".nsp",
+		".xci", ".nsz", ".xcz", ".nca", ".nro", ".nso", ".vb", ".vboy", ".min",
+		".vpk", ".vci", ".pkg", ".pbp", ".self", ".elf", ".prx", ".suprx", ".skprx",
+		".psdp", ".sg", ".sms", ".md", ".gen", ".smd", ".68k", ".32x", ".gg",
+		".dat", ".lst", ".xiso", ".xbe", ".xex", ".god", ".xcp", ".xvc", ".msixvc",
+		".appx", ".appxbundle", ".msix", ".msixbundle", ".a26", ".a52", ".a78", ".jag", ".j64",
+		".rom", ".lnx", ".lyx", ".atr", ".atx", ".xfd", ".car", ".cas", ".st",
+		".msa", ".stx", ".col", ".cv", ".int", ".itv", ".vec", ".neo", ".ngp",
+		".ngc", ".ngpc", ".npc", ".pce", ".sgx", ".ws", ".wsc", ".sv", ".d64",
+		".g64", ".t64", ".tap", ".crt", ".prg", ".p00", ".adf", ".adz", ".dms",
+		".ipf", ".hdf", ".lha", ".z80", ".sna", ".szx", ".tzx", ".pzx", ".dsk",
+		".trd", ".scl", ".mx1", ".mx2", ".msx", ".tsx", ".cdt", ".cpr", ".do",
+		".po", ".nib", ".woz", ".2mg", ".2img", ".d88", ".d98", ".fdi", ".hdi",
+		".hdm", ".nhd", ".fdd", ".xdf", ".exe", ".com", ".bat", ".ima", ".ssd",
+		".dsd", ".uef", ".csw", ".cmd", ".msi", ".sh", ".run", ".appimage", ".deb",
+		".rpm", ".apk", ".aab", ".xapk", ".apks", ".obb", ".ipa", ".jar", ".jad",
+		".swf", ".html", ".htm", ".wasm", ".js", ".p8", ".png", ".tic", ".ch8",
+		".c8", ".sc8", ".xo8", ".love", ".pck", ".rgssad", ".rgss2a", ".rgss3a", ".rvdata",
+		".rpgmvp", ".pk3", ".pk4", ".ipk3", ".zip", ".7z", ".rar", ".tar", ".gz",
+		".gzip", ".bz2", ".xz", ".zst", ".001",
 	};
 
 	const ExtKind k_exts[] = {
@@ -84,7 +115,6 @@ namespace {
 		{ ".7z", fs::Kind_Package }, { ".tar", fs::Kind_Package }, { ".gz", fs::Kind_Package },
 		{ ".psarc", fs::Kind_Package },
 		{ ".suprx", fs::Kind_Plugin }, { ".skprx", fs::Kind_Plugin }, { ".self", fs::Kind_Plugin },
-		{ ".bin", fs::Kind_Plugin },
 	};
 
 	fs::Kind KindForName(const char *name)
@@ -100,7 +130,7 @@ namespace {
 				}
 			}
 		}
-		return fs::Kind_Other;
+		return fs::IsGameFormat(name) ? fs::Kind_Game : fs::Kind_Other;
 	}
 
 	bool EntryBefore(const fs::Entry *a, const fs::Entry *b)
@@ -156,6 +186,15 @@ namespace {
 		out->push_back(e);
 		return 0;
 	}
+}
+
+bool fs::IsGameFormat(const char *name)
+{
+	const char *ext = strrchr(name, '.');
+	if (!ext) return false;
+	for (uint32_t i = 0; i < sizeof(k_gameExtensions) / sizeof(k_gameExtensions[0]); ++i)
+		if (strcasecmp(ext, k_gameExtensions[i]) == 0) return true;
+	return false;
 }
 
 const char *const fs::k_systemPath = "::system";
@@ -218,6 +257,14 @@ const paf::vector<paf::string> &shortcuts::List()
 		}
 	}
 	return s_shortcuts;
+}
+
+bool shortcuts::Contains(const paf::string &path)
+{
+	const paf::vector<paf::string> &items = List();
+	for (uint32_t i = 0; i < items.size(); ++i)
+		if (strcasecmp(items.at(i).c_str(), path.c_str()) == 0) return true;
+	return false;
 }
 
 void shortcuts::Add(const paf::string &path)
@@ -322,7 +369,13 @@ void fs::ListRoot(EntryList *out)
 	const paf::vector<paf::string> &user = shortcuts::List();
 	for (uint32_t i = 0; i < user.size(); i++)
 	{
-		Entry *e = NewRootEntry(user.at(i).c_str(), user.at(i).c_str(), 0, tex_ui_bookmark, true);
+		SceIoStat stat;
+		// File and folder favorites have different artwork and must retain their type.
+		const bool valid = sceIoGetstat(user.at(i).c_str(), &stat) >= 0;
+		const bool isDir = !valid || SCE_S_ISDIR(stat.st_mode);
+		Entry *e = NewRootEntry(user.at(i).c_str(), user.at(i).c_str(), 0,
+			isDir ? tex_ui_favorite_folder : tex_ui_favorite_file, isDir);
+		e->kind = isDir ? Kind_Folder : KindForName(user.at(i).c_str());
 		e->isShortcut = true;
 		out->push_back(e);
 	}

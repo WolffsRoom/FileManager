@@ -19,7 +19,8 @@ namespace {
 	const uint32_t k_mainIcons[Main_Count] = { tex_new_theme, tex_ui_text, tex_ui_text, tex_ui_ftp, tex_ui_encrypted, tex_ui_bookmark, tex_new_gears, tex_about };
 
 	const uint32_t k_languages[] = { msg_lang_system, msg_lang_ptbr, msg_lang_en, msg_lang_es, msg_lang_fr, msg_lang_de };
-	const uint32_t k_selectFunctions[] = { msg_ftp_server, msg_qr_code };
+	const uint32_t k_selectFunctions[] = { msg_ftp_server, msg_qr_code, msg_usb };
+	const uint32_t k_usbDevices[] = { msg_usb_memory_card, msg_usb_game_card, msg_usb_sd2vita, msg_usb_psvsd };
 	const uint32_t k_fontSizes[] = { msg_font_small, msg_font_normal, msg_font_large };
 	const uint32_t k_enabled[] = { msg_disabled, msg_enabled };
 
@@ -57,7 +58,7 @@ namespace {
 	}
 }
 
-SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *userdata) :
+SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *userdata, bool openUsbDevice) :
 	m_parentRoot(parentRoot), m_cb(cb), m_userdata(userdata), m_level(Level_Main), m_rows(0)
 {
 	Plugin::PageOpenParam openParam;
@@ -77,6 +78,9 @@ SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *user
 		reinterpret_cast<SettingsMenu *>(userdata)->OnBack();
 	}, this);
 
+	m_emptyShortcuts = m_root->FindChild(text_shortcuts_empty_page_settings);
+	m_emptyShortcuts->SetString(Str(msg_shortcuts_empty));
+	m_emptyShortcuts->Hide(common::transition::Type_Reset);
 	m_list = static_cast<ui::ListView *>(m_root->FindChild(list_view_page_settings));
 	m_list->SetItemFactory(new ListViewCb(this));
 	m_list->InsertSegment(0, 1);
@@ -84,7 +88,7 @@ SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *user
 	m_list->SetCellSizeDefault(0, cellSize);
 	m_list->SetSegmentLayoutType(0, ui::ListView::LAYOUT_TYPE_LIST);
 
-	ShowLevel(Level_Main);
+	ShowLevel(openUsbDevice ? Level_UsbDevice : Level_Main);
 }
 
 SettingsMenu::~SettingsMenu()
@@ -116,9 +120,10 @@ int32_t SettingsMenu::RowCount(Level level)
 	case Level_Themes: return theme::Count();
 	case Level_FontSize: return 3;
 	case Level_Language: return sizeof(k_languages) / sizeof(k_languages[0]);
-	case Level_Select: return 2;
+	case Level_Select: return 3;
+	case Level_UsbDevice: return 4;
 	case Level_AutoDecrypt: return 2;
-	case Level_Shortcuts: return m_shortcuts.empty() ? 1 : m_shortcuts.size();
+	case Level_Shortcuts: return m_shortcuts.size();
 	case Level_Commands: return k_commandCount;
 	}
 	return 0;
@@ -143,8 +148,12 @@ void SettingsMenu::ShowLevel(Level level)
 		}
 	}
 
-	static const uint32_t k_titles[] = { msg_opt_settings, msg_set_themes, msg_set_font_size, msg_set_language, msg_set_select, msg_set_auto_decrypt, msg_set_shortcuts, msg_set_commands };
+	static const uint32_t k_titles[] = { msg_opt_settings, msg_set_themes, msg_set_font_size, msg_set_language, msg_set_select, msg_usb_device, msg_set_auto_decrypt, msg_set_shortcuts, msg_set_commands };
 	m_root->FindChild(text_top)->SetString(Str(k_titles[level]));
+
+	if (level == Level_Shortcuts && m_shortcuts.empty())
+		m_emptyShortcuts->Show(common::transition::Type_Reset);
+	else m_emptyShortcuts->Hide(common::transition::Type_Reset);
 
 	m_rows = RowCount(level);
 	if (m_rows > 0)
@@ -162,6 +171,7 @@ bool SettingsMenu::IsSelected(int32_t row)
 	case Level_FontSize: return c.fontSize == row;
 	case Level_Language: return c.language == row;
 	case Level_Select: return c.selectFunction == row;
+	case Level_UsbDevice: return c.usbDevice == row;
 	case Level_AutoDecrypt: return c.autoDecrypt == row;
 	case Level_Shortcuts: return row < (int32_t)m_shortcutKept.size() && m_shortcutKept.at(row);
 	default: return false;
@@ -194,10 +204,24 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	case Level_Main:
 		label = Str(k_mainLabels[row]);
 		icon = k_mainIcons[row];
+		if (row == Main_FontSize) icon = tex_ui_font_size;
+		else if (row == Main_Language) icon = tex_ui_language;
+		else if (row == Main_Select) icon = c.selectFunction == 2 ? tex_ui_usb :
+			(c.selectFunction == 1 ? tex_ui_qr : tex_ui_ftp);
+		else if (row == Main_AutoDecrypt) icon = c.autoDecrypt ? tex_ui_unlock : tex_ui_locked;
+		else if (row == Main_Shortcuts) icon = tex_ui_favorite_folder;
 		if (row == Main_Themes) info = Str(theme::At(c.theme).nameHash);
 		else if (row == Main_FontSize) info = Str(k_fontSizes[c.fontSize]);
 		else if (row == Main_Language) info = Str(k_languages[c.language]);
-		else if (row == Main_Select) info = Str(k_selectFunctions[c.selectFunction]);
+		else if (row == Main_Select)
+		{
+			info = Str(k_selectFunctions[c.selectFunction]);
+			if (c.selectFunction == 2 && c.usbDevice >= 0 && c.usbDevice < 4)
+			{
+				info += L" - ";
+				info += Str(k_usbDevices[c.usbDevice]);
+			}
+		}
 		else if (row == Main_AutoDecrypt) info = Str(k_enabled[c.autoDecrypt]);
 		else if (row == Main_Shortcuts) info = Wide(common::FormatString("%u", (uint32_t)shortcuts::List().size()).c_str());
 		break;
@@ -207,25 +231,27 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		break;
 	case Level_FontSize:
 		label = Str(k_fontSizes[row]);
-		icon = tex_ui_text;
+		icon = tex_ui_font_size;
 		break;
 	case Level_Language:
 		label = Str(k_languages[row]);
-		icon = tex_ui_text;
+		icon = tex_ui_language;
 		break;
 	case Level_Select:
 		label = Str(k_selectFunctions[row]);
-		icon = tex_ui_ftp;
+		icon = row == 2 ? tex_ui_usb : (row == 1 ? tex_ui_qr : tex_ui_ftp);
+		break;
+	case Level_UsbDevice:
+		label = Str(k_usbDevices[row]);
+		icon = tex_ui_usb;
 		break;
 	case Level_AutoDecrypt:
 		label = Str(k_enabled[row]);
-		icon = tex_ui_encrypted;
+		icon = row ? tex_ui_unlock : tex_ui_locked;
 		break;
 	case Level_Shortcuts:
-		label = m_shortcuts.empty()
-			? Str(msg_shortcuts_empty)
-			: Wide(m_shortcuts.at(row).c_str());
-		icon = tex_ui_bookmark;
+		label = Wide(m_shortcuts.at(row).c_str());
+		icon = tex_ui_favorite_folder;
 		break;
 	case Level_Commands:
 		label = Str(k_commands[row][1]);
@@ -336,6 +362,10 @@ void SettingsMenu::OnRow(int32_t row)
 		break;
 	case Level_Select:
 		c.selectFunction = row;
+		if (row == 2) { settings::Save(); ShowLevel(Level_UsbDevice); m_cb(m_userdata); return; }
+		break;
+	case Level_UsbDevice:
+		c.usbDevice = row;
 		break;
 	case Level_AutoDecrypt:
 		c.autoDecrypt = row;

@@ -49,9 +49,10 @@ add_subdirectory("${PAF_STUB_DIR}" "${CMAKE_BINARY_DIR}/paf_stubs_build" EXCLUDE
 # VitaShell's PFS bridge, used to expose protected application data.
 add_subdirectory(modules/kernel)
 add_subdirectory(modules/user)
+add_subdirectory(modules/usbdevice)
 
 # Resource -------------------------------------------------------------------
-file(GLOB RCO_INPUTS CONFIGURE_DEPENDS resource/*.xml resource/locale/*.xml resource/texture/*)
+file(GLOB RCO_INPUTS CONFIGURE_DEPENDS resource/*.xml resource/locale/*.xml resource/texture/* resource/ui/*.png)
 set(RCO_FILE "${CMAKE_BINARY_DIR}/file_manager_plugin.rco")
 set(RCO_HEADER "${CMAKE_BINARY_DIR}/generated/file_manager_plugin.h")
 add_custom_command(
@@ -81,6 +82,8 @@ add_executable(FileManager
   src/notice_menu.cpp
   src/music_menu.cpp
   src/qr_menu.cpp
+  src/usb.cpp
+  src/usb_menu.cpp
   third_party/quirc_src/lib/quirc.c
   third_party/quirc_src/lib/decode.c
   third_party/quirc_src/lib/identify.c
@@ -115,7 +118,7 @@ add_executable(FileManager
   legacy/strnatcmp.c
 )
 add_dependencies(FileManager file_manager_rco)
-add_dependencies(FileManager kernel.skprx-self user.suprx-self vitashell_user_stubs)
+add_dependencies(FileManager kernel.skprx-self user.suprx-self vitashell_user_stubs usbdevice.skprx-self)
 
 # FMVita's audio engine and libmad are older C: keep GCC 15's stricter defaults as warnings.
 file(GLOB LEGACY_AUDIO_SOURCES legacy/audio/*.c legacy/libmad/*.c)
@@ -156,6 +159,10 @@ target_link_libraries(FileManager
   SceFios2_stub
   SceMusicExport_stub
   SceCamera_stub
+  SceMtpIfDriver_stub
+  SceUsbstorVStorDriver_stub
+  taihen_stub
+  SceVshBridge_stub
   ftpvita
   archive
   vorbisfile
@@ -188,6 +195,8 @@ vita_create_vpk(FileManager.vpk ${VITA_TITLEID} eboot.bin
     ${RCO_FILE} resource/file_manager_plugin.rco
 	${CMAKE_BINARY_DIR}/modules/kernel/kernel.skprx module/kernel.skprx
 	${CMAKE_BINARY_DIR}/modules/user/user.suprx module/user.suprx
+	${CMAKE_BINARY_DIR}/modules/usbdevice/usbdevice.skprx module/usbdevice.skprx
+	resources/umass.skprx module/umass.skprx
     legacy/resources/head.bin resource/head.bin
     resource/sce_sys/icon0.png sce_sys/icon0.png
     resource/sce_sys/pic0.png sce_sys/pic0.png

@@ -90,7 +90,7 @@
   <string src="Instalando..." id="msg_installing" />
   <string src="Instalado (%s). Já está na tela inicial." id="msg_install_done" />
   <string src="Temas" id="msg_set_themes" />
-  <string src="Tamanho do nome dos arquivos" id="msg_set_font_size" />
+  <string src="Tamanho da fonte" id="msg_set_font_size" />
   <string src="Pequeno" id="msg_font_small" />
   <string src="Normal" id="msg_font_normal" />
   <string src="Grande" id="msg_font_large" />
@@ -100,7 +100,7 @@
   <string src="Idioma" id="msg_set_language" />
   <string src="Função do Select" id="msg_set_select" />
   <string src="Atalhos" id="msg_set_shortcuts" />
-  <string src="Nenhum atalho registrado. Para registrar atalhos, selecione uma pasta e clique em Favoritar." id="msg_shortcuts_empty" />
+  <string src="Nenhum atalho registrado. Para adicionar, selecione um arquivo ou pasta e escolha Favoritar." id="msg_shortcuts_empty" />
   <string src="Comandos" id="msg_set_commands" />
   <string src="Idioma do sistema" id="msg_lang_system" />
   <string src="Português (Brasil)" id="msg_lang_ptbr" />
@@ -109,6 +109,15 @@
   <string src="Français" id="msg_lang_fr" />
   <string src="Deutsch" id="msg_lang_de" />
   <string src="QR Code" id="msg_qr_code" />
+  <string src="USB" id="msg_usb" />
+    <string src="USB conectado." id="msg_usb_connected" />
+    <string src="Ejete no computador antes de desconectar." id="msg_usb_eject" />
+    <string src="Desconectar" id="msg_usb_disconnect" />
+  <string src="Dispositivo USB" id="msg_usb_device" />
+  <string src="Cartão de Memória" id="msg_usb_memory_card" />
+  <string src="Cartão de Jogo" id="msg_usb_game_card" />
+  <string src="SD2Vita" id="msg_usb_sd2vita" />
+  <string src="PSVSD" id="msg_usb_psvsd" />
   <string src="Aponte a câmera traseira para um QR Code" id="msg_qr_scanning" />
   <string src="Não foi possível abrir a câmera traseira." id="msg_qr_camera_error" />
   <string src="Resultado do QR Code" id="msg_qr_result" />
@@ -128,7 +137,7 @@
   <string src="Voltar" id="msg_cmd_back" />
   <string src="Opções" id="msg_cmd_options" />
   <string src="Selecionar item" id="msg_cmd_mark" />
-  <string src="FTP ou QR Code" id="msg_cmd_select" />
+  <string src="FTP, QR Code ou USB" id="msg_cmd_select" />
   <string src="Pesquisar" id="msg_cmd_settings" />
   <string src="Ir para o primeiro item" id="msg_cmd_first" />
   <string src="Ir para o último item" id="msg_cmd_last" />

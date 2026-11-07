@@ -18,6 +18,7 @@ namespace fs {
 		Kind_Plugin,
 		Kind_Vpk,
 		Kind_Sfo,
+		Kind_Game,
 		Kind_Other
 	};
 
@@ -56,6 +57,9 @@ namespace fs {
 	/** Folders first, then natural order by name. Returns a negative error on failure. */
 	int32_t ListDirectory(const char *path, EntryList *out);
 
+	/** True for supported game, emulator and packaging file formats. */
+	bool IsGameFormat(const char *name);
+
 	void FreeList(EntryList *list);
 
 	/** path + "/" + name, without doubling the separator after a device ("ux0:"). */
@@ -76,4 +80,5 @@ namespace shortcuts {
 	const paf::vector<paf::string> &List();
 	void Add(const paf::string &path);
 	void Remove(const paf::string &path);
+	bool Contains(const paf::string &path);
 }
