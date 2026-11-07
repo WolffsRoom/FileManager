@@ -31,6 +31,7 @@ public:
 private:
 
 	void ShowCover(const char *path, int32_t type, int32_t offset, int32_t length);
+	void UpdateSeekPreview(float percent);
 	int32_t ExportCurrent(bool notify);
 
 	paf::ui::Widget *m_parentRoot;
@@ -42,6 +43,7 @@ private:
 	paf::ui::Widget *m_elapsed;
 	paf::ui::Widget *m_total;
 	paf::ui::Widget *m_barFill;
+	paf::ui::Widget *m_seekMarker;
 	paf::ui::Widget *m_playButton;
 	paf::ui::Widget *m_playGlyph;
 	paf::ui::Widget *m_pauseGlyph;

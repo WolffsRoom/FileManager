@@ -2,6 +2,7 @@
 #include <paf.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <psp2/appmgr.h>
 #include <psp2/musicexport.h>
 #include <psp2/sysmodule.h>
@@ -70,6 +71,8 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	m_elapsed = m_root->FindChild(text_elapsed_page_music);
 	m_total = m_root->FindChild(text_total_page_music);
 	m_barFill = m_root->FindChild(plane_bar_fill_page_music);
+	m_seekMarker = m_root->FindChild(plane_seek_marker_page_music);
+	m_seekMarker->Hide(common::transition::Type_Reset);
 	m_playButton = m_root->FindChild(button_play_page_music);
 	m_playGlyph = m_root->FindChild(glyph_play_page_music);
 	m_pauseGlyph = m_root->FindChild(glyph_pause_page_music);
@@ -314,8 +317,16 @@ void MusicMenu::Update()
 	{
 		float x = touch.report[0].x * (960.0f / 1920.0f);
 		float y = touch.report[0].y * (544.0f / 1088.0f);
-		m_barTouch = x >= 420.0f && x <= 920.0f && y >= 272.0f && y <= 320.0f;
-		if (m_barTouch) m_barTouchX = x;
+		bool overTrack = x >= 420.0f && x <= 920.0f && y >= 252.0f && y <= 330.0f;
+		if (overTrack || m_barTouch)
+		{
+			m_barTouch = true;
+			m_barTouchX = x;
+			float pct = (m_barTouchX - 440.0f) / k_barWidth;
+			if (pct < 0.0f) pct = 0.0f;
+			if (pct > 1.0f) pct = 1.0f;
+			UpdateSeekPreview(pct);
+		}
 	}
 	else if (m_barTouch)
 	{
@@ -325,6 +336,7 @@ void MusicMenu::Update()
 		if (pct > 1.0f) pct = 1.0f;
 		musicSeek(pct * m_seconds);
 		m_barTouch = false;
+		m_seekMarker->Hide(common::transition::Type_FadeinFast);
 	}
 	if (!m_playing || m_frame++ % 15 != 0)
 	{
@@ -353,4 +365,16 @@ void MusicMenu::Update()
 	if (pct < 0.0f) pct = 0.0f;
 	if (pct > 100.0f) pct = 100.0f;
 	m_barFill->SetSize(k_barWidth * pct / 100.0f, 8.0f, 0.0f);
+}
+
+void MusicMenu::UpdateSeekPreview(float percent)
+{
+	if (m_seconds <= 0) return;
+	long target = (long)(percent * m_seconds);
+	char text[16];
+	snprintf(text, sizeof(text), "%02ld:%02ld", target / 60, target % 60);
+	SetText(m_elapsed, text);
+	m_barFill->SetSize(k_barWidth * percent, 8.0f, 0.0f);
+	m_seekMarker->SetPos(k_barWidth * percent - k_barWidth * 0.5f, 0.0f, 0.0f);
+	m_seekMarker->Show(common::transition::Type_FadeinFast);
 }

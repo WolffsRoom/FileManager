@@ -238,6 +238,9 @@
         <plane style="style_plane_bar_fill" id="plane_bar_fill_page_music">
           <layout_hint anchor="1, 0" align="1, 0" size="0, 8" />
         </plane>
+        <plane style="style_plane_seek_marker" id="plane_seek_marker_page_music">
+          <layout_hint size="18, 18" pos="0, 0" />
+        </plane>
       </plane>
       <text style="style_text_music_time" id="text_elapsed_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="200, 30" pos="440, -46" />
@@ -247,12 +250,7 @@
       </text>
       <button style="style_button_option_single" id="button_prev_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="92, 46" pos="510, -112" />
-        <plane style="style_plane_glyph" id="glyph_prev_page_music">
-          <layout_hint size="5, 25" pos="-15, 0" />
-          <plane style="style_plane_glyph" id="glyph_prev_triangle_page_music">
-            <layout_hint size="24, 5" pos="13, 0" />
-          </plane>
-        </plane>
+        <plane texture="tex_preview_arrow_left" id="glyph_prev_page_music"><layout_hint size="32, 32" /></plane>
       </button>
       <button style="style_button_option_single" id="button_play_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="92, 46" pos="610, -112" />
@@ -268,12 +266,7 @@
       </button>
       <button style="style_button_option_single" id="button_next_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="92, 46" pos="710, -112" />
-        <plane style="style_plane_glyph" id="glyph_next_page_music">
-          <layout_hint size="5, 25" pos="15, 0" />
-          <plane style="style_plane_glyph" id="glyph_next_triangle_page_music">
-            <layout_hint size="24, 5" pos="-13, 0" />
-          </plane>
-        </plane>
+        <plane texture="tex_preview_arrow_right" id="glyph_next_page_music"><layout_hint size="32, 32" /></plane>
       </button>
       <button style="style_button_music_action" id="button_export_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="170, 48" pos="430, -180" />
@@ -461,6 +454,9 @@
       <planeobj id="plane_obj1" />
     </style_plane>
     <style_plane color="1, 1, 1, 0.94" planeobj="plane_obj1" id="style_plane_glyph">
+      <planeobj id="plane_obj1" />
+    </style_plane>
+    <style_plane color="0.62, 1, 0.1, 0.95" planeobj="plane_obj1" id="style_plane_seek_marker">
       <planeobj id="plane_obj1" />
     </style_plane>
     <style_plane color="1, 1, 1, 0.86" planeobj="plane_obj1" id="style_plane_music_indicator">
