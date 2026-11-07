@@ -653,9 +653,9 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	page->cellCount = 0;
 	page->focused = -1;
 	page->loaded = false;
-	// Animate the whole list, never its recycled cells. This preserves the
-	// native page motion without creating duplicated/stacked row layers.
-	page->openingAnimation = true;
+	// Only the main menu uses the stacked opening animation. Folder navigation
+	// uses ScePaf's native 3D page transition below.
+	page->openingAnimation = path.empty();
 
 	g_appPlugin->TemplateOpen(m_browserRoot, template_list_view_generic, tmpParam);
 	page->list = static_cast<ui::ListView *>(m_browserRoot->GetChild(m_browserRoot->GetChildrenNum() - 1));
@@ -675,8 +675,10 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 			older->list->SetTransitionComplete(false);
 		}
 		BrowserPage *current = m_pages.back();
-		current->list->Hide(common::transition::Type_Reset);
+		current->list->SetSize(960.0f, 448.0f, 0.0f);
 		current->list->SetPos(0.0f, -272.0f, 0.0f);
+		current->list->Show(common::transition::Type_3D_SlideToBack1);
+		current->list->SetTransitionComplete(false);
 	}
 
 	m_pages.push_back(page);
@@ -707,7 +709,8 @@ bool BrowserMenu::PopPage()
 
 	if (!isLast)
 	{
-		page->list->Hide(common::transition::Type_Reset);
+		common::transition::DoReverse(-100.0f, page->list,
+			common::transition::Type_3D_SlideFromFront, true, false);
 	}
 
 	fs::FreeList(&page->all);
@@ -729,9 +732,10 @@ bool BrowserMenu::PopPage()
 		int32_t wasOpened = current->opened;
 		current->opened = -1;
 		SetRowIcon(current, wasOpened);
+		current->list->SetSize(960.0f, 448.0f, 0.0f);
 		current->list->SetPos(0.0f, -272.0f, 0.0f);
-		current->list->Hide(common::transition::Type_Reset);
-		current->list->Show(common::transition::Type_SlideFromLeft2);
+		current->list->Hide(common::transition::Type_3D_SlideToBack1);
+		current->list->Show(common::transition::Type_Reset);
 		current->list->SetTransitionComplete(false);
 		if (m_pages.size() > 1)
 		{
@@ -821,9 +825,7 @@ void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 		{
 			page->list->Hide(common::transition::Type_Reset);
 			page->list->SetPos(0.0f, -272.0f, 0.0f);
-			page->list->Show(page->path.empty()
-				? common::transition::Type_SlideFromBottom4
-				: common::transition::Type_SlideFromRight2);
+			page->list->Show(common::transition::Type_SlideFromBottom4);
 		}
 		if (page->focused >= 0)
 			page->list->SetFocus(0, page->focused, ui::ListView::FOCUS_ALIGN_TYPE_CENTER, NULL);

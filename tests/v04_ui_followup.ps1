@@ -11,8 +11,14 @@ if ($rco -match '<plane texture="tex_new_theme" id="plane_theme_preview">') {
 if ($settings -notmatch 'themePreview->SetTexture\(g_appPlugin->GetTexture\(tex_new_theme\)') {
     throw 'theme texture is not scoped to the Themes screen'
 }
-if ($browser -notmatch 'Type_SlideFromRight2' -or $browser -notmatch 'Type_SlideFromLeft2') {
-    throw 'folder forward/back transitions are missing'
+if ($browser -notmatch 'Type_3D_SlideToBack1' -or $browser -notmatch 'Type_3D_SlideFromFront') {
+    throw 'native Vita 3D folder navigation was not restored'
+}
+if ($browser -match 'Type_SlideFromRight2' -or $browser -match 'Type_SlideFromLeft2') {
+    throw 'generic lateral transitions still replace the native folder navigation'
+}
+if ($browser -notmatch 'openingAnimation = path\.empty\(\)') {
+    throw 'folder pages still replay the main-menu opening animation'
 }
 if ($music -notmatch 's_minimizedPlayer != NULL && musicIsPlaying\(\)') {
     throw 'background indicator is not restricted to active playback'
