@@ -68,6 +68,13 @@ public:
 			param.list_item->Show(paf::common::transition::Type_Popup1);
 		}
 
+		void Stop(StopParam &param)
+		{
+			// ListView recycles rows. Reset the completed animation before the
+			// same cell is started again so Popup1 never accumulates per scroll.
+			param.list_item->Hide(paf::common::transition::Type_Reset);
+		}
+
 	private:
 
 		BrowserMenu *m_parent;
@@ -132,6 +139,7 @@ private:
 
 	void PushPage(const paf::string &path, bool forceDecrypt = false, bool ownsPsarc = false);
 	bool PopPage();
+	void RestoreListGeometry(BrowserPage *page);
 	void Refresh();
 	BrowserPage *Top() { return m_pages.back(); }
 	void UpdateChrome();

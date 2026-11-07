@@ -32,6 +32,7 @@
 #include <psp2/net/http.h>
 #include <psp2/libssl.h>
 #include <psp2/sysmodule.h>
+#include <new>
 
 // Second option menu ("More..."): its own page, since the first is still fading out.
 #define page_option_menu_sub (0xcd2afa0du)
@@ -703,6 +704,7 @@ bool BrowserMenu::PopPage()
 	if (!isLast)
 	{
 		BrowserPage *current = m_pages.back();
+		RestoreListGeometry(current);
 		int32_t wasOpened = current->opened;
 		current->opened = -1;
 		SetRowIcon(current, wasOpened);
@@ -728,6 +730,14 @@ bool BrowserMenu::PopPage()
 	}
 
 	return true;
+}
+
+void BrowserMenu::RestoreListGeometry(BrowserPage *page)
+{
+	if (!page || !page->list) return;
+	page->list->SetAdjust(ui::Widget::ADJUST_NONE, ui::Widget::ADJUST_NONE, ui::Widget::ADJUST_NONE);
+	page->list->SetSize(960.0f, m_searchVisible ? 368.0f : 448.0f, 0.0f);
+	page->list->SetPos(0.0f, m_searchVisible ? -232.0f : -272.0f, 0.0f);
 }
 
 void BrowserMenu::Refresh()
@@ -1391,7 +1401,13 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		buttons.push_back(bt);
 	}
 
-	new OptionMenu(g_appPlugin, m_root, &buttons, submenu ? page_option_menu_sub : 0xd098335eu);
+	OptionMenu *menu = new (std::nothrow) OptionMenu(g_appPlugin, m_root, &buttons,
+		submenu ? page_option_menu_sub : 0xd098335eu);
+	if (!menu)
+	{
+		HighlightOptionTarget(false);
+		m_root->SetActivate(true);
+	}
 }
 
 void BrowserMenu::HighlightOptionTarget(bool highlighted)
@@ -1421,7 +1437,8 @@ void BrowserMenu::OpenSortMenu()
 		button.label = g_appPlugin->GetString(labels[i]);
 		buttons.push_back(button);
 	}
-	new OptionMenu(g_appPlugin, m_root, &buttons, page_option_menu_sort);
+	OptionMenu *menu = new (std::nothrow) OptionMenu(g_appPlugin, m_root, &buttons, page_option_menu_sort);
+	if (!menu) m_root->SetActivate(true);
 }
 
 void BrowserMenu::OnOption(int32_t index)
