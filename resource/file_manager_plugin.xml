@@ -27,7 +27,7 @@
       </button>
       <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_search_page_browser" />
       <plane texture="tex_ui_ftp" id="plane_ftp_indicator_page_browser">
-        <layout_hint size="36, 36" pos="-330, 208" />
+        <layout_hint size="36, 36" pos="356, -215" />
       </plane>
       <text_box auto_scroll="1" ime_type="0" edit_mode="1" paste_mode="1" edit_auto_transition_mode="0" style="style_text_box_input" id="text_box_search_page_browser">
         <layout_hint size="860, 44" pos="0, 174" />
@@ -38,6 +38,9 @@
       </text>
 	  <button style="style_button_alpha_toggle" id="button_alpha_page_browser">
 		<layout_hint size="46, 46" pos="-452, 190" />
+		<plane style="style_plane_index_icon" texture="tex_new_search" id="plane_alpha_icon_page_browser">
+		  <layout_hint size="30, 30" />
+		</plane>
 	  </button>
       <plane style="style_plane_alpha_bubble" id="plane_alpha_bubble_page_browser">
         <layout_hint size="68, 68" pos="-382, 0" />
@@ -83,7 +86,7 @@
         <focus_hint enable="0" />
       </button>
       <button style="_common_default_style_button_transparent" id="button_music_indicator_page_browser">
-        <layout_hint size="52, 52" pos="430, -160" />
+        <layout_hint size="52, 52" pos="356, -165" />
         <focus_hint enable="0" />
         <plane style="style_plane_music_indicator" texture="tex_ui_music" id="plane_music_indicator_page_browser">
           <layout_hint size="42, 42" />
@@ -461,6 +464,9 @@
       <planeobj id="plane_obj1" />
     </style_plane>
     <style_plane color="1, 1, 1, 0.86" planeobj="plane_obj1" id="style_plane_music_indicator">
+      <planeobj id="plane_obj1" />
+    </style_plane>
+    <style_plane color="1, 1, 1, 0.58" planeobj="plane_obj1" id="style_plane_index_icon">
       <planeobj id="plane_obj1" />
     </style_plane>
     <style_plane color="1, 1, 1, 0.20" planeobj="plane_obj1" id="style_plane_qr_frame">

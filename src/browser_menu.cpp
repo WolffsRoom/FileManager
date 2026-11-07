@@ -309,7 +309,6 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 	m_alphaBubble = m_root->FindChild(plane_alpha_bubble_page_browser);
 	m_alphaLetter = m_root->FindChild(text_alpha_letter_page_browser);
 	m_alphaButton = m_root->FindChild(button_alpha_page_browser);
-	m_alphaButton->SetString(ToWide(paf::string("Superior")));
 	m_alphaButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
 	{
@@ -389,6 +388,8 @@ void BrowserMenu::UpdateBackground()
 	theme::UpdateBackground(m_background);
 	if (MusicMenu::HasMinimized()) m_musicIndicator->Show(common::transition::Type_Reset);
 	else m_musicIndicator->Hide(common::transition::Type_Reset);
+	if (ftp::IsRunning()) m_ftpIndicator->Show(common::transition::Type_Reset);
+	else m_ftpIndicator->Hide(common::transition::Type_Reset);
 }
 
 // ------------------------------------------------------------------ pages
