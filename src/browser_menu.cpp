@@ -443,25 +443,6 @@ void BrowserMenu::UpdateChrome()
 	SetSearchVisible(false);
 }
 
-void BrowserMenu::StartListItem(ui::listview::ItemFactory::StartParam &param)
-{
-	bool mainMenu = false;
-	for (uint32_t i = 0; i < m_pages.size(); i++)
-	{
-		if (m_pages.at(i)->list == param.list_view)
-		{
-			mainMenu = m_pages.at(i)->path.empty();
-			break;
-		}
-	}
-	BrowserPage *owner = NULL;
-	for (uint32_t i = 0; i < m_pages.size(); i++)
-		if (m_pages.at(i)->list == param.list_view) owner = m_pages.at(i);
-	// ListView recycles cells. Replaying SlideFromBottom on a recycled cell leaves
-	// several transition layers visible, which looked like duplicated rows.
-	param.list_item->Show(common::transition::Type_Reset);
-}
-
 void BrowserMenu::ToggleAlphaIndex()
 {
 	BrowserPage *page = Top();
@@ -653,9 +634,6 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	page->cellCount = 0;
 	page->focused = -1;
 	page->loaded = false;
-	// Only the main menu uses the stacked opening animation. Folder navigation
-	// uses ScePaf's native 3D page transition below.
-	page->openingAnimation = path.empty();
 
 	g_appPlugin->TemplateOpen(m_browserRoot, template_list_view_generic, tmpParam);
 	page->list = static_cast<ui::ListView *>(m_browserRoot->GetChild(m_browserRoot->GetChildrenNum() - 1));
@@ -664,7 +642,6 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	math::v4 cellSize(960.0f, fs::IsRootStyle(physicalPath) ? k_rowRoot : k_rowFile);
 	page->list->SetCellSizeDefault(0, cellSize);
 	page->list->SetSegmentLayoutType(0, ui::ListView::LAYOUT_TYPE_LIST);
-	page->list->SetPos(0.0f, -272.0f, 0.0f);
 
 	if (!m_pages.empty())
 	{
@@ -675,8 +652,6 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 			older->list->SetTransitionComplete(false);
 		}
 		BrowserPage *current = m_pages.back();
-		current->list->SetSize(960.0f, 448.0f, 0.0f);
-		current->list->SetPos(0.0f, -272.0f, 0.0f);
 		current->list->Show(common::transition::Type_3D_SlideToBack1);
 		current->list->SetTransitionComplete(false);
 	}
@@ -709,8 +684,7 @@ bool BrowserMenu::PopPage()
 
 	if (!isLast)
 	{
-		common::transition::DoReverse(-100.0f, page->list,
-			common::transition::Type_3D_SlideFromFront, true, false);
+		common::transition::DoReverse(-100.0f, page->list, common::transition::Type_3D_SlideFromFront, true, false);
 	}
 
 	fs::FreeList(&page->all);
@@ -732,8 +706,6 @@ bool BrowserMenu::PopPage()
 		int32_t wasOpened = current->opened;
 		current->opened = -1;
 		SetRowIcon(current, wasOpened);
-		current->list->SetSize(960.0f, 448.0f, 0.0f);
-		current->list->SetPos(0.0f, -272.0f, 0.0f);
 		current->list->Hide(common::transition::Type_3D_SlideToBack1);
 		current->list->Show(common::transition::Type_Reset);
 		current->list->SetTransitionComplete(false);
@@ -821,12 +793,6 @@ void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 	{
 		page->cellCount = page->entries.size();
 		page->list->InsertCell(0, 0, page->cellCount);
-		if (page->openingAnimation)
-		{
-			page->list->Hide(common::transition::Type_Reset);
-			page->list->SetPos(0.0f, -272.0f, 0.0f);
-			page->list->Show(common::transition::Type_SlideFromBottom4);
-		}
 		if (page->focused >= 0)
 			page->list->SetFocus(0, page->focused, ui::ListView::FOCUS_ALIGN_TYPE_CENTER, NULL);
 	}
@@ -844,7 +810,6 @@ void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 	thread::RMutex::MainThreadMutex()->Unlock();
 
 	page->loaded = true;
-	page->openingAnimation = false;
 }
 
 intrusive_ptr<graph::Surface> BrowserMenu::Icon(uint32_t hash)

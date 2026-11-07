@@ -17,8 +17,8 @@ if ($browser -notmatch 'Type_3D_SlideToBack1' -or $browser -notmatch 'Type_3D_Sl
 if ($browser -match 'Type_SlideFromRight2' -or $browser -match 'Type_SlideFromLeft2') {
     throw 'generic lateral transitions still replace the native folder navigation'
 }
-if ($browser -notmatch 'openingAnimation = path\.empty\(\)') {
-    throw 'folder pages still replay the main-menu opening animation'
+if ($browser -match 'openingAnimation') {
+    throw 'post-v0.2 list-level opening animation is still present'
 }
 if ($music -notmatch 's_minimizedPlayer != NULL && musicIsPlaying\(\)') {
     throw 'background indicator is not restricted to active playback'

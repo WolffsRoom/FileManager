@@ -65,7 +65,7 @@ public:
 
 		void Start(StartParam &param)
 		{
-			m_parent->StartListItem(param);
+			param.list_item->Show(paf::common::transition::Type_Popup1);
 		}
 
 	private:
@@ -87,7 +87,6 @@ public:
 		int32_t opened;             // row whose folder is open above this page
 		float width;                // current list width
 		volatile bool loaded;
-		bool openingAnimation;
 	};
 
 	BrowserMenu();
@@ -127,7 +126,6 @@ public:
 	void UpdateBackground();
 	void UpdateAlphaIndex();
 	void ToggleAlphaIndex();
-	void StartListItem(paf::ui::listview::ItemFactory::StartParam &param);
 
 
 private:
