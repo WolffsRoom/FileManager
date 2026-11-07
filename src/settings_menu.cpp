@@ -259,6 +259,7 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		const theme::Info &preview = theme::At(row);
 		if (row != (int32_t)theme::CustomIndex())
 		{
+			themePreview->SetTexture(g_appPlugin->GetTexture(tex_new_theme), 0, 0);
 			themePreview->SetColor(preview.bg[0], preview.bg[1], preview.bg[2], 0.88f);
 			themePreview->Show(common::transition::Type_Reset);
 		}

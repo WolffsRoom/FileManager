@@ -291,7 +291,7 @@ void MusicMenu::ListenInBackground()
 
 bool MusicMenu::HasMinimized()
 {
-	return s_minimizedPlayer != NULL;
+	return s_minimizedPlayer != NULL && musicIsPlaying();
 }
 
 void MusicMenu::RestoreMinimized()

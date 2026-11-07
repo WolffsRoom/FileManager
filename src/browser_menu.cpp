@@ -653,7 +653,9 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	page->cellCount = 0;
 	page->focused = -1;
 	page->loaded = false;
-	page->openingAnimation = path.empty();
+	// Animate the whole list, never its recycled cells. This preserves the
+	// native page motion without creating duplicated/stacked row layers.
+	page->openingAnimation = true;
 
 	g_appPlugin->TemplateOpen(m_browserRoot, template_list_view_generic, tmpParam);
 	page->list = static_cast<ui::ListView *>(m_browserRoot->GetChild(m_browserRoot->GetChildrenNum() - 1));
@@ -729,7 +731,7 @@ bool BrowserMenu::PopPage()
 		SetRowIcon(current, wasOpened);
 		current->list->SetPos(0.0f, -272.0f, 0.0f);
 		current->list->Hide(common::transition::Type_Reset);
-		current->list->Show(common::transition::Type_Reset);
+		current->list->Show(common::transition::Type_SlideFromLeft2);
 		current->list->SetTransitionComplete(false);
 		if (m_pages.size() > 1)
 		{
@@ -819,7 +821,9 @@ void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 		{
 			page->list->Hide(common::transition::Type_Reset);
 			page->list->SetPos(0.0f, -272.0f, 0.0f);
-			page->list->Show(common::transition::Type_SlideFromBottom4);
+			page->list->Show(page->path.empty()
+				? common::transition::Type_SlideFromBottom4
+				: common::transition::Type_SlideFromRight2);
 		}
 		if (page->focused >= 0)
 			page->list->SetFocus(0, page->focused, ui::ListView::FOCUS_ALIGN_TYPE_CENTER, NULL);
@@ -1760,6 +1764,13 @@ void BrowserMenu::StartOperation(int32_t type)
 		m_undoFrom.clear();
 		m_undoTo.clear();
 		m_undoType = Undo_None;
+	}
+	else if (type == Op_Install && !m_opSources.empty())
+	{
+		const char *path = m_opSources.at(0).c_str();
+		const char *slash = strrchr(path, '/');
+		progressText += L"\n";
+		progressText += ToWide(slash ? slash + 1 : path);
 	}
 	dialog::OpenProgress(g_appPlugin, NULL, progressText.c_str());
 	if (type == Op_Install && !m_opSources.empty())
