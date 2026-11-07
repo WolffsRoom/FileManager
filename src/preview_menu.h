@@ -24,6 +24,9 @@ public:
 	void OnImageTouch();
 	void OnOptions();
 	void OnOption(int32_t index);
+	void OnRenameEntered(const paf::wstring &text);
+	void OnDeleteAnswer(int32_t buttonCode);
+	void SetArrowPressed(bool left, bool pressed);
 
 	/** Closes the page on the next frame. */
 	void Close();
@@ -39,6 +42,7 @@ private:
 	bool StartVideo(const char *path);
 	void ShowError();
 	void ApplyImageTransform();
+	void RemoveCurrentPath();
 	enum { OptionTag = 0x50525657 };
 
 	paf::ui::Widget *m_parentRoot;
@@ -91,6 +95,7 @@ private:
 	bool m_flipX;
 	bool m_flipY;
 	int32_t m_viewMode;
+	bool m_deletePending;
 };
 
 #endif

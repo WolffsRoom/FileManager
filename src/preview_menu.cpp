@@ -19,8 +19,11 @@ extern "C" int sceAvPlayerStreamCount(SceAvPlayerHandle handle);
 extern "C" int sceAvPlayerStart(SceAvPlayerHandle handle);
 
 #include "common.h"
+#include "dialog.h"
 #include "preview_menu.h"
 #include "option_menu.h"
+#include "text_input.h"
+#include "core/fs.h"
 
 using namespace paf;
 
@@ -288,7 +291,7 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_loadId(0), m_jobId(0),
 	m_player(0), m_videoActive(false), m_imageActive(false), m_paused(false), m_frameShown(false), m_rgba(NULL), m_videoW(0), m_videoH(0),
 	m_touchActive(false), m_pinchActive(false), m_touchStartX(0), m_touchStartY(0), m_touchLastX(0), m_touchLastY(0),
-	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false), m_viewMode(0)
+	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false), m_viewMode(0), m_deletePending(false)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -357,10 +360,20 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 		PreviewMenu *menu = reinterpret_cast<PreviewMenu *>(userdata);
 		menu->Open((menu->m_index + 1) % menu->m_paths.size());
 	}, this);
-	AddKey(m_root->FindChild(button_arrow_left_page_preview), 0,
-	[](int32_t, ui::Handler *, ui::Event *, void *userdata) { reinterpret_cast<PreviewMenu *>(userdata)->StepImage(-1); }, this);
-	AddKey(m_root->FindChild(button_arrow_right_page_preview), 0,
-	[](int32_t, ui::Handler *, ui::Event *, void *userdata) { reinterpret_cast<PreviewMenu *>(userdata)->StepImage(1); }, this);
+	ui::Widget *leftArrowButton = m_root->FindChild(button_arrow_left_page_preview);
+	ui::Widget *rightArrowButton = m_root->FindChild(button_arrow_right_page_preview);
+	AddKey(leftArrowButton, 0,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata) { PreviewMenu *m = reinterpret_cast<PreviewMenu *>(userdata); m->SetArrowPressed(true, false); m->StepImage(-1); }, this);
+	AddKey(rightArrowButton, 0,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata) { PreviewMenu *m = reinterpret_cast<PreviewMenu *>(userdata); m->SetArrowPressed(false, false); m->StepImage(1); }, this);
+	leftArrowButton->AddEventCallback(ui::Button::CB_BTN_PRESS,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata) { reinterpret_cast<PreviewMenu *>(userdata)->SetArrowPressed(true, true); }, this);
+	leftArrowButton->AddEventCallback(ui::Button::CB_BTN_PRESS_OUT,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata) { reinterpret_cast<PreviewMenu *>(userdata)->SetArrowPressed(true, false); }, this);
+	rightArrowButton->AddEventCallback(ui::Button::CB_BTN_PRESS,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata) { reinterpret_cast<PreviewMenu *>(userdata)->SetArrowPressed(false, true); }, this);
+	rightArrowButton->AddEventCallback(ui::Button::CB_BTN_PRESS_OUT,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata) { reinterpret_cast<PreviewMenu *>(userdata)->SetArrowPressed(false, false); }, this);
 	AddKey(m_root->FindChild(button_down_page_preview), inputdevice::pad::Data::PAD_DOWN,
 	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
 	{
@@ -411,6 +424,11 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 			}
 		}
 	}, this);
+	m_root->AddEventCallback(dialog::DialogEvent,
+	[](int32_t, ui::Handler *, ui::Event *e, void *userdata)
+	{
+		reinterpret_cast<PreviewMenu *>(userdata)->OnDeleteAnswer(e->GetValue(0));
+	}, this);
 
 	common::MainThreadCallList::Register(ImageTouchTask, this);
 
@@ -453,6 +471,12 @@ void PreviewMenu::StepImage(int32_t delta)
 	if (m_videoActive || m_paths.size() < 2) return;
 	int32_t n = m_paths.size();
 	Open((m_index + n + delta) % n);
+}
+
+void PreviewMenu::SetArrowPressed(bool left, bool pressed)
+{
+	ui::Widget *arrow = left ? m_leftArrow : m_rightArrow;
+	arrow->SetColor(1.0f, 1.0f, 1.0f, pressed ? 0.28f : 1.0f);
 }
 
 void PreviewMenu::SetViewMode(int32_t mode)
@@ -613,11 +637,15 @@ void PreviewMenu::OnOptions()
 {
 	if (!m_imageActive || m_videoActive) return;
 	paf::vector<OptionMenu::Button> buttons;
-	OptionMenu::Button mirror, invert;
+	OptionMenu::Button mirror, invert, rename, remove;
 	mirror.label = g_appPlugin->GetString(msg_preview_mirror);
 	invert.label = g_appPlugin->GetString(msg_preview_invert);
+	rename.label = g_appPlugin->GetString(msg_opt_rename);
+	remove.label = g_appPlugin->GetString(msg_opt_delete);
 	buttons.push_back(mirror);
 	buttons.push_back(invert);
+	buttons.push_back(rename);
+	buttons.push_back(remove);
 	new OptionMenu(g_appPlugin, m_root, &buttons, 0xd098335eu, OptionTag);
 }
 
@@ -625,7 +653,66 @@ void PreviewMenu::OnOption(int32_t index)
 {
 	if (index == 0) m_flipX = !m_flipX;
 	else if (index == 1) m_flipY = !m_flipY;
+	else if (index == 2)
+	{
+		const paf::string &path = m_paths.at(m_index);
+		const char *slash = strrchr(path.c_str(), '/');
+		paf::wstring initial;
+		common::Utf8ToUtf16(slash ? slash + 1 : path.c_str(), &initial);
+		new TextInput(m_root, g_appPlugin->GetString(msg_rename_title), initial,
+		[](const paf::wstring &text, void *userdata) { reinterpret_cast<PreviewMenu *>(userdata)->OnRenameEntered(text); }, this);
+		return;
+	}
+	else if (index == 3)
+	{
+		m_deletePending = true;
+		const paf::string &path = m_paths.at(m_index);
+		const char *slash = strrchr(path.c_str(), '/');
+		paf::wstring name;
+		common::Utf8ToUtf16(slash ? slash + 1 : path.c_str(), &name);
+		dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_confirm_delete_title), name.c_str());
+		return;
+	}
 	ApplyImageTransform();
+}
+
+void PreviewMenu::OnRenameEntered(const paf::wstring &text)
+{
+	if (text.empty() || m_index < 0 || m_index >= (int32_t)m_paths.size()) return;
+	paf::string name;
+	common::Utf16ToUtf8(text, &name);
+	if (!fs::IsValidName(name.c_str())) { dialog::OpenError(g_appPlugin, SCE_ERROR_ERRNO_EINVAL); return; }
+	paf::string oldPath = m_paths.at(m_index);
+	const char *slash = strrchr(oldPath.c_str(), '/');
+	if (!slash) return;
+	char renamed[1024];
+	int32_t parentLen = slash - oldPath.c_str() + 1;
+	if (parentLen + (int32_t)name.length() >= (int32_t)sizeof(renamed)) { dialog::OpenError(g_appPlugin, SCE_ERROR_ERRNO_ENAMETOOLONG); return; }
+	memcpy(renamed, oldPath.c_str(), parentLen);
+	strcpy(renamed + parentLen, name.c_str());
+	int32_t ret = sceIoRename(oldPath.c_str(), renamed);
+	if (ret < 0) { dialog::OpenError(g_appPlugin, ret); return; }
+	m_paths.at(m_index) = renamed;
+	Open(m_index);
+}
+
+void PreviewMenu::OnDeleteAnswer(int32_t buttonCode)
+{
+	if (!m_deletePending) return;
+	m_deletePending = false;
+	if (buttonCode != dialog::ButtonCode_Yes || m_index < 0 || m_index >= (int32_t)m_paths.size()) return;
+	int32_t ret = sceIoRemove(m_paths.at(m_index).c_str());
+	if (ret < 0) { dialog::OpenError(g_appPlugin, ret); return; }
+	RemoveCurrentPath();
+}
+
+void PreviewMenu::RemoveCurrentPath()
+{
+	if (m_index < 0 || m_index >= (int32_t)m_paths.size()) return;
+	m_paths.erase(m_paths.begin() + m_index);
+	if (m_paths.empty()) { Close(); return; }
+	if (m_index >= (int32_t)m_paths.size()) m_index = m_paths.size() - 1;
+	Open(m_index);
 }
 
 void PreviewMenu::OnImageTouch()

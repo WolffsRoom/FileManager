@@ -308,7 +308,7 @@
         <layout_hint size="800, 60" />
       </text>
       <text style="style_text_preview_title" auto_scroll="1" id="text_title_page_preview">
-		<layout_hint align="0, 1" anchor="0, 1" size="760, 38" pos="0, 88" />
+		<layout_hint align="0, 1" anchor="0, 1" size="760, 38" pos="0, 18" />
       </text>
 	  <plane texture="tex_preview_arrow_left" id="plane_arrow_left_page_preview">
 		<layout_hint size="56, 56" pos="-438, 0" />
