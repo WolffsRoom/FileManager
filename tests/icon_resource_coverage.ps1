@@ -53,6 +53,6 @@ $settings = Get-Content (Join-Path $root 'src/settings_menu.cpp') -Raw
 if ($browser -notmatch 'tex_ui_suprx' -or $browser -notmatch 'tex_ui_favorite_file' -or $browser -notmatch 'fs::IsGameFormat') { throw 'Browser icon mapping incomplete' }
 if ($settings -notmatch 'tex_ui_font_size' -or $settings -notmatch 'tex_ui_language' -or $settings -notmatch 'tex_ui_unlock' -or $settings -notmatch 'tex_ui_locked') { throw 'Settings icon mapping incomplete' }
 if ($settings -notmatch 'm_emptyShortcuts->Show') { throw 'Empty shortcut label is still a selectable row' }
-if ($browser -notmatch 'new UsbMenu') { throw 'USB mode has no safe blocking status page' }
+if ($browser -notmatch 'UsbMenu::Open') { throw 'USB mode has no safe blocking status page' }
 if (-not (Test-Path (Join-Path $root 'src/usb_menu.cpp'))) { throw 'USB menu implementation missing' }
 "Icon/resource audit passed: $($extensions.Count) game formats, $($actual.Count) RCO textures"

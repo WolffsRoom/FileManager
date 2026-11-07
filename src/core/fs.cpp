@@ -286,13 +286,54 @@ void shortcuts::Remove(const paf::string &path)
 	List();
 	for (uint32_t i = 0; i < s_shortcuts.size(); i++)
 	{
-		if (strcmp(s_shortcuts.at(i).c_str(), path.c_str()) == 0)
+		if (!strcasecmp(s_shortcuts.at(i).c_str(), path.c_str()))
 		{
 			s_shortcuts.erase(s_shortcuts.begin() + i);
-			break;
+			SaveShortcuts();
+			return;
 		}
 	}
-	SaveShortcuts();
+}
+
+namespace {
+	bool SameOrDescendant(const paf::string &candidate, const paf::string &parent)
+	{
+		const size_t n = parent.length();
+		return !strncasecmp(candidate.c_str(), parent.c_str(), n) &&
+			(candidate.length() == n || candidate.c_str()[n] == '/');
+	}
+}
+
+void shortcuts::RemovePath(const paf::string &path)
+{
+	List();
+	bool changed = false;
+	for (uint32_t i = 0; i < s_shortcuts.size();)
+	{
+		if (SameOrDescendant(s_shortcuts.at(i), path))
+		{
+			s_shortcuts.erase(s_shortcuts.begin() + i);
+			changed = true;
+		}
+		else ++i;
+	}
+	if (changed) SaveShortcuts();
+}
+
+void shortcuts::RenamePath(const paf::string &oldPath, const paf::string &newPath)
+{
+	if (!strcasecmp(oldPath.c_str(), newPath.c_str())) return;
+	List();
+	bool changed = false;
+	for (uint32_t i = 0; i < s_shortcuts.size(); i++)
+	{
+		if (!SameOrDescendant(s_shortcuts.at(i), oldPath)) continue;
+		paf::string updated = newPath;
+		updated += s_shortcuts.at(i).c_str() + oldPath.length();
+		s_shortcuts.at(i) = updated;
+		changed = true;
+	}
+	if (changed) SaveShortcuts();
 }
 
 bool fs::IsRootStyle(const paf::string &path)
@@ -370,9 +411,10 @@ void fs::ListRoot(EntryList *out)
 	for (uint32_t i = 0; i < user.size(); i++)
 	{
 		SceIoStat stat;
-		// File and folder favorites have different artwork and must retain their type.
-		const bool valid = sceIoGetstat(user.at(i).c_str(), &stat) >= 0;
-		const bool isDir = !valid || SCE_S_ISDIR(stat.st_mode);
+		// An older favorites file may reference an already deleted item.
+		// Ignore it so the root never exposes an invalid path or crashes on open.
+		if (sceIoGetstat(user.at(i).c_str(), &stat) < 0) continue;
+		const bool isDir = SCE_S_ISDIR(stat.st_mode);
 		Entry *e = NewRootEntry(user.at(i).c_str(), user.at(i).c_str(), 0,
 			isDir ? tex_ui_favorite_folder : tex_ui_favorite_file, isDir);
 		e->kind = isDir ? Kind_Folder : KindForName(user.at(i).c_str());

@@ -44,6 +44,10 @@ public:
 		{
 			param.list_item->Show(paf::common::transition::Type_Popup1);
 		}
+		void Stop(StopParam &param)
+		{
+			param.list_item->Hide(paf::common::transition::Type_Reset);
+		}
 
 	private:
 
@@ -62,6 +66,9 @@ private:
 	void OnBack();
 	void OnRow(int32_t row);
 	void ShowLevel(Level level);
+	void QueueLevel(Level level);
+	void OnPowerRequested(int32_t action);
+	void OnPowerDialog(int32_t buttonCode);
 	int32_t RowCount(Level level);
 	bool IsSelected(int32_t row);
 	void UpdateChecks();
@@ -69,6 +76,10 @@ private:
 	paf::ui::Widget *m_parentRoot;
 	paf::ui::ListView *m_list;
 	paf::ui::Widget *m_emptyShortcuts;
+	paf::ui::Widget *m_powerBar;
+	bool m_levelQueued;
+	Level m_queuedLevel;
+	int32_t m_pendingPower;
 	ChangeCallback m_cb;
 	void *m_userdata;
 	Level m_level;

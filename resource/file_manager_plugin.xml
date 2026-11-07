@@ -27,7 +27,7 @@
       </button>
       <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_search_page_browser" />
       <plane texture="tex_ui_ftp" id="plane_ftp_indicator_page_browser">
-        <layout_hint size="36, 36" pos="356, -215" />
+        <layout_hint size="36, 36" pos="-429, 208" />
       </plane>
       <text_box auto_scroll="1" ime_type="0" edit_mode="1" paste_mode="1" edit_auto_transition_mode="0" style="style_text_box_input" id="text_box_search_page_browser">
         <layout_hint size="860, 44" pos="0, 174" />
@@ -86,10 +86,10 @@
         <focus_hint enable="0" />
       </button>
       <button style="_common_default_style_button_transparent" id="button_music_indicator_page_browser">
-        <layout_hint size="52, 52" pos="356, -165" />
+        <layout_hint size="48, 48" pos="-375, 208" />
         <focus_hint enable="0" />
         <plane style="style_plane_music_indicator" texture="tex_ui_musical" id="plane_music_indicator_page_browser">
-          <layout_hint size="42, 42" />
+          <layout_hint size="36, 36" />
         </plane>
       </button>
     </page>
@@ -98,11 +98,32 @@
         <layout_hint size="960, 544" />
       </plane>
       <template_ref id="template_ref_top_title_bar_page_settings" template="template_top_title_bar" />
+      <plane style="_common_style_plane_transparent" id="plane_power_actions_page_settings">
+        <layout_hint size="960, 70" pos="0, 158" />
+        <button style="style_button_selection_action" id="button_power_off_page_settings">
+          <layout_hint size="286, 60" pos="-306, 0" />
+          <plane texture="tex_ui_turn_off" id="icon_power_off_page_settings">
+            <layout_hint size="36, 36" pos="-107, 0" />
+          </plane>
+        </button>
+        <button style="style_button_selection_action" id="button_power_restart_page_settings">
+          <layout_hint size="286, 60" pos="0, 0" />
+          <plane texture="tex_ui_restart" id="icon_power_restart_page_settings">
+            <layout_hint size="36, 36" pos="-107, 0" />
+          </plane>
+        </button>
+        <button style="style_button_selection_action" id="button_power_sleep_page_settings">
+          <layout_hint size="286, 60" pos="306, 0" />
+          <plane texture="tex_ui_standbye" id="icon_power_sleep_page_settings">
+            <layout_hint size="36, 36" pos="-107, 0" />
+          </plane>
+        </button>
+      </plane>
       <list_view style="style_list_view_generic" id="list_view_page_settings">
-        <layout_hint align="0, 1" size="960, 448" pos="0, -272" />
+        <layout_hint align="0, 1" size="960, 350" pos="0, -225" />
       </list_view>
-      <text style="style_text_empty" id="text_shortcuts_empty_page_settings">
-        <layout_hint size="800, 100" pos="0, 12" />
+      <text style="style_text_shortcuts_empty" id="text_shortcuts_empty_page_settings">
+        <layout_hint size="850, 148" pos="0, -8" />
       </text>
       <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_settings" />
     </page>
@@ -475,6 +496,10 @@
     <style_text textobj="text_obj1" id="style_text_top_title_bar">
       <textobj font_size="19" bold="1" align_y="1" align_x="1" ellipsis="1" id="text_obj1" />
     </style_text>
+    <style_text textobj="text_obj1" id="style_text_shortcuts_empty">
+      <textobj font_size="23" align_y="1" align_x="1" word_wrap="1" max_line_count="4"
+        line_pitch="31" font_color="0.75, 0.78, 0.82, 1" id="text_obj1" />
+    </style_text>
     <style_text textobj="text_obj1" id="style_text_empty">
       <textobj font_size="28" align_y="1" align_x="1" font_color="0.75, 0.78, 0.82, 1" id="text_obj1" />
     </style_text>
@@ -732,6 +757,9 @@
     <texture src="ui/font_size.png" type="texture/png" id="tex_ui_font_size" />
     <texture src="ui/unlock.png" type="texture/png" id="tex_ui_unlock" />
     <texture src="ui/usb.png" type="texture/png" id="tex_ui_usb" />
+    <texture src="ui/turn-off.png" type="texture/png" id="tex_ui_turn_off" />
+    <texture src="ui/restart.png" type="texture/png" id="tex_ui_restart" />
+    <texture src="ui/standbye.png" type="texture/png" id="tex_ui_standbye" />
     <texture src="ui/archive_icon.png" type="texture/png" id="tex_ui_archive" />
     <texture src="ui/audio_icon.png" type="texture/png" id="tex_ui_audio" />
     <texture src="ui/file_icon.png" type="texture/png" id="tex_ui_file" />

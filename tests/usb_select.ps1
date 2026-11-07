@@ -11,7 +11,7 @@ if ($menu -notmatch 'Level_UsbDevice' -or $menu -notmatch 'return 4') { throw 'S
 foreach ($path in @('sdstor0:xmc-lp-ign-userext','sdstor0:gcd-lp-ign-gamero','sdstor0:gcd-lp-ign-entire','sdstor0:uma-pp-act-a')) {
     if ($usb -notmatch [regex]::Escape($path)) { throw "USB path mapping missing: $path" }
 }
-if ($browser -notmatch 'usb::Toggle') { throw 'Select does not activate the configured USB device' }
+if ($browser -notmatch 'UsbMenu::Open') { throw 'Select does not open the configured USB modal' }; if ((Get-Content -Raw "$PSScriptRoot\..\src\usb_menu.cpp") -notmatch 'usb::Toggle') { throw 'USB modal does not start the service' }
 if ($cmake -notmatch 'modules/usbdevice/usbdevice.skprx module/usbdevice.skprx') { throw 'usbdevice.skprx is not packaged' }
 if ($cmake -notmatch 'resources/umass.skprx module/umass.skprx') { throw 'umass.skprx is not packaged' }
 

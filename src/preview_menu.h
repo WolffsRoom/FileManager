@@ -13,7 +13,9 @@ class PreviewMenu
 {
 public:
 
-	PreviewMenu(paf::ui::Widget *parentRoot, const paf::vector<paf::string> &paths, int32_t index);
+	typedef void (*ChangeCallback)(void *user);
+	PreviewMenu(paf::ui::Widget *parentRoot, const paf::vector<paf::string> &paths,
+		int32_t index, ChangeCallback onChanged = NULL, void *userdata = NULL);
 	~PreviewMenu();
 
 	/** Worker-thread side of loading an image. */
@@ -46,6 +48,9 @@ private:
 	enum { OptionTag = 0x50525657 };
 
 	paf::ui::Widget *m_parentRoot;
+	ChangeCallback m_onChanged;
+	void *m_userdata;
+	bool m_filesChanged;
 	paf::ui::Scene *m_root;
 	paf::ui::Widget *m_plane;
 	paf::ui::BusyIndicator *m_busy;

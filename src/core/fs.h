@@ -81,4 +81,8 @@ namespace shortcuts {
 	void Add(const paf::string &path);
 	void Remove(const paf::string &path);
 	bool Contains(const paf::string &path);
+	/** Keep favorites in sync with successful file/folder rename and move operations. */
+	void RenamePath(const paf::string &oldPath, const paf::string &newPath);
+	/** Delete a favorite and all descendants of a removed folder. */
+	void RemovePath(const paf::string &path);
 }

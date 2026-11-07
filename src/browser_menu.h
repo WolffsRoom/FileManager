@@ -127,6 +127,7 @@ public:
 	void SetSearchVisible(bool visible);
 	void SetRowIcon(BrowserPage *page, int32_t index);
 	void UpdateFtpIndicator();
+	void OnPreviewChanged();
 
 	/** The theme changed in the settings page. */
 	void ApplySettings();
@@ -140,6 +141,7 @@ private:
 	void PushPage(const paf::string &path, bool forceDecrypt = false, bool ownsPsarc = false);
 	bool PopPage();
 	void RestoreListGeometry(BrowserPage *page);
+	void RecreateList(BrowserPage *page);
 	void Refresh();
 	BrowserPage *Top() { return m_pages.back(); }
 	void UpdateChrome();
@@ -196,6 +198,10 @@ private:
 	paf::ui::TextBox *m_search;
 	paf::ui::Widget *m_searchButton;
 	paf::ui::Widget *m_ftpIndicator;
+	bool m_ftpShown;
+	bool m_musicShown;
+	bool m_backPending;
+	BrowserPage *m_backPage;
 	paf::ui::Widget *m_musicIndicator;
 	paf::ui::Widget *m_alphaIndex;
 	paf::ui::Widget *m_alphaBubble;

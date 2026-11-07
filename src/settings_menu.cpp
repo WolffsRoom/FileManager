@@ -1,6 +1,10 @@
 #include <sdk_compat.h>
 #include <paf.h>
 #include <string.h>
+#include <psp2/power.h>
+#include <psp2/io/stat.h>
+
+#include "dialog.h"
 
 #include "common.h"
 #include "settings.h"
@@ -59,7 +63,8 @@ namespace {
 }
 
 SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *userdata, bool openUsbDevice) :
-	m_parentRoot(parentRoot), m_cb(cb), m_userdata(userdata), m_level(Level_Main), m_rows(0)
+	m_parentRoot(parentRoot), m_cb(cb), m_userdata(userdata), m_level(Level_Main), m_rows(0),
+	m_levelQueued(false), m_queuedLevel(Level_Main), m_pendingPower(-1)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -76,6 +81,31 @@ SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *user
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
 		reinterpret_cast<SettingsMenu *>(userdata)->OnBack();
+	}, this);
+
+	m_powerBar = m_root->FindChild(plane_power_actions_page_settings);
+	static const uint32_t powerButtons[] = {
+		button_power_off_page_settings, button_power_restart_page_settings,
+		button_power_sleep_page_settings
+	};
+	static const uint32_t powerLabels[] = { msg_power_off, msg_power_restart, msg_power_sleep };
+	for (int32_t i = 0; i < 3; ++i)
+	{
+		ui::Widget *button = m_root->FindChild(powerButtons[i]);
+		button->SetString(Str(powerLabels[i]));
+		button->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+		[](int32_t, ui::Handler *self, ui::Event *, void *user)
+		{
+			uint32_t id = static_cast<ui::Widget *>(self)->GetName().GetIDHash();
+			int action = id == button_power_off_page_settings ? 0 :
+				(id == button_power_restart_page_settings ? 1 : 2);
+			reinterpret_cast<SettingsMenu *>(user)->OnPowerRequested(action);
+		}, this);
+	}
+	m_root->AddEventCallback(dialog::DialogEvent,
+	[](int32_t, ui::Handler *, ui::Event *e, void *user)
+	{
+		reinterpret_cast<SettingsMenu *>(user)->OnPowerDialog(e->GetValue(0));
 	}, this);
 
 	m_emptyShortcuts = m_root->FindChild(text_shortcuts_empty_page_settings);
@@ -99,17 +129,59 @@ SettingsMenu::~SettingsMenu()
 	closeParam.fade_time_ms = 200.0f;
 	g_appPlugin->PageClose(page_settings, closeParam);
 	m_parentRoot->SetActivate(true);
+	if (m_cb) m_cb(m_userdata);
 }
 
 void SettingsMenu::OnBack()
 {
 	if (m_level != Level_Main)
 	{
-		ShowLevel(Level_Main);
+		QueueLevel(Level_Main);
 		return;
 	}
 	m_root->SetActivate(false);
 	DeferDelete(this);
+}
+
+void SettingsMenu::QueueLevel(Level level)
+{
+	// PAF is still dispatching the selected ListView row callback. Changing
+	// its cells synchronously can invalidate the current widget and crash.
+	m_queuedLevel = level;
+	if (m_levelQueued) return;
+	m_levelQueued = true;
+	DeferCall([](void *user)
+	{
+		SettingsMenu *menu = static_cast<SettingsMenu *>(user);
+		menu->m_levelQueued = false;
+		menu->ShowLevel(menu->m_queuedLevel);
+	}, this);
+}
+
+void SettingsMenu::OnPowerRequested(int32_t action)
+{
+	if (m_pendingPower >= 0 || action < 0 || action > 2 || dialog::IsActive()) return;
+	static const uint32_t k_prompts[] = {
+		msg_power_confirm_off, msg_power_confirm_restart, msg_power_confirm_sleep
+	};
+	m_pendingPower = action;
+	dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_opt_settings),
+		g_appPlugin->GetString(k_prompts[action]));
+}
+
+void SettingsMenu::OnPowerDialog(int32_t buttonCode)
+{
+	if (m_pendingPower < 0) return;
+	const int32_t action = m_pendingPower;
+	m_pendingPower = -1;
+	if (buttonCode != dialog::ButtonCode_Yes) return;
+	// User-level ScePower functions are exactly those used by FMVita.
+	// Standby requests shutdown; Suspend enters sleep mode.
+	int32_t result = 0;
+	if (action == 0) result = scePowerRequestStandby();
+	else if (action == 1) result = scePowerRequestColdReset();
+	else result = scePowerRequestSuspend();
+	if (result < 0) dialog::OpenError(g_appPlugin, result);
 }
 
 int32_t SettingsMenu::RowCount(Level level)
@@ -136,6 +208,24 @@ void SettingsMenu::ShowLevel(Level level)
 		m_list->DeleteCell(0, 0, m_rows);
 	}
 	m_level = level;
+	if (level == Level_Main)
+	{
+		static const uint32_t ids[] = {
+			button_power_off_page_settings, button_power_restart_page_settings, button_power_sleep_page_settings
+		};
+		static const uint32_t texts[] = { msg_power_off, msg_power_restart, msg_power_sleep };
+		for (int i = 0; i < 3; ++i)
+			m_root->FindChild(ids[i])->SetString(Str(texts[i]));
+		m_powerBar->Show(common::transition::Type_Reset);
+		m_list->SetSize(960.0f, 350.0f, 0.0f);
+		m_list->SetPos(0.0f, -225.0f, 0.0f);
+	}
+	else
+	{
+		m_powerBar->Hide(common::transition::Type_Reset);
+		m_list->SetSize(960.0f, 448.0f, 0.0f);
+		m_list->SetPos(0.0f, -272.0f, 0.0f);
+	}
 
 	if (level == Level_Shortcuts)
 	{
@@ -173,7 +263,8 @@ bool SettingsMenu::IsSelected(int32_t row)
 	case Level_Select: return c.selectFunction == row;
 	case Level_UsbDevice: return c.usbDevice == row;
 	case Level_AutoDecrypt: return c.autoDecrypt == row;
-	case Level_Shortcuts: return row < (int32_t)m_shortcutKept.size() && m_shortcutKept.at(row);
+	case Level_Shortcuts: return row >= 0 && row < (int32_t)m_shortcuts.size() &&
+		shortcuts::Contains(m_shortcuts.at(row));
 	default: return false;
 	}
 }
@@ -251,7 +342,9 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		break;
 	case Level_Shortcuts:
 		label = Wide(m_shortcuts.at(row).c_str());
-		icon = tex_ui_favorite_folder;
+		SceIoStat stat;
+		icon = sceIoGetstat(m_shortcuts.at(row).c_str(), &stat) >= 0 &&
+			!SCE_S_ISDIR(stat.st_mode) ? tex_ui_favorite_file : tex_ui_favorite_folder;
 		break;
 	case Level_Commands:
 		label = Str(k_commands[row][1]);
@@ -338,13 +431,13 @@ void SettingsMenu::OnRow(int32_t row)
 	switch (m_level)
 	{
 	case Level_Main:
-		if (row == Main_Themes) ShowLevel(Level_Themes);
-		else if (row == Main_FontSize) ShowLevel(Level_FontSize);
-		else if (row == Main_Language) ShowLevel(Level_Language);
-		else if (row == Main_Select) ShowLevel(Level_Select);
-		else if (row == Main_AutoDecrypt) ShowLevel(Level_AutoDecrypt);
-		else if (row == Main_Shortcuts) ShowLevel(Level_Shortcuts);
-		else if (row == Main_Commands) ShowLevel(Level_Commands);
+		if (row == Main_Themes) QueueLevel(Level_Themes);
+		else if (row == Main_FontSize) QueueLevel(Level_FontSize);
+		else if (row == Main_Language) QueueLevel(Level_Language);
+		else if (row == Main_Select) QueueLevel(Level_Select);
+		else if (row == Main_AutoDecrypt) QueueLevel(Level_AutoDecrypt);
+		else if (row == Main_Shortcuts) QueueLevel(Level_Shortcuts);
+		else if (row == Main_Commands) QueueLevel(Level_Commands);
 		else new AboutMenu(m_root);
 		return;
 	case Level_Themes:
@@ -358,11 +451,11 @@ void SettingsMenu::OnRow(int32_t row)
 		c.language = row;
 		settings::ApplyLanguage();
 		// Rows of this page take the new strings when rebuilt.
-		ShowLevel(Level_Language);
+		QueueLevel(Level_Language);
 		break;
 	case Level_Select:
 		c.selectFunction = row;
-		if (row == 2) { settings::Save(); ShowLevel(Level_UsbDevice); m_cb(m_userdata); return; }
+		if (row == 2) { settings::Save(); QueueLevel(Level_UsbDevice); return; }
 		break;
 	case Level_UsbDevice:
 		c.usbDevice = row;
@@ -371,23 +464,16 @@ void SettingsMenu::OnRow(int32_t row)
 		c.autoDecrypt = row;
 		break;
 	case Level_Shortcuts:
-		if (!m_shortcuts.empty() && row < (int32_t)m_shortcutKept.size())
+		if (row >= 0 && row < (int32_t)m_shortcuts.size())
 		{
-			m_shortcutKept.at(row) = !m_shortcutKept.at(row);
-			if (m_shortcutKept.at(row))
-			{
-				shortcuts::Add(m_shortcuts.at(row));
-			}
-			else
-			{
-				shortcuts::Remove(m_shortcuts.at(row));
-			}
+			// A removed favorite must immediately disappear from this page.
+			shortcuts::Remove(m_shortcuts.at(row));
+			QueueLevel(Level_Shortcuts);
 		}
-		break;
+		return;
 	case Level_Commands:
 		return;
 	}
 	settings::Save();
 	UpdateChecks();
-	m_cb(m_userdata);
 }

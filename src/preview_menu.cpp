@@ -287,8 +287,10 @@ namespace {
 	}
 }
 
-PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &paths, int32_t index) :
-	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_loadId(0), m_jobId(0),
+PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &paths,
+	int32_t index, ChangeCallback onChanged, void *userdata) :
+	m_parentRoot(parentRoot), m_onChanged(onChanged), m_userdata(userdata), m_filesChanged(false),
+	m_paths(paths), m_index(index), m_loadId(0), m_jobId(0),
 	m_player(0), m_videoActive(false), m_imageActive(false), m_paused(false), m_frameShown(false), m_rgba(NULL), m_videoW(0), m_videoH(0),
 	m_touchActive(false), m_pinchActive(false), m_touchStartX(0), m_touchStartY(0), m_touchLastX(0), m_touchLastY(0),
 	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false), m_viewMode(0), m_deletePending(false)
@@ -446,6 +448,8 @@ PreviewMenu::~PreviewMenu()
 	closeParam.fade_time_ms = 200.0f;
 	g_appPlugin->PageClose(page_preview, closeParam);
 	m_parentRoot->SetActivate(true);
+	// Browser must not continue displaying stale filenames after rename/delete.
+	if (m_filesChanged && m_onChanged) m_onChanged(m_userdata);
 }
 
 void PreviewMenu::SeekVideo(int32_t deltaMs)
@@ -646,7 +650,7 @@ void PreviewMenu::OnOptions()
 	buttons.push_back(invert);
 	buttons.push_back(rename);
 	buttons.push_back(remove);
-	new OptionMenu(g_appPlugin, m_root, &buttons, 0xd098335eu, OptionTag);
+	OptionMenu::Create(g_appPlugin, m_root, &buttons, 0xd098335eu, OptionTag);
 }
 
 void PreviewMenu::OnOption(int32_t index)
@@ -692,6 +696,8 @@ void PreviewMenu::OnRenameEntered(const paf::wstring &text)
 	strcpy(renamed + parentLen, name.c_str());
 	int32_t ret = sceIoRename(oldPath.c_str(), renamed);
 	if (ret < 0) { dialog::OpenError(g_appPlugin, ret); return; }
+	shortcuts::RenamePath(oldPath, paf::string(renamed));
+	m_filesChanged = true;
 	m_paths.at(m_index) = renamed;
 	Open(m_index);
 }
@@ -701,8 +707,11 @@ void PreviewMenu::OnDeleteAnswer(int32_t buttonCode)
 	if (!m_deletePending) return;
 	m_deletePending = false;
 	if (buttonCode != dialog::ButtonCode_Yes || m_index < 0 || m_index >= (int32_t)m_paths.size()) return;
-	int32_t ret = sceIoRemove(m_paths.at(m_index).c_str());
+	paf::string removed = m_paths.at(m_index);
+	int32_t ret = sceIoRemove(removed.c_str());
 	if (ret < 0) { dialog::OpenError(g_appPlugin, ret); return; }
+	shortcuts::RemovePath(removed);
+	m_filesChanged = true;
 	RemoveCurrentPath();
 }
 

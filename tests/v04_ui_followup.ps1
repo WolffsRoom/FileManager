@@ -11,7 +11,7 @@ if ($rco -match '<plane texture="tex_new_theme" id="plane_theme_preview">') {
 if ($settings -notmatch 'themePreview->SetTexture\(g_appPlugin->GetTexture\(tex_new_theme\)') {
     throw 'theme texture is not scoped to the Themes screen'
 }
-if ($browser -notmatch 'Type_3D_SlideToBack1' -or $browser -notmatch 'Type_3D_SlideFromFront') {
+if ($browser -notmatch 'Type_3D_SlideToBack1' -or $browser -notmatch 'RecreateList\(current\)') {
     throw 'native Vita 3D folder navigation was not restored'
 }
 if ($browser -match 'Type_SlideFromRight2' -or $browser -match 'Type_SlideFromLeft2') {
@@ -23,8 +23,8 @@ if ($browser -match 'openingAnimation') {
 if ($music -notmatch 's_minimizedPlayer != NULL && musicIsPlaying\(\)') {
     throw 'background indicator is not restricted to active playback'
 }
-if ($rco -notmatch 'button_music_indicator_page_browser[\s\S]{0,160}pos="356, -165"') {
-    throw 'music indicator is not positioned above the options corner'
+if ($rco -notmatch 'button_music_indicator_page_browser[\s\S]{0,160}pos="-375, 208"') {
+    throw 'music indicator is not positioned at the upper left'
 }
 if ($browser -notmatch 'msg_installing[\s\S]{0,900}m_opSources\.at\(0\)') {
     throw 'installation progress does not include the VPK source name'

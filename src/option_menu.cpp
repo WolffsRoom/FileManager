@@ -6,6 +6,7 @@
 #include "common.h"
 #include "event.h"
 #include "option_menu.h"
+#include <new>
 
 
 // Not in the XML on purpose: PageOption_Create builds this page at runtime and fails
@@ -16,34 +17,53 @@ using namespace paf;
 
 const float k_minBtLen = 202.0f;
 
-void OptionMenu::OnButton(ui::Widget *wdg)
+OptionMenu *OptionMenu::Create(Plugin *plugin, ui::Widget *parent, paf::vector<Button> *buttons,
+	uint32_t pageHash, int32_t tag)
 {
-	uint32_t hash = wdg->GetName().GetIDHash();
-	Plugin *plugin = m_plugin;
-	int32_t tag = m_tag;
-	delete this;
-
-	if (hash == button_option_menu_close)
+	if (!plugin || !parent || !buttons || buttons->empty()) return NULL;
+	// Do not call a C++ constructor with a null this pointer (seen in the Vita dumps).
+	void *memory = ::operator new(sizeof(OptionMenu), std::nothrow);
+	if (!memory) return NULL;
+	OptionMenu *menu = new (memory) OptionMenu(plugin, parent, buttons, pageHash, tag);
+	if (!menu->m_rootScene || !menu->m_optPlaneRoot)
 	{
-		event::BroadcastGlobalEvent(plugin, OptionMenuEvent, OptionMenuEvent_Close, 0, tag);
+		delete menu;
+		return NULL;
 	}
-	else
-	{
-		event::BroadcastGlobalEvent(plugin, OptionMenuEvent, OptionMenuEvent_Button, hash - OPTION_MENU_BUTTON_MAGIC, tag);
-	}
+	return menu;
 }
 
-OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button> *buttons, uint32_t pageHash, int32_t tag)
+void OptionMenu::OnButton(ui::Widget *wdg)
 {
-	m_pageHash = pageHash;
-	m_tag = tag;
+	if (m_closing || !wdg) return;
+	m_closing = true;
+	m_selectedHash = wdg->GetName().GetIDHash();
+	if (m_rootScene) m_rootScene->SetActivate(false);
+	// Destruction inside CB_BTN_DECIDE invalidates the widget tree while PAF is
+	// still dispatching the event. Defer both destruction and the selection event.
+	DeferCall([](void *userdata)
+	{
+		OptionMenu *menu = static_cast<OptionMenu *>(userdata);
+		const int32_t tag = menu->m_tag;
+		const uint32_t hash = menu->m_selectedHash;
+		Plugin *plugin = menu->m_plugin;
+		delete menu;
+		if (hash == button_option_menu_close)
+			event::BroadcastGlobalEvent(plugin, OptionMenuEvent, OptionMenuEvent_Close, 0, tag);
+		else
+			event::BroadcastGlobalEvent(plugin, OptionMenuEvent, OptionMenuEvent_Button, hash - OPTION_MENU_BUTTON_MAGIC, tag);
+	}, this);
+}
+
+OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button> *buttons, uint32_t pageHash, int32_t tag) :
+	m_closing(false), m_selectedHash(0), m_plugin(workPlugin), m_rootScene(NULL),
+	m_parentRoot(root), m_optPlaneRoot(NULL), m_buttonCount(buttons ? buttons->size() : 0),
+	m_pageHash(pageHash), m_tag(tag)
+{
 	Plugin::TemplateOpenParam tmpParam;
 	ui::Widget *closeButton = NULL;
 	ui::Widget *button = NULL;
 
-	m_parentRoot = root;
-	m_plugin = workPlugin;
-	m_buttonCount = buttons->size();
 
 	Plugin::PageOpenParam openParam;
 	openParam.option = Plugin::PageOption_Create;
@@ -61,6 +81,7 @@ OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button>
 	m_plugin->TemplateOpen(m_rootScene, template_option_menu_base, tmpParam);
 
 	closeButton = m_rootScene->FindChild(button_option_menu_close);
+	if (!closeButton) return;
 	closeButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
@@ -70,7 +91,9 @@ OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button>
 	closeButton->SetKeycode(inputdevice::pad::Data::PAD_ESCAPE | inputdevice::pad::Data::PAD_MENU);
 
 	m_optPlaneRoot = closeButton->FindChild(plane_option_menu_base);
+	if (!m_optPlaneRoot) return;
 	ui::Widget *optRoot = m_optPlaneRoot->FindChild(box_option_menu);
+	if (!optRoot) { m_optPlaneRoot = NULL; return; }
 
 	uint32_t maxLen = 0;
 	uint32_t curLen = 0;
@@ -101,8 +124,15 @@ OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button>
 			idhash = template_option_menu_button_middle;
 		}
 
+		const int32_t before = optRoot->GetChildrenNum();
 		m_plugin->TemplateOpen(optRoot, idhash, tmpParam);
+		if (optRoot->GetChildrenNum() <= before)
+		{
+			m_optPlaneRoot = NULL;
+			return; // allocation failed; Create() will clean up the partial page
+		}
 		button = optRoot->GetChild(optRoot->GetChildrenNum() - 1);
+		if (!button) { m_optPlaneRoot = NULL; return; }
 		button->SetName(OPTION_MENU_BUTTON_MAGIC + i);
 		button->SetString(btItem.label);
 		// Long translated labels stay centered inside the native button instead
@@ -128,6 +158,7 @@ OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button>
 	}
 
 	ui::Widget *ruler = m_optPlaneRoot->FindChild(text_option_menu_ruler);
+	if (!ruler) { m_optPlaneRoot = NULL; return; }
 	ruler->SetString(buttons->at(maxLenIdx).label);
 
 	// Size synchronously. The former CB_STATE_READY callback could run after the
@@ -140,6 +171,7 @@ OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button>
 	for (int i = 0; i < m_buttonCount; i++)
 	{
 		button = optRoot->FindChild(OPTION_MENU_BUTTON_MAGIC + i);
+		if (!button) { m_optPlaneRoot = NULL; return; }
 		button->SetAdjust(ui::Widget::ADJUST_NONE, ui::Widget::ADJUST_NONE, ui::Widget::ADJUST_NONE);
 		button->SetSize(btSz);
 	}
@@ -152,11 +184,15 @@ OptionMenu::~OptionMenu()
 {
 	Plugin::PageCloseParam closeParam;
 
-	m_optPlaneRoot->Hide(common::transition::Type_Popup4, 0.0f);
-
-	closeParam.fade = true;
-	closeParam.fade_time_ms = 1000;
-	m_plugin->PageClose(m_pageHash, closeParam);
-
-	m_parentRoot->SetActivate(true);
+	if (m_rootScene)
+	{
+		if (m_optPlaneRoot)
+			m_optPlaneRoot->Hide(common::transition::Type_Reset, 0.0f);
+		// A pending one-second fade keeps the page alive and causes duplicate
+		// PageOpen and allocation crashes when the next menu is opened quickly.
+		closeParam.fade = false;
+		closeParam.fade_time_ms = 0.0f;
+		m_plugin->PageClose(m_pageHash, closeParam);
+	}
+	if (m_parentRoot) m_parentRoot->SetActivate(true);
 }

@@ -3,6 +3,7 @@
 #include "common.h"
 #include "dialog.h"
 #include "usb_menu.h"
+#include <new>
 
 using namespace paf;
 
@@ -13,13 +14,26 @@ namespace {
     }
 }
 
+bool UsbMenu::Open(ui::Widget *parentRoot, usb::Device device)
+{
+	UsbMenu *menu = new (std::nothrow) UsbMenu(parentRoot, device);
+	if (!menu) return false;
+	if (!menu->m_root)
+	{
+		delete menu;
+		return false;
+	}
+	return true;
+}
+
 UsbMenu::UsbMenu(ui::Widget *parentRoot, usb::Device device) :
-    m_parentRoot(parentRoot), m_closing(false), m_stopResult(0)
+    m_parentRoot(parentRoot), m_root(NULL), m_closing(false), m_stopResult(0), m_startResult(0)
 {
     Plugin::PageOpenParam param;
     param.graphics_flag = 0x80;
     param.overwrite_draw_priority = 8;
     m_root = g_appPlugin->PageOpen(page_ftp, param);
+    if (!m_root) return;
     m_parentRoot->SetActivate(false);
 
     static const uint32_t k_names[] = {
@@ -49,10 +63,20 @@ UsbMenu::UsbMenu(ui::Widget *parentRoot, usb::Device device) :
         {
             static_cast<UsbMenu *>(userdata)->Disconnect();
         }, this);
+
+    // Read and create all PAF resources before exposing the app's storage.
+    m_startResult = usb::Toggle(device);
+    if (m_startResult < 0)
+    {
+        SetText(m_root->FindChild(text_connection_page_ftp),
+            g_appPlugin->GetString(msg_usb_failed));
+        dialog::OpenError(g_appPlugin, m_startResult);
+    }
 }
 
 UsbMenu::~UsbMenu()
 {
+    if (!m_root) return;
     Plugin::PageCloseParam closeParam;
     closeParam.fade = true;
     closeParam.fade_time_ms = 200.0f;

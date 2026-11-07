@@ -100,7 +100,7 @@
   <string src="Idioma" id="msg_set_language" />
   <string src="Função do Select" id="msg_set_select" />
   <string src="Atalhos" id="msg_set_shortcuts" />
-  <string src="Nenhum atalho registrado. Para adicionar, selecione um arquivo ou pasta e escolha Favoritar." id="msg_shortcuts_empty" />
+  <string src="Nenhum atalho registrado.&#10;Para adicionar, selecione um arquivo ou pasta&#10;e escolha Favoritar." id="msg_shortcuts_empty" />
   <string src="Comandos" id="msg_set_commands" />
   <string src="Idioma do sistema" id="msg_lang_system" />
   <string src="Português (Brasil)" id="msg_lang_ptbr" />
@@ -110,6 +110,14 @@
   <string src="Deutsch" id="msg_lang_de" />
   <string src="QR Code" id="msg_qr_code" />
   <string src="USB" id="msg_usb" />
+    <string src="Não foi possível iniciar o USB." id="msg_usb_failed" />
+    <string src="Desative o servidor FTP antes de iniciar o USB." id="msg_usb_ftp_conflict" />
+    <string src="Colocar o PS Vita em modo repouso?" id="msg_power_confirm_sleep" />
+    <string src="Deseja reiniciar o PS Vita?" id="msg_power_confirm_restart" />
+    <string src="Deseja desligar o PS Vita?" id="msg_power_confirm_off" />
+    <string src="Repouso" id="msg_power_sleep" />
+    <string src="Reiniciar" id="msg_power_restart" />
+    <string src="Desligar" id="msg_power_off" />
     <string src="USB conectado." id="msg_usb_connected" />
     <string src="Ejete no computador antes de desconectar." id="msg_usb_eject" />
     <string src="Desconectar" id="msg_usb_disconnect" />

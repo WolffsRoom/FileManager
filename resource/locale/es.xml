@@ -98,7 +98,7 @@
   <string src="Idioma" id="msg_set_language" />
   <string src="Bot&#xF3;n SELECT" id="msg_set_select" />
   <string src="Shortcuts" id="msg_set_shortcuts" />
-  <string src="No hay favoritos. Selecciona un archivo o carpeta y elige Favorito." id="msg_shortcuts_empty" />
+  <string src="No hay favoritos registrados.&#10;Selecciona un archivo o carpeta&#10;y elige Favorito." id="msg_shortcuts_empty" />
   <string src="Controls" id="msg_set_commands" />
   <string src="System Language" id="msg_lang_system" />
   <string src="Portugu&#xEA;s (Brasil)" id="msg_lang_ptbr" />
@@ -108,6 +108,14 @@
   <string src="Deutsch" id="msg_lang_de" />
   <string src="QR" id="msg_qr_code" />
   <string src="USB" id="msg_usb" />
+    <string src="No se pudo iniciar USB." id="msg_usb_failed" />
+    <string src="Detén el servidor FTP antes de iniciar USB." id="msg_usb_ftp_conflict" />
+    <string src="¿Poner PS Vita en reposo?" id="msg_power_confirm_sleep" />
+    <string src="¿Reiniciar PS Vita?" id="msg_power_confirm_restart" />
+    <string src="¿Apagar PS Vita?" id="msg_power_confirm_off" />
+    <string src="Reposo" id="msg_power_sleep" />
+    <string src="Reiniciar" id="msg_power_restart" />
+    <string src="Apagar" id="msg_power_off" />
     <string src="USB conectado." id="msg_usb_connected" />
     <string src="Expulsa en el ordenador antes de desconectar." id="msg_usb_eject" />
     <string src="Desconectar" id="msg_usb_disconnect" />

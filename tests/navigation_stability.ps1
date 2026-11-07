@@ -9,11 +9,11 @@ $browserHeader = Get-Content -Raw "$PSScriptRoot\..\src\browser_menu.h"
 if ($browserHeader -notmatch 'Stop\(StopParam') {
     throw 'recycled list rows do not reset their Popup1 transition'
 }
-if ($browserCpp -notmatch 'RestoreListGeometry\(current\)') {
+if ($browserCpp -notmatch 'RestoreListGeometry\(current\)' -or $browserCpp -notmatch 'RecreateList\(current\)' -or $browserCpp -notmatch 'DestroyWidget\(\)') {
     throw 'back navigation does not restore canonical list geometry'
 }
-if ($browserCpp -notmatch 'new \(std::nothrow\) OptionMenu') {
-    throw 'OptionMenu allocation is not guarded against heap exhaustion'
+if ($browserCpp -notmatch 'OptionMenu::Create') {
+    throw 'OptionMenu creation is not guarded'
 }
 
 'navigation stability checks passed'

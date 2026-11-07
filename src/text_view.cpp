@@ -246,7 +246,7 @@ void TextView::OnOptions()
 		bt.label = Str(k_labels[i]);
 		buttons.push_back(bt);
 	}
-	new OptionMenu(g_appPlugin, m_root, &buttons, 0xd098335eu, OptionTag);
+	OptionMenu::Create(g_appPlugin, m_root, &buttons, 0xd098335eu, OptionTag);
 }
 
 void TextView::OnOption(int32_t index)

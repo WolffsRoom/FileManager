@@ -31,6 +31,10 @@ public:
 		paf::wstring label;
 	};
 
+	/** Explicitly allocate before construction; operator new can return NULL on Vita. */
+	static OptionMenu *Create(Plugin *workPlugin, ui::Widget *root, vector<Button> *buttons,
+		uint32_t pageHash = 0xd098335e, int32_t tag = 0);
+
 	OptionMenu(Plugin *workPlugin, ui::Widget *root, vector<Button> *buttons, uint32_t pageHash = 0xd098335e, int32_t tag = 0);
 
 	~OptionMenu();
@@ -38,6 +42,8 @@ public:
 private:
 
 	void OnButton(ui::Widget *wdg);
+	bool m_closing;
+	int32_t m_selectedHash;
 
 	Plugin *m_plugin;
 	ui::Scene *m_rootScene;

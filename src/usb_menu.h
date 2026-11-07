@@ -9,6 +9,7 @@
 class UsbMenu
 {
 public:
+    static bool Open(paf::ui::Widget *parentRoot, usb::Device device);
     UsbMenu(paf::ui::Widget *parentRoot, usb::Device device);
     ~UsbMenu();
 
@@ -18,5 +19,6 @@ private:
     paf::ui::Scene *m_root;
     bool m_closing;
     int32_t m_stopResult;
+    int32_t m_startResult;
 };
 #endif

@@ -98,7 +98,7 @@
   <string src="Sprache" id="msg_set_language" />
   <string src="SELECT Knopf" id="msg_set_select" />
   <string src="Shortcuts" id="msg_set_shortcuts" />
-  <string src="Keine Favoriten. Datei oder Ordner wählen und Favorit hinzufügen." id="msg_shortcuts_empty" />
+  <string src="Keine Favoriten vorhanden.&#10;Datei oder Ordner wählen&#10;und als Favorit hinzufügen." id="msg_shortcuts_empty" />
   <string src="Controls" id="msg_set_commands" />
   <string src="System Language" id="msg_lang_system" />
   <string src="Portugu&#xEA;s (Brasil)" id="msg_lang_ptbr" />
@@ -108,6 +108,14 @@
   <string src="Deutsch" id="msg_lang_de" />
   <string src="QR" id="msg_qr_code" />
   <string src="USB" id="msg_usb" />
+    <string src="USB konnte nicht gestartet werden." id="msg_usb_failed" />
+    <string src="FTP-Server vor USB-Start beenden." id="msg_usb_ftp_conflict" />
+    <string src="PS Vita in Ruhezustand versetzen?" id="msg_power_confirm_sleep" />
+    <string src="PS Vita neu starten?" id="msg_power_confirm_restart" />
+    <string src="PS Vita ausschalten?" id="msg_power_confirm_off" />
+    <string src="Ruhezustand" id="msg_power_sleep" />
+    <string src="Neustart" id="msg_power_restart" />
+    <string src="Ausschalten" id="msg_power_off" />
     <string src="USB verbunden." id="msg_usb_connected" />
     <string src="Vor dem Trennen am Computer auswerfen." id="msg_usb_eject" />
     <string src="Trennen" id="msg_usb_disconnect" />

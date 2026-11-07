@@ -120,6 +120,7 @@ namespace {
 		if (!fs::IsRootStyle(parent) && shortcuts::Contains(fs::Join(parent, entry->name)))
 			return entry->isDir ? tex_ui_favorite_folder : tex_ui_favorite_file;
 		const char *ext = strrchr(entry->name.c_str(), '.');
+		if (!entry->isDir && ext && strcasecmp(ext, ".bin") == 0) return tex_ui_root;
 		if (!entry->isDir && ext && strcasecmp(ext, ".suprx") == 0) return tex_ui_suprx;
 		if (!entry->isDir && entry->kind != fs::Kind_Image && entry->kind != fs::Kind_Vpk &&
 			entry->kind != fs::Kind_Sfo && fs::IsGameFormat(entry->name.c_str()))
@@ -204,7 +205,7 @@ namespace {
 }
 
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_inputAction(Action_Rename),
-	m_iconCount(0), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
+	m_iconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -310,6 +311,7 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 	m_ftpIndicator->Hide(common::transition::Type_Reset);
 	m_musicIndicator = m_root->FindChild(button_music_indicator_page_browser);
 	m_musicIndicator->Hide(common::transition::Type_Reset);
+	m_musicIndicator->SetActivate(false);
 	m_musicIndicator->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t, ui::Handler *, ui::Event *, void *) { MusicMenu::RestoreMinimized(); }, NULL);
 	m_alphaIndex = m_root->FindChild(text_alpha_index_page_browser);
@@ -348,7 +350,7 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 	{
 		reinterpret_cast<BrowserMenu *>(userdata)->DoActionPublic(Action_Copy);
 	}, this);
-	common::MainThreadCallList::Register(AlphaIndexTask, this);
+	// No Music alphabetical index worker.
 
 	// Search box: filters the list on Enter.
 	m_search = static_cast<ui::TextBox *>(m_root->FindChild(text_box_search_page_browser));
@@ -383,7 +385,7 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 BrowserMenu::~BrowserMenu()
 {
 	if (usb::IsActive()) usb::Stop();
-	common::MainThreadCallList::Unregister(AlphaIndexTask, this);
+	// Index worker not registered.
 	common::MainThreadCallList::Unregister(BackgroundTask, this);
 	while (PopPage())
 	{
@@ -394,10 +396,22 @@ BrowserMenu::~BrowserMenu()
 void BrowserMenu::UpdateBackground()
 {
 	theme::UpdateBackground(m_background);
-	if (MusicMenu::HasMinimized()) m_musicIndicator->Show(common::transition::Type_Reset);
-	else m_musicIndicator->Hide(common::transition::Type_Reset);
-	if (ftp::IsRunning()) m_ftpIndicator->Show(common::transition::Type_Reset);
-	else m_ftpIndicator->Hide(common::transition::Type_Reset);
+	const bool playing = MusicMenu::HasMinimized();
+	const bool ftpActive = ftp::IsRunning();
+	// Only change PAF visibility when the actual service state changes.
+	if (playing != m_musicShown)
+	{
+		m_musicShown = playing;
+		m_musicIndicator->SetActivate(playing);
+		if (playing) m_musicIndicator->Show(common::transition::Type_Reset);
+		else m_musicIndicator->Hide(common::transition::Type_Reset);
+	}
+	if (ftpActive != m_ftpShown)
+	{
+		m_ftpShown = ftpActive;
+		if (ftpActive) m_ftpIndicator->Show(common::transition::Type_Reset);
+		else m_ftpIndicator->Hide(common::transition::Type_Reset);
+	}
 }
 
 // ------------------------------------------------------------------ pages
@@ -432,23 +446,13 @@ void BrowserMenu::UpdateChrome()
 
 	m_searchButton->Show(common::transition::Type_Reset);
 	m_selectionBar->Hide(common::transition::Type_Reset);
-	const bool musicFolder = !page->logicalPath.empty() &&
-		strncasecmp(page->logicalPath.c_str(), "ux0:music", 9) == 0;
-	if (musicFolder)
-	{
-		m_alphaButton->Show(common::transition::Type_FadeinFast);
-		m_alphaIndex->Hide(common::transition::Type_Reset);
-		m_alphaVisible = false;
-	}
-	else
-	{
-		m_alphaButton->Hide(common::transition::Type_Reset);
-		m_alphaIndex->Hide(common::transition::Type_Reset);
-		m_alphaBubble->Hide(common::transition::Type_Reset);
-		m_alphaTouch = false;
-		m_alphaCurrent = -1;
-		m_alphaVisible = false;
-	}
+	// Alphabetical index removed from Music and all other folders.
+	m_alphaButton->Hide(common::transition::Type_Reset);
+	m_alphaIndex->Hide(common::transition::Type_Reset);
+	m_alphaBubble->Hide(common::transition::Type_Reset);
+	m_alphaTouch = false;
+	m_alphaVisible = false;
+	m_alphaCurrent = -1;
 	// Each page starts without the search box; the corner button opens it.
 	SetSearchVisible(false);
 }
@@ -579,14 +583,8 @@ void BrowserMenu::SetRowIcon(BrowserPage *page, int32_t index)
 
 void BrowserMenu::UpdateFtpIndicator()
 {
-	if (ftp::IsRunning())
-	{
-		m_ftpIndicator->Show(common::transition::Type_Reset);
-	}
-	else
-	{
-		m_ftpIndicator->Hide(common::transition::Type_Reset);
-	}
+	m_ftpShown = !ftp::IsRunning();
+	UpdateBackground();
 }
 
 void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool ownsPsarc)
@@ -659,11 +657,9 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 		{
 			BrowserPage *older = m_pages.rbegin()[1];
 			older->list->Hide(common::transition::Type_Reset);
-			older->list->SetTransitionComplete(false);
 		}
 		BrowserPage *current = m_pages.back();
 		current->list->Show(common::transition::Type_3D_SlideToBack1);
-		current->list->SetTransitionComplete(false);
 	}
 
 	m_pages.push_back(page);
@@ -690,12 +686,11 @@ bool BrowserMenu::PopPage()
 		thread::Sleep(10);
 	}
 
+	// TemplateOpen created a real child widget. Explicitly release it on pop.
 	page->list->SetName(static_cast<uint32_t>(0));
-
-	if (!isLast)
-	{
-		common::transition::DoReverse(-100.0f, page->list, common::transition::Type_3D_SlideFromFront, true, false);
-	}
+	page->list->SetActivate(false);
+	page->list->Hide(common::transition::Type_Reset);
+	page->list->DestroyWidget();
 
 	fs::FreeList(&page->all);
 	page->entries.clear();
@@ -713,21 +708,10 @@ bool BrowserMenu::PopPage()
 	if (!isLast)
 	{
 		BrowserPage *current = m_pages.back();
-		RestoreListGeometry(current);
-		int32_t wasOpened = current->opened;
 		current->opened = -1;
-		SetRowIcon(current, wasOpened);
-		current->list->Hide(common::transition::Type_3D_SlideToBack1);
-		current->list->Show(common::transition::Type_Reset);
-		current->list->SetTransitionComplete(false);
-		if (m_pages.size() > 1)
-		{
-			BrowserPage *older = m_pages.rbegin()[1];
-			older->list->Show(common::transition::Type_Reset);
-			older->list->SetTransitionComplete(false);
-		}
-
+		RecreateList(current);
 		UpdateChrome();
+		RestoreListGeometry(current);
 		if (current->entries.empty())
 		{
 			m_emptyText->Show(common::transition::Type_Reset);
@@ -741,6 +725,35 @@ bool BrowserMenu::PopPage()
 	return true;
 }
 
+void BrowserMenu::RecreateList(BrowserPage *page)
+{
+	if (!page || !page->list) return;
+	// Rebuilding the parent ListView clears the PAF 3D transform left by
+	// Type_3D_SlideToBack1; merely calling Show(Reset) did not clear it.
+	page->list->SetName(static_cast<uint32_t>(0));
+	page->list->SetActivate(false);
+	page->list->Hide(common::transition::Type_Reset);
+	page->list->DestroyWidget();
+
+	Plugin::TemplateOpenParam tmp;
+	g_appPlugin->TemplateOpen(m_browserRoot, template_list_view_generic, tmp);
+	page->list = static_cast<ui::ListView *>(m_browserRoot->GetChild(m_browserRoot->GetChildrenNum() - 1));
+	page->list->SetItemFactory(new ListViewCb(this));
+	page->list->InsertSegment(0, 1);
+	page->list->SetCellSizeDefault(0,
+		math::v4(960.0f, fs::IsRootStyle(page->path) ? k_rowRoot : k_rowFile));
+	page->list->SetSegmentLayoutType(0, ui::ListView::LAYOUT_TYPE_LIST);
+	RestoreListGeometry(page);
+	if (page->loaded && page->cellCount > 0)
+	{
+		page->list->InsertCell(0, 0, page->cellCount);
+		if (page->focused >= 0 && page->focused < (int32_t)page->cellCount)
+			page->list->SetFocus(0, page->focused, ui::ListView::FOCUS_ALIGN_TYPE_CENTER, NULL);
+	}
+	page->list->SetTransitionComplete(true);
+	page->list->Show(common::transition::Type_Reset);
+}
+
 void BrowserMenu::RestoreListGeometry(BrowserPage *page)
 {
 	if (!page || !page->list) return;
@@ -751,6 +764,7 @@ void BrowserMenu::RestoreListGeometry(BrowserPage *page)
 
 void BrowserMenu::Refresh()
 {
+	if (m_pages.empty() || !Top()->loaded) return;
 	BrowserPage *page = Top();
 	page->loaded = false;
 	m_busy->Start();
@@ -759,54 +773,50 @@ void BrowserMenu::Refresh()
 
 void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 {
+	// Stage I/O outside the main-thread UI lock. Old Entry pointers must stay
+	// valid until the ListView has discarded every old cell.
+	fs::EntryList fresh;
+	const uint32_t startTime = sceKernelGetProcessTimeLow();
+	int32_t ret = 0;
+	if (page->path.empty())
+		fs::ListRoot(&fresh);
+	else if (fs::IsRootStyle(page->path))
+		fs::ListSystem(&fresh);
+	else
+		ret = fs::ListDirectory(page->path.c_str(), &fresh);
+	PerfLog(page->path.c_str(), fresh.size(), sceKernelGetProcessTimeLow() - startTime);
+
 	thread::RMutex::MainThreadMutex()->Lock();
-	if (refresh && page->cellCount > 0)
+	// The page is still owned by the stack until loaded is set. Retain the old
+	// data during DeleteCell, then swap the staged list in a single UI update.
+	paf::string previous;
+	if (page->focused >= 0 && page->focused < (int32_t)page->entries.size())
+		previous = page->entries.at(page->focused)->name;
+	if (page->cellCount > 0)
 	{
 		page->list->DeleteCell(0, 0, page->cellCount);
 		page->cellCount = 0;
 	}
-	thread::RMutex::MainThreadMutex()->Unlock();
-
-	fs::FreeList(&page->all);
 	page->entries.clear();
+	fs::FreeList(&page->all);
+	page->all = fresh;
+	page->entries = page->all;
 	page->focused = -1;
 
-	const uint32_t startTime = sceKernelGetProcessTimeLow();
-
-	int32_t ret = 0;
-	if (page->path.empty())
-	{
-		fs::ListRoot(&page->all);
-	}
-	else if (fs::IsRootStyle(page->path))
-	{
-		fs::ListSystem(&page->all);
-	}
-	else
-	{
-		ret = fs::ListDirectory(page->path.c_str(), &page->all);
-	}
-	page->entries = page->all;
 	if (page == m_pages.back() && !m_focusAfterRefresh.empty())
 	{
-		for (uint32_t i = 0; i < page->entries.size(); i++)
-		{
-			if (!strcasecmp(page->entries.at(i)->name.c_str(), m_focusAfterRefresh.c_str()))
-			{
-				page->focused = i;
-				break;
-			}
-		}
+		previous = m_focusAfterRefresh;
 		m_focusAfterRefresh.clear();
 	}
-
-	PerfLog(page->path.c_str(), page->entries.size(), sceKernelGetProcessTimeLow() - startTime);
-
-	thread::RMutex::MainThreadMutex()->Lock();
-	m_busy->Stop();
+	if (!previous.empty())
+	{
+		for (uint32_t i = 0; i < page->entries.size(); ++i)
+			if (!strcasecmp(page->entries.at(i)->name.c_str(), previous.c_str()))
+			{ page->focused = i; break; }
+	}
 	if (ret < 0)
 	{
-		dialog::OpenError(g_appPlugin, ret);
+		if (page == m_pages.back()) dialog::OpenError(g_appPlugin, ret);
 	}
 	else if (!page->entries.empty())
 	{
@@ -817,18 +827,13 @@ void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 	}
 	if (page == m_pages.back())
 	{
+		m_busy->Stop();
 		if (ret >= 0 && page->entries.empty())
-		{
 			m_emptyText->Show(common::transition::Type_Reset);
-		}
-		else
-		{
-			m_emptyText->Hide(common::transition::Type_Reset);
-		}
+		else m_emptyText->Hide(common::transition::Type_Reset);
 	}
-	thread::RMutex::MainThreadMutex()->Unlock();
-
 	page->loaded = true;
+	thread::RMutex::MainThreadMutex()->Unlock();
 }
 
 intrusive_ptr<graph::Surface> BrowserMenu::Icon(uint32_t hash)
@@ -950,20 +955,14 @@ void BrowserMenu::FillRootItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 void BrowserMenu::ApplySettings()
 {
 	theme::ApplyBackground(m_background);
+	if (!m_pages.empty() && Top()->loaded) Refresh();
+}
 
-	// Storage bars and file-name sizes take their settings when cells are built.
-	if (!m_pages.empty())
-	{
-		for (uint32_t i = 0; i < m_pages.size(); i++)
-		{
-			BrowserPage *page = m_pages.at(i);
-			if (page->cellCount > 0 && page->loaded)
-			{
-				page->list->DeleteCell(0, 0, page->cellCount);
-				page->list->InsertCell(0, 0, page->cellCount);
-			}
-		}
-	}
+void BrowserMenu::OnPreviewChanged()
+{
+	if (m_pages.empty()) return;
+	if (Top()->loaded) Refresh();
+	if (m_pages.size() > 1) ReloadRoot();
 }
 
 void BrowserMenu::OpenPreview(int32_t index)
@@ -983,7 +982,8 @@ void BrowserMenu::OpenPreview(int32_t index)
 			paths.push_back(fs::Join(page->path, entry->name));
 		}
 	}
-	new PreviewMenu(m_root, paths, start);
+	new PreviewMenu(m_root, paths, start,
+		[](void *user) { reinterpret_cast<BrowserMenu *>(user)->OnPreviewChanged(); }, this);
 }
 
 ui::ListItem *BrowserMenu::CreateListItem(ui::listview::ItemFactory::CreateParam &param)
@@ -1076,12 +1076,20 @@ ui::ListItem *BrowserMenu::CreateListItem(ui::listview::ItemFactory::CreateParam
 
 void BrowserMenu::OnBack()
 {
-	// PopPage waits for the worker, and the worker needs the main thread mutex to
-	// finish loading: never wait for it from here, just ignore the press.
-	if (m_pages.size() > 1 && Top()->loaded)
+	// The button itself belongs to a PAF dispatch in progress. Destroying the
+	// outgoing ListView within that callback can invalidate its current handler.
+	if (m_backPending || m_pages.size() <= 1 || !Top()->loaded) return;
+	m_backPending = true;
+	m_backPage = Top();
+	DeferCall([](void *userdata)
 	{
-		PopPage();
-	}
+		BrowserMenu *menu = static_cast<BrowserMenu *>(userdata);
+		const bool samePage = !menu->m_pages.empty() && menu->Top() == menu->m_backPage;
+		menu->m_backPending = false;
+		menu->m_backPage = NULL;
+		if (samePage && menu->m_pages.size() > 1 && menu->Top()->loaded)
+			menu->PopPage();
+	}, this);
 }
 
 void BrowserMenu::DoActionPublic(Action action)
@@ -1103,9 +1111,14 @@ void BrowserMenu::OnSelectButton()
 			new SettingsMenu(m_root, OnSettingsChanged, this, true);
 			return;
 		}
-		int32_t result = usb::Toggle((usb::Device)config.usbDevice);
-		if (result < 0) dialog::OpenError(g_appPlugin, result);
-		else if (usb::IsActive()) new UsbMenu(m_root, (usb::Device)config.usbDevice);
+		if (ftp::IsRunning())
+		{
+			dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_usb),
+				g_appPlugin->GetString(msg_usb_ftp_conflict));
+			return;
+		}
+		if (!UsbMenu::Open(m_root, (usb::Device)config.usbDevice))
+			dialog::OpenError(g_appPlugin, SCE_ERROR_ERRNO_ENOMEM);
 		return;
 	}
 	DoAction(config.selectFunction == 1 ? Action_Qr : Action_Ftp);
@@ -1178,7 +1191,12 @@ void BrowserMenu::OnForward()
 
 void BrowserMenu::OnItemFocus(ui::Widget *wdg)
 {
-	Top()->focused = wdg->GetName().GetIDHash();
+	if (m_pages.empty() || !wdg || !Top()->loaded) return;
+	ui::Widget *owner = wdg;
+	while (owner && owner != Top()->list) owner = owner->GetParent();
+	if (owner != Top()->list) return;
+	int32_t idx = wdg->GetName().GetIDHash();
+	if (idx >= 0 && idx < (int32_t)Top()->entries.size()) Top()->focused = idx;
 }
 
 void BrowserMenu::OnItemDecide(ui::Widget *wdg)
@@ -1189,9 +1207,23 @@ void BrowserMenu::OnItemDecide(ui::Widget *wdg)
 		return;
 	}
 
+	ui::Widget *owner = wdg;
+	while (owner && owner != page->list) owner = owner->GetParent();
+	if (owner != page->list) return;
 	int32_t index = wdg->GetName().GetIDHash();
+	if (index < 0 || index >= (int32_t)page->entries.size()) return;
 	page->focused = index;
 	fs::Entry *entry = page->entries.at(index);
+	if (entry->isShortcut && !entry->target.empty())
+	{
+		SceIoStat stat;
+		if (sceIoGetstat(entry->target.c_str(), &stat) < 0)
+		{
+			shortcuts::Remove(entry->target);
+			Refresh();
+			return;
+		}
+	}
 
 	if (strcmp(entry->target.c_str(), fs::k_ftpPath) == 0)
 	{
@@ -1201,7 +1233,8 @@ void BrowserMenu::OnItemDecide(ui::Widget *wdg)
 	{
 		paf::vector<paf::string> single;
 		single.push_back(entry->target);
-		if (Previewable(entry)) new PreviewMenu(m_root, single, 0);
+		if (Previewable(entry)) new PreviewMenu(m_root, single, 0,
+			[](void *user) { reinterpret_cast<BrowserMenu *>(user)->OnPreviewChanged(); }, this);
 		else if (entry->kind == fs::Kind_Music && musicSupported(entry->name.c_str()))
 			new MusicMenu(m_root, single, 0);
 		else if (entry->kind == fs::Kind_Vpk)
@@ -1366,10 +1399,8 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		{
 			m_optionActions.push_back(Action_ClearSelection);
 		}
-		if (target && !target->isShortcut)
-		{
+		if (target && !target->isShortcut && !fs::IsRootStyle(page->path))
 			m_optionActions.push_back(Action_AddShortcut);
-		}
 		m_optionActions.push_back(Action_Ftp);
 		m_optionActions.push_back(Action_Qr);
 		m_optionActions.push_back(Action_Sort);
@@ -1436,7 +1467,7 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		buttons.push_back(bt);
 	}
 
-	OptionMenu *menu = new (std::nothrow) OptionMenu(g_appPlugin, m_root, &buttons,
+	OptionMenu *menu = OptionMenu::Create(g_appPlugin, m_root, &buttons,
 		submenu ? page_option_menu_sub : 0xd098335eu);
 	if (!menu)
 	{
@@ -1472,7 +1503,7 @@ void BrowserMenu::OpenSortMenu()
 		button.label = g_appPlugin->GetString(labels[i]);
 		buttons.push_back(button);
 	}
-	OptionMenu *menu = new (std::nothrow) OptionMenu(g_appPlugin, m_root, &buttons, page_option_menu_sort);
+	OptionMenu *menu = OptionMenu::Create(g_appPlugin, m_root, &buttons, page_option_menu_sort);
 	if (!menu) m_root->SetActivate(true);
 }
 
@@ -1612,7 +1643,7 @@ void BrowserMenu::DoAction(Action action)
 		if (page->focused >= 0)
 		{
 			shortcuts::Add(fs::Join(page->path, page->entries.at(page->focused)->name));
-			m_pages.at(0)->loaded = false;
+			SetRowIcon(page, page->focused);
 			ReloadRoot();
 		}
 		break;
@@ -1701,6 +1732,8 @@ void BrowserMenu::OnNameEntered(const paf::wstring &text)
 			m_undoFrom.clear(); m_undoTo.clear();
 			m_undoFrom.push_back(oldPath); m_undoTo.push_back(newPath);
 			m_focusAfterRefresh = name;
+			shortcuts::RenamePath(oldPath, newPath);
+			if (m_pages.size() > 1) ReloadRoot();
 		}
 	}
 	else
@@ -1907,6 +1940,16 @@ void BrowserMenu::FinishOperation(int32_t result)
 		m_undoType = m_opType == Op_Move ? Undo_Move : Undo_Copy;
 
 	thread::RMutex::MainThreadMutex()->Lock();
+	if (result > 0 && m_opType == Op_Delete)
+	{
+		for (uint32_t i = 0; i < m_opSources.size(); ++i)
+			shortcuts::RemovePath(m_opSources.at(i));
+	}
+	if (result > 0 && m_opType == Op_Move)
+	{
+		for (uint32_t i = 0; i < m_undoFrom.size() && i < m_undoTo.size(); ++i)
+			shortcuts::RenamePath(m_undoFrom.at(i), m_undoTo.at(i));
+	}
 	if (result < 0)
 	{
 		dialog::OpenError(g_appPlugin, result);
@@ -1938,6 +1981,7 @@ void BrowserMenu::FinishOperation(int32_t result)
 		}, this);
 	}
 	Refresh();
+	if (m_pages.size() > 1) ReloadRoot();
 	thread::RMutex::MainThreadMutex()->Unlock();
 }
 
@@ -1962,6 +2006,9 @@ void BrowserMenu::FinishUndo(int32_t result)
 		dialog::OpenError(g_appPlugin, result);
 	else
 	{
+		if (m_undoType == Undo_Move || m_undoType == Undo_Rename)
+			for (uint32_t i = 0; i < m_undoTo.size() && i < m_undoFrom.size(); ++i)
+				shortcuts::RenamePath(m_undoTo.at(i), m_undoFrom.at(i));
 		m_undoType = Undo_None;
 		m_undoFrom.clear();
 		m_undoTo.clear();
@@ -2077,7 +2124,10 @@ void BrowserMenu::RunQrDownload()
 
 void BrowserMenu::ReloadRoot()
 {
+	if (m_pages.empty()) return;
 	BrowserPage *rootPage = m_pages.at(0);
+	if (!rootPage->loaded) return;
+	rootPage->loaded = false;
 	Enqueue(new LoadJob(this, rootPage, true));
 }
 

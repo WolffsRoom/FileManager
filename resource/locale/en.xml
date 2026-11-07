@@ -100,7 +100,7 @@
   <string src="Language" id="msg_set_language" />
   <string src="Select Button" id="msg_set_select" />
   <string src="Shortcuts" id="msg_set_shortcuts" />
-  <string src="No shortcuts registered. Select a file or folder and choose Favorite." id="msg_shortcuts_empty" />
+  <string src="No favorites registered.&#10;Select a file or folder&#10;and choose Favorite." id="msg_shortcuts_empty" />
   <string src="Controls" id="msg_set_commands" />
   <string src="System Language" id="msg_lang_system" />
   <string src="Português (Brasil)" id="msg_lang_ptbr" />
@@ -110,6 +110,14 @@
   <string src="Deutsch" id="msg_lang_de" />
   <string src="QR Code" id="msg_qr_code" />
   <string src="USB" id="msg_usb" />
+    <string src="Could not start USB." id="msg_usb_failed" />
+    <string src="Stop the FTP server before starting USB." id="msg_usb_ftp_conflict" />
+    <string src="Put the PS Vita into sleep mode?" id="msg_power_confirm_sleep" />
+    <string src="Restart the PS Vita?" id="msg_power_confirm_restart" />
+    <string src="Power off the PS Vita?" id="msg_power_confirm_off" />
+    <string src="Sleep" id="msg_power_sleep" />
+    <string src="Restart" id="msg_power_restart" />
+    <string src="Power off" id="msg_power_off" />
     <string src="USB connected." id="msg_usb_connected" />
     <string src="Eject on the computer before disconnecting." id="msg_usb_eject" />
     <string src="Disconnect" id="msg_usb_disconnect" />
