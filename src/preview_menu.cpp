@@ -246,6 +246,18 @@ namespace {
 		return dot && strcasecmp(dot, ".mp4") == 0;
 	}
 
+	intrusive_ptr<graph::Surface> LoadImageSurface(const char *path)
+	{
+		intrusive_ptr<graph::Surface> tex;
+		SceIoStat stat;
+		sce_paf_memset(&stat, 0, sizeof(stat));
+		if (sceIoGetstat(path, &stat) < 0 || stat.st_size > k_maxImageFile) return tex;
+		int32_t res = -1;
+		auto file = LocalFile::Open(path, SCE_O_RDONLY, 0, &res);
+		if (res == 0) tex = graph::Surface::Load(gutil::GetDefaultSurfacePool(), (common::SharedPtr<File> &)file);
+		return tex;
+	}
+
 	class ImageJob : public job::JobItem
 	{
 	public:
@@ -276,7 +288,7 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_loadId(0), m_jobId(0),
 	m_player(0), m_videoActive(false), m_imageActive(false), m_paused(false), m_frameShown(false), m_rgba(NULL), m_videoW(0), m_videoH(0),
 	m_touchActive(false), m_pinchActive(false), m_touchStartX(0), m_touchStartY(0), m_touchLastX(0), m_touchLastY(0),
-	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false)
+	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false), m_viewMode(0)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -289,12 +301,18 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	m_busy = static_cast<ui::BusyIndicator *>(m_root->FindChild(busyindicator_page_preview));
 	m_title = static_cast<ui::Text *>(m_root->FindChild(text_title_page_preview));
 	m_error = static_cast<ui::Text *>(m_root->FindChild(text_error_page_preview));
-	ui::Widget *leftArrow = m_root->FindChild(plane_arrow_left_page_preview);
-	ui::Widget *rightArrow = m_root->FindChild(plane_arrow_right_page_preview);
+	m_leftArrow = m_root->FindChild(plane_arrow_left_page_preview);
+	m_rightArrow = m_root->FindChild(plane_arrow_right_page_preview);
+	m_thumbLeft = m_root->FindChild(plane_thumb_left_page_preview);
+	m_thumbCurrent = m_root->FindChild(plane_thumb_current_page_preview);
+	m_thumbRight = m_root->FindChild(plane_thumb_right_page_preview);
+	m_thumbLeft->Hide(common::transition::Type_Reset);
+	m_thumbCurrent->Hide(common::transition::Type_Reset);
+	m_thumbRight->Hide(common::transition::Type_Reset);
 	if (m_paths.size() < 2)
 	{
-		leftArrow->Hide(common::transition::Type_Reset);
-		rightArrow->Hide(common::transition::Type_Reset);
+		m_leftArrow->Hide(common::transition::Type_Reset);
+		m_rightArrow->Hide(common::transition::Type_Reset);
 	}
 
 	paf::wstring errorText = g_appPlugin->GetString(msg_preview_error);
@@ -338,6 +356,22 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	{
 		PreviewMenu *menu = reinterpret_cast<PreviewMenu *>(userdata);
 		menu->Open((menu->m_index + 1) % menu->m_paths.size());
+	}, this);
+	AddKey(m_root->FindChild(button_arrow_left_page_preview), 0,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata) { reinterpret_cast<PreviewMenu *>(userdata)->StepImage(-1); }, this);
+	AddKey(m_root->FindChild(button_arrow_right_page_preview), 0,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata) { reinterpret_cast<PreviewMenu *>(userdata)->StepImage(1); }, this);
+	AddKey(m_root->FindChild(button_down_page_preview), inputdevice::pad::Data::PAD_DOWN,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		PreviewMenu *menu = reinterpret_cast<PreviewMenu *>(userdata);
+		if (!menu->m_videoActive) menu->SetViewMode(1);
+	}, this);
+	AddKey(m_root->FindChild(button_up_page_preview), inputdevice::pad::Data::PAD_UP,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		PreviewMenu *menu = reinterpret_cast<PreviewMenu *>(userdata);
+		if (!menu->m_videoActive) menu->SetViewMode(menu->m_viewMode == 1 ? 0 : 2);
 	}, this);
 
 	m_controls = m_root->FindChild(plane_controls_page_preview);
@@ -414,6 +448,52 @@ void PreviewMenu::SeekVideo(int32_t deltaMs)
 	sceAvPlayerJumpToTime(m_player, (uint64_t)target);
 }
 
+void PreviewMenu::StepImage(int32_t delta)
+{
+	if (m_videoActive || m_paths.size() < 2) return;
+	int32_t n = m_paths.size();
+	Open((m_index + n + delta) % n);
+}
+
+void PreviewMenu::SetViewMode(int32_t mode)
+{
+	if (!m_imageActive) return;
+	m_viewMode = mode;
+	bool strip = mode == 1;
+	bool full = mode == 2;
+	if (strip)
+	{
+		m_thumbLeft->SetTexture(m_leftSurf, 0, 0);
+		m_thumbCurrent->SetTexture(m_currentSurf, 0, 0);
+		m_thumbRight->SetTexture(m_rightSurf, 0, 0);
+		m_thumbLeft->Show(common::transition::Type_FadeinFast);
+		m_thumbCurrent->Show(common::transition::Type_FadeinFast);
+		m_thumbRight->Show(common::transition::Type_FadeinFast);
+		m_imageScale = m_imageInitialScale * 0.72f;
+		m_plane->SetPos(0.0f, 58.0f, 0.0f);
+	}
+	else
+	{
+		m_thumbLeft->Hide(common::transition::Type_Reset);
+		m_thumbCurrent->Hide(common::transition::Type_Reset);
+		m_thumbRight->Hide(common::transition::Type_Reset);
+		m_imageScale = full ? m_imageInitialScale * 1.25f : m_imageInitialScale;
+		m_plane->SetPos(0.0f, 0.0f, 0.0f);
+	}
+	if (full)
+	{
+		m_title->Hide(common::transition::Type_FadeinFast);
+		m_leftArrow->Hide(common::transition::Type_FadeinFast);
+		m_rightArrow->Hide(common::transition::Type_FadeinFast);
+	}
+	else
+	{
+		m_title->Show(common::transition::Type_FadeinFast);
+		if (m_paths.size() > 1) { m_leftArrow->Show(common::transition::Type_FadeinFast); m_rightArrow->Show(common::transition::Type_FadeinFast); }
+	}
+	ApplyImageTransform();
+}
+
 void PreviewMenu::Close()
 {
 	m_loadId++;
@@ -440,6 +520,11 @@ void PreviewMenu::Open(int32_t index)
 	m_imageY = 0.0f;
 	m_flipX = false;
 	m_flipY = false;
+	m_viewMode = 0;
+	m_title->Show(common::transition::Type_Reset);
+	m_thumbLeft->Hide(common::transition::Type_Reset);
+	m_thumbCurrent->Hide(common::transition::Type_Reset);
+	m_thumbRight->Hide(common::transition::Type_Reset);
 	m_plane->SetScale(1.0f, 1.0f, 1.0f);
 	m_plane->SetPos(0.0f, 0.0f, 0.0f);
 	m_index = index;
@@ -475,18 +560,10 @@ void PreviewMenu::LoadImageJob()
 	const int32_t id = m_jobId;
 	paf::string path = m_jobPath;
 
-	intrusive_ptr<graph::Surface> tex;
-	SceIoStat stat;
-	sce_paf_memset(&stat, 0, sizeof(stat));
-	if (sceIoGetstat(path.c_str(), &stat) >= 0 && stat.st_size <= k_maxImageFile)
-	{
-		int32_t res = -1;
-		auto file = LocalFile::Open(path.c_str(), SCE_O_RDONLY, 0, &res);
-		if (res == 0)
-		{
-			tex = graph::Surface::Load(gutil::GetDefaultSurfacePool(), (common::SharedPtr<File> &)file);
-		}
-	}
+	intrusive_ptr<graph::Surface> tex = LoadImageSurface(path.c_str());
+	int32_t n = m_paths.size();
+	intrusive_ptr<graph::Surface> left = n > 1 ? LoadImageSurface(m_paths.at((m_index + n - 1) % n).c_str()) : tex;
+	intrusive_ptr<graph::Surface> right = n > 1 ? LoadImageSurface(m_paths.at((m_index + 1) % n).c_str()) : tex;
 
 	thread::RMutex::MainThreadMutex()->Lock();
 	// The page may have moved on to another file, or closed, while this one decoded.
@@ -495,6 +572,9 @@ void PreviewMenu::LoadImageJob()
 		m_busy->Stop();
 		if (tex.get())
 		{
+			m_currentSurf = tex;
+			m_leftSurf = left;
+			m_rightSurf = right;
 			m_plane->SetTexture(tex, 0, 0);
 			m_plane->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 			float displayW = (float)tex->GetWidth();

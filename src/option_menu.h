@@ -37,7 +37,6 @@ public:
 
 private:
 
-	static void OnSizeAdjust(int32_t type, ui::Handler *self, ui::Event *e, void *userdata);
 	void OnButton(ui::Widget *wdg);
 
 	Plugin *m_plugin;

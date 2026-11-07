@@ -29,6 +29,8 @@ public:
 	void Close();
 
 	void SeekVideo(int32_t deltaMs);
+	void SetViewMode(int32_t mode);
+	void StepImage(int32_t delta);
 
 private:
 
@@ -45,6 +47,11 @@ private:
 	paf::ui::BusyIndicator *m_busy;
 	paf::ui::Text *m_title;
 	paf::ui::Text *m_error;
+	paf::ui::Widget *m_leftArrow;
+	paf::ui::Widget *m_rightArrow;
+	paf::ui::Widget *m_thumbLeft;
+	paf::ui::Widget *m_thumbCurrent;
+	paf::ui::Widget *m_thumbRight;
 
 	paf::vector<paf::string> m_paths;
 	int32_t m_index;
@@ -61,6 +68,9 @@ private:
 	int32_t m_videoW;
 	int32_t m_videoH;
 	paf::intrusive_ptr<paf::graph::Surface> m_videoSurf;
+	paf::intrusive_ptr<paf::graph::Surface> m_currentSurf;
+	paf::intrusive_ptr<paf::graph::Surface> m_leftSurf;
+	paf::intrusive_ptr<paf::graph::Surface> m_rightSurf;
 	paf::ui::Widget *m_controls;
 	paf::ui::Widget *m_time;
 	paf::ui::Widget *m_barFill;
@@ -80,6 +90,7 @@ private:
 	float m_imageY;
 	bool m_flipX;
 	bool m_flipY;
+	int32_t m_viewMode;
 };
 
 #endif

@@ -16,6 +16,7 @@
 using namespace paf;
 
 namespace {
+	MusicMenu *s_minimizedPlayer = NULL;
 
 	const float k_barWidth = 480.0f;
 
@@ -49,7 +50,7 @@ namespace {
 }
 
 MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &paths, int32_t index) :
-	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false), m_barTouch(false), m_barTouchX(0)
+	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false), m_barTouch(false), m_barTouchX(0), m_minimized(false)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -70,9 +71,10 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	m_total = m_root->FindChild(text_total_page_music);
 	m_barFill = m_root->FindChild(plane_bar_fill_page_music);
 	m_playButton = m_root->FindChild(button_play_page_music);
+	m_playGlyph = m_root->FindChild(glyph_play_page_music);
+	m_pauseGlyph = m_root->FindChild(glyph_pause_page_music);
 
-	SetText(m_root->FindChild(button_prev_page_music), "◀◀");
-	SetText(m_root->FindChild(button_next_page_music), "▶▶");
+	m_playGlyph->Hide(common::transition::Type_Reset);
 	SetText(m_root->FindChild(button_export_page_music), Utf8(msg_music_export).c_str());
 	SetText(m_root->FindChild(button_background_page_music), Utf8(msg_music_background).c_str());
 	SetText(m_root->FindChild(button_native_music_page_music), Utf8(msg_music_open_native).c_str());
@@ -129,6 +131,7 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 
 MusicMenu::~MusicMenu()
 {
+	if (s_minimizedPlayer == this) s_minimizedPlayer = NULL;
 	Plugin::PageCloseParam closeParam;
 	closeParam.fade = true;
 	closeParam.fade_time_ms = 200.0f;
@@ -143,6 +146,7 @@ void MusicMenu::Close()
 		return;
 	}
 	m_closing = true;
+	if (s_minimizedPlayer == this) s_minimizedPlayer = NULL;
 	common::MainThreadCallList::Unregister(UpdateTask, this);
 	musicClose();
 	m_root->SetActivate(false);
@@ -208,7 +212,8 @@ void MusicMenu::Play(int32_t index)
 	m_seconds = info.seconds;
 	m_playing = true;
 	m_barFill->SetSize(0.0f, 8.0f, 0.0f);
-	SetText(m_playButton, "Ⅱ");
+	m_playGlyph->Hide(common::transition::Type_Reset);
+	m_pauseGlyph->Show(common::transition::Type_Reset);
 	ShowCover(path, info.coverType, info.coverOffset, info.coverLength);
 }
 
@@ -231,7 +236,9 @@ void MusicMenu::Seek(int32_t seconds)
 void MusicMenu::TogglePause()
 {
 	musicTogglePause();
-	SetText(m_playButton, musicIsPlaying() ? "Ⅱ" : "▶");
+	bool playing = musicIsPlaying();
+	if (playing) { m_playGlyph->Hide(common::transition::Type_Reset); m_pauseGlyph->Show(common::transition::Type_Reset); }
+	else { m_pauseGlyph->Hide(common::transition::Type_Reset); m_playGlyph->Show(common::transition::Type_Reset); }
 }
 
 int32_t MusicMenu::ExportCurrent(bool notify)
@@ -274,13 +281,28 @@ void MusicMenu::OpenInMusic()
 
 void MusicMenu::ListenInBackground()
 {
-	if (m_closing) return;
-	m_closing = true;
-	common::MainThreadCallList::Unregister(UpdateTask, this);
-	// Do not call musicClose(): the decoder/output threads keep the current song
-	// playing while the browser becomes active again.
+	if (m_closing || m_minimized) return;
+	m_minimized = true;
+	s_minimizedPlayer = this;
 	m_root->SetActivate(false);
-	DeferDelete(this);
+	m_root->Hide(common::transition::Type_FadeinFast);
+	m_parentRoot->SetActivate(true);
+}
+
+bool MusicMenu::HasMinimized()
+{
+	return s_minimizedPlayer != NULL;
+}
+
+void MusicMenu::RestoreMinimized()
+{
+	if (!s_minimizedPlayer) return;
+	MusicMenu *menu = s_minimizedPlayer;
+	s_minimizedPlayer = NULL;
+	menu->m_minimized = false;
+	menu->m_parentRoot->SetActivate(false);
+	menu->m_root->Show(common::transition::Type_FadeinFast);
+	menu->m_root->SetActivate(true);
 }
 
 void MusicMenu::Update()
@@ -319,7 +341,8 @@ void MusicMenu::Update()
 		{
 			m_playing = false;
 			musicClose();
-			SetText(m_playButton, "▶");
+			m_pauseGlyph->Hide(common::transition::Type_Reset);
+			m_playGlyph->Show(common::transition::Type_Reset);
 		}
 		return;
 	}

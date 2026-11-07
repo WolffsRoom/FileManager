@@ -172,6 +172,12 @@ The custom RCO compiler was validated by recompiling NetStream resources and com
 
 ## Version History
 
+### v0.4 Test - Current Development Branch
+
+v0.4 is developed and distributed from the `test` branch only; it does not have a GitHub Release while hardware validation is in progress. This line corrects the Themes and alphabetical-index crash paths, stabilizes the main-list animation and page positioning, and continues the Vita-style image, music and VPK installer interface work.
+
+Every successful build is preserved under `scripts/build/vpk/v0.4-test/` with a timestamped filename. The build script never replaces an earlier archived VPK.
+
 ### v0.30 Beta - Native Media and File Management Update
 
 [Download v0.30 Beta](https://github.com/WolffsRoom/FileManager/releases/tag/v0.30-beta)

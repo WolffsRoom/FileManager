@@ -190,6 +190,7 @@ private:
 	paf::ui::TextBox *m_search;
 	paf::ui::Widget *m_searchButton;
 	paf::ui::Widget *m_ftpIndicator;
+	paf::ui::Widget *m_musicIndicator;
 	paf::ui::Widget *m_alphaIndex;
 	paf::ui::Widget *m_alphaBubble;
 	paf::ui::Widget *m_alphaLetter;

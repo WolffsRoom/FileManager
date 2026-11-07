@@ -25,6 +25,8 @@ public:
 	void ListenInBackground();
 	void OpenInMusic();
 	void Close();
+	static bool HasMinimized();
+	static void RestoreMinimized();
 
 private:
 
@@ -41,6 +43,8 @@ private:
 	paf::ui::Widget *m_total;
 	paf::ui::Widget *m_barFill;
 	paf::ui::Widget *m_playButton;
+	paf::ui::Widget *m_playGlyph;
+	paf::ui::Widget *m_pauseGlyph;
 	paf::vector<paf::string> m_paths;
 	int32_t m_index;
 	long m_seconds;
@@ -49,6 +53,7 @@ private:
 	bool m_closing;
 	bool m_barTouch;
 	float m_barTouchX;
+	bool m_minimized;
 };
 
 #endif

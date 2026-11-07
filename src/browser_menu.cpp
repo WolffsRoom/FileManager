@@ -300,6 +300,10 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 	m_ftpIndicator = m_root->FindChild(plane_ftp_indicator_page_browser);
 	m_ftpIndicator->SetColor(1.0f, 1.0f, 1.0f, 0.5f);
 	m_ftpIndicator->Hide(common::transition::Type_Reset);
+	m_musicIndicator = m_root->FindChild(button_music_indicator_page_browser);
+	m_musicIndicator->Hide(common::transition::Type_Reset);
+	m_musicIndicator->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t, ui::Handler *, ui::Event *, void *) { MusicMenu::RestoreMinimized(); }, NULL);
 	m_alphaIndex = m_root->FindChild(text_alpha_index_page_browser);
 	m_alphaBubble = m_root->FindChild(plane_alpha_bubble_page_browser);
 	m_alphaLetter = m_root->FindChild(text_alpha_letter_page_browser);
@@ -382,6 +386,8 @@ BrowserMenu::~BrowserMenu()
 void BrowserMenu::UpdateBackground()
 {
 	theme::UpdateBackground(m_background);
+	if (MusicMenu::HasMinimized()) m_musicIndicator->Show(common::transition::Type_Reset);
+	else m_musicIndicator->Hide(common::transition::Type_Reset);
 }
 
 // ------------------------------------------------------------------ pages
@@ -453,9 +459,7 @@ void BrowserMenu::StartListItem(ui::listview::ItemFactory::StartParam &param)
 		if (m_pages.at(i)->list == param.list_view) owner = m_pages.at(i);
 	// ListView recycles cells. Replaying SlideFromBottom on a recycled cell leaves
 	// several transition layers visible, which looked like duplicated rows.
-	param.list_item->Hide(common::transition::Type_Reset);
-	param.list_item->Show(mainMenu && owner && owner->openingAnimation
-		? common::transition::Type_SlideFromBottom4 : common::transition::Type_Reset);
+	param.list_item->Show(common::transition::Type_Reset);
 }
 
 void BrowserMenu::ToggleAlphaIndex()
@@ -477,7 +481,7 @@ void BrowserMenu::UpdateAlphaIndex()
 {
 	if (!m_alphaVisible || !m_alphaIndex || !m_alphaIndex->IsVisible() || m_pages.empty()) return;
 	BrowserPage *page = Top();
-	if (!page || !page->loaded || page->entries.empty()) return;
+	if (!page || !page->loaded || page->entries.empty() || !page->list || !page->list->IsVisible()) return;
 	SceTouchData touch;
 	sce_paf_memset(&touch, 0, sizeof(touch));
 	sceTouchPeek(SCE_TOUCH_PORT_FRONT, &touch, 1);
@@ -507,6 +511,9 @@ void BrowserMenu::UpdateAlphaIndex()
 		bool match = letter < 26 ? first == (unsigned char)('A' + letter) : !isalpha(first);
 		if (match)
 		{
+			// The page may have changed while the touch report was being handled.
+			// Never send focus to a list that is no longer the active page.
+			if (m_pages.empty() || Top() != page || !page->list->IsVisible()) return;
 			page->focused = i;
 			page->list->SetFocus(0, i, ui::ListView::FOCUS_ALIGN_TYPE_HEAD, NULL);
 			break;
@@ -655,6 +662,7 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	math::v4 cellSize(960.0f, fs::IsRootStyle(physicalPath) ? k_rowRoot : k_rowFile);
 	page->list->SetCellSizeDefault(0, cellSize);
 	page->list->SetSegmentLayoutType(0, ui::ListView::LAYOUT_TYPE_LIST);
+	page->list->SetPos(0.0f, -272.0f, 0.0f);
 
 	if (!m_pages.empty())
 	{
@@ -665,8 +673,8 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 			older->list->SetTransitionComplete(false);
 		}
 		BrowserPage *current = m_pages.back();
-		current->list->Show(common::transition::Type_3D_SlideToBack1);
-		current->list->SetTransitionComplete(false);
+		current->list->Hide(common::transition::Type_Reset);
+		current->list->SetPos(0.0f, -272.0f, 0.0f);
 	}
 
 	m_pages.push_back(page);
@@ -697,7 +705,7 @@ bool BrowserMenu::PopPage()
 
 	if (!isLast)
 	{
-		common::transition::DoReverse(-100.0f, page->list, common::transition::Type_3D_SlideFromFront, true, false);
+		page->list->Hide(common::transition::Type_Reset);
 	}
 
 	fs::FreeList(&page->all);
@@ -719,7 +727,8 @@ bool BrowserMenu::PopPage()
 		int32_t wasOpened = current->opened;
 		current->opened = -1;
 		SetRowIcon(current, wasOpened);
-		current->list->Hide(common::transition::Type_3D_SlideToBack1);
+		current->list->SetPos(0.0f, -272.0f, 0.0f);
+		current->list->Hide(common::transition::Type_Reset);
 		current->list->Show(common::transition::Type_Reset);
 		current->list->SetTransitionComplete(false);
 		if (m_pages.size() > 1)
@@ -806,6 +815,12 @@ void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 	{
 		page->cellCount = page->entries.size();
 		page->list->InsertCell(0, 0, page->cellCount);
+		if (page->openingAnimation)
+		{
+			page->list->Hide(common::transition::Type_Reset);
+			page->list->SetPos(0.0f, -272.0f, 0.0f);
+			page->list->Show(common::transition::Type_SlideFromBottom4);
+		}
 		if (page->focused >= 0)
 			page->list->SetFocus(0, page->focused, ui::ListView::FOCUS_ALIGN_TYPE_CENTER, NULL);
 	}

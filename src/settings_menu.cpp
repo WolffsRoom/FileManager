@@ -237,6 +237,8 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	button->FindChild(text_list_item_info)->SetString(info);
 
 	ui::Widget *check = button->FindChild(plane_list_item_check);
+	ui::Widget *themePreview = button->FindChild(plane_theme_preview);
+	themePreview->Hide(common::transition::Type_Reset);
 	if (m_level == Level_Shortcuts)
 	{
 		// shortcuts use a check box that can be unticked
@@ -255,10 +257,11 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	if (m_level == Level_Themes)
 	{
 		const theme::Info &preview = theme::At(row);
-		// Tint through the widget animation layer; touching the internal draw
-		// object directly crashes on some ScePaf firmware revisions.
-		graph::DrawObj *image = button->GetDrawObj(ui::ImageButton::OBJ_IMAGE);
-		if (image) image->SetColor(math::v4(preview.bg[0], preview.bg[1], preview.bg[2], 0.88f));
+		if (row != (int32_t)theme::CustomIndex())
+		{
+			themePreview->SetColor(preview.bg[0], preview.bg[1], preview.bg[2], 0.88f);
+			themePreview->Show(common::transition::Type_Reset);
+		}
 	}
 	else if (m_level == Level_Commands)
 	{

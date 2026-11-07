@@ -33,40 +33,6 @@ void OptionMenu::OnButton(ui::Widget *wdg)
 	}
 }
 
-void OptionMenu::OnSizeAdjust(int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
-{
-	ui::Widget *button = NULL;
-	float len = 0.0f;
-	ui::Text *wdg = static_cast<ui::Text *>(self);
-	OptionMenu *workObj = static_cast<OptionMenu *>(userdata);
-
-	len = wdg->GetDrawObj(ui::Text::OBJ_ROOT)->GetSize().extract_x() + 40.0f;
-
-	if (len < k_minBtLen)
-	{
-		len = k_minBtLen;
-	}
-
-	math::v4 btSz(len, 60.0f);
-	math::v4 plSz(len + 12.0f, 12.0f + 60.0f * workObj->m_buttonCount);
-	math::v4 plPos(264.0f + ((202.0f - plSz.extract_x()) / 2.0f), 43.0f);
-
-	ui::Widget *optRoot = workObj->m_optPlaneRoot->FindChild(box_option_menu);
-
-	for (int i = 0; i < workObj->m_buttonCount; i++)
-	{
-		button = optRoot->FindChild(OPTION_MENU_BUTTON_MAGIC + i);
-		button->SetAdjust(ui::Widget::ADJUST_NONE, ui::Widget::ADJUST_NONE, ui::Widget::ADJUST_NONE);
-		button->SetSize(btSz);
-	}
-
-	workObj->m_optPlaneRoot->SetSize(plSz);
-	workObj->m_optPlaneRoot->SetPos(plPos);
-	workObj->m_optPlaneRoot->Show(common::transition::Type_Popup4, 0.0f);
-
-	self->DeleteEventCallback(ui::Handler::CB_STATE_READY, OnSizeAdjust, userdata);
-}
-
 OptionMenu::OptionMenu(Plugin *workPlugin, ui::Widget *root, paf::vector<Button> *buttons, uint32_t pageHash, int32_t tag)
 {
 	m_pageHash = pageHash;

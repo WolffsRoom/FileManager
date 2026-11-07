@@ -317,6 +317,14 @@ void dialog::SetProgressIcon(intrusive_ptr<graph::Surface> texture)
 	if (icon)
 	{
 		icon->SetTexture(texture, 0, 0);
+		// A subtle Vita-style "breathing" motion keeps the application bubble
+		// alive without moving it away from the progress-dialog layout.
+		icon->SetScale(0.96f, 0.96f, 1.0f);
+		icon->SetScale(1.04f, 1.04f, 1.0f,
+			new Timer(1.15f, Timer::FUNC_SINE_INOUT, Timer::REPEAT_ROUND));
+		icon->SetColor(1.0f, 1.0f, 1.0f, 0.86f);
+		icon->SetColor(1.0f, 1.0f, 1.0f, 1.0f,
+			new Timer(0.9f, Timer::FUNC_SINE_INOUT, Timer::REPEAT_ROUND));
 		icon->Show(common::transition::Type_Reset);
 	}
 }

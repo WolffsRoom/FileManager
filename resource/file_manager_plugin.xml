@@ -82,6 +82,13 @@
         <layout_hint size="1, 1" pos="-463, 271" />
         <focus_hint enable="0" />
       </button>
+      <button style="_common_default_style_button_transparent" id="button_music_indicator_page_browser">
+        <layout_hint size="52, 52" pos="393, -218" />
+        <focus_hint enable="0" />
+        <plane style="style_plane_music_indicator" texture="tex_ui_music" id="plane_music_indicator_page_browser">
+          <layout_hint size="42, 42" />
+        </plane>
+      </button>
     </page>
     <page id="page_settings">
       <plane texture="tex_common_bg" id="plane_base_bg_page_settings">
@@ -237,12 +244,33 @@
       </text>
       <button style="style_button_option_single" id="button_prev_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="92, 46" pos="510, -112" />
+        <plane style="style_plane_glyph" id="glyph_prev_page_music">
+          <layout_hint size="5, 25" pos="-15, 0" />
+          <plane style="style_plane_glyph" id="glyph_prev_triangle_page_music">
+            <layout_hint size="24, 5" pos="13, 0" />
+          </plane>
+        </plane>
       </button>
       <button style="style_button_option_single" id="button_play_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="92, 46" pos="610, -112" />
+        <plane style="style_plane_glyph" id="glyph_play_page_music">
+          <layout_hint size="23, 23" />
+        </plane>
+        <plane style="style_plane_glyph" id="glyph_pause_page_music">
+          <layout_hint size="7, 24" pos="-7, 0" />
+          <plane style="style_plane_glyph" id="glyph_pause_right_page_music">
+            <layout_hint size="7, 24" pos="14, 0" />
+          </plane>
+        </plane>
       </button>
       <button style="style_button_option_single" id="button_next_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="92, 46" pos="710, -112" />
+        <plane style="style_plane_glyph" id="glyph_next_page_music">
+          <layout_hint size="5, 25" pos="15, 0" />
+          <plane style="style_plane_glyph" id="glyph_next_triangle_page_music">
+            <layout_hint size="24, 5" pos="-13, 0" />
+          </plane>
+        </plane>
       </button>
       <button style="style_button_music_action" id="button_export_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="170, 48" pos="430, -180" />
@@ -277,14 +305,21 @@
         <layout_hint size="800, 60" />
       </text>
       <text style="style_text_preview_title" auto_scroll="1" id="text_title_page_preview">
-        <layout_hint align="0, 2" anchor="0, 2" size="900, 44" pos="0, -6" />
+		<layout_hint align="0, 1" anchor="0, 1" size="760, 38" pos="0, 76" />
       </text>
 	  <plane texture="tex_preview_arrow_left" id="plane_arrow_left_page_preview">
-		<layout_hint size="42, 72" pos="-438, 0" />
+		<layout_hint size="56, 56" pos="-438, 0" />
 	  </plane>
 	  <plane texture="tex_preview_arrow_right" id="plane_arrow_right_page_preview">
-		<layout_hint size="42, 72" pos="438, 0" />
+		<layout_hint size="56, 56" pos="438, 0" />
 	  </plane>
+	  <button style="_common_default_style_button_transparent" id="button_arrow_left_page_preview"><layout_hint size="100, 220" pos="-430, 0" /></button>
+	  <button style="_common_default_style_button_transparent" id="button_arrow_right_page_preview"><layout_hint size="100, 220" pos="430, 0" /></button>
+	  <plane texture="_common_texture_transparent" id="plane_thumb_left_page_preview"><layout_hint size="190, 104" pos="-220, -190" /></plane>
+	  <plane texture="_common_texture_transparent" id="plane_thumb_current_page_preview"><layout_hint size="210, 116" pos="0, -184" /></plane>
+	  <plane texture="_common_texture_transparent" id="plane_thumb_right_page_preview"><layout_hint size="190, 104" pos="220, -190" /></plane>
+	  <button style="_common_default_style_button_transparent" id="button_up_page_preview"><layout_hint size="1, 1" /><focus_hint enable="0" /></button>
+	  <button style="_common_default_style_button_transparent" id="button_down_page_preview"><layout_hint size="1, 1" /><focus_hint enable="0" /></button>
       <button style="_common_default_style_button_transparent" id="button_prev_page_preview">
         <layout_hint size="1, 1" pos="-479, 271" />
         <focus_hint enable="0" />
@@ -420,6 +455,12 @@
 	  <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj1" />
 	</style_plane>
     <style_plane color="0.28, 0.02, 0.42, 0.88" planeobj="plane_obj1" id="style_plane_selection_bar">
+      <planeobj id="plane_obj1" />
+    </style_plane>
+    <style_plane color="1, 1, 1, 0.94" planeobj="plane_obj1" id="style_plane_glyph">
+      <planeobj id="plane_obj1" />
+    </style_plane>
+    <style_plane color="1, 1, 1, 0.86" planeobj="plane_obj1" id="style_plane_music_indicator">
       <planeobj id="plane_obj1" />
     </style_plane>
     <style_plane color="1, 1, 1, 0.20" planeobj="plane_obj1" id="style_plane_qr_frame">
@@ -576,6 +617,9 @@
           <plane style="_common_default_style_plane" texture="_common_texture_check_mark" id="plane_list_item_check">
             <layout_hint anchor="2, 0" align="2, 0" size="40, 40" pos="-4, 0" />
           </plane>
+		  <plane texture="tex_new_theme" id="plane_theme_preview">
+			<layout_hint size="92, 64" pos="-369, 0" />
+		  </plane>
         </image_button>
       </list_item>
     </template>

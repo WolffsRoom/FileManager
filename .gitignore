@@ -42,3 +42,9 @@ tools/ui_viewer/cache/
 !Release/Screenshots/
 !Release/Screenshots/*.png
 Release/Screenshots/*.zip
+
+# Timestamped test VPK history. Keep every package; the build script uses cp -n.
+!scripts/build/
+!scripts/build/vpk/
+!scripts/build/vpk/**/
+!scripts/build/vpk/**/*.vpk
