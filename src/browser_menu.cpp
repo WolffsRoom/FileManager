@@ -534,7 +534,12 @@ void BrowserMenu::UpdateAlphaIndex()
 void BrowserMenu::SetSearchVisible(bool visible)
 {
 	BrowserPage *page = Top();
-	m_searchVisible = visible && !fs::IsRootStyle(page->path);
+	const bool target = visible && !fs::IsRootStyle(page->path);
+	// UpdateChrome runs for every push/pop. Reapplying SetPos/SetSize while
+	// ScePaf owns a 3D transition mixes the transition transform with the
+	// list geometry and can leave the restored page half outside the screen.
+	if (target == m_searchVisible) return;
+	m_searchVisible = target;
 	if (m_searchVisible)
 	{
 		m_search->Show(common::transition::Type_Reset);
@@ -612,6 +617,12 @@ void BrowserMenu::UpdateFtpIndicator()
 
 void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool ownsPsarc)
 {
+	// Normalize the current page before ScePaf captures it for the native
+	// back-plane transition. The shared search box must never resize a list
+	// after Type_3D_SlideToBack1 has started.
+	if (m_searchVisible)
+		SetSearchVisible(false);
+
 	Plugin::TemplateOpenParam tmpParam;
 	paf::string physicalPath = path;
 	paf::string logicalPath = path;
@@ -898,8 +909,11 @@ void BrowserMenu::CommitLoad(BrowserPage *page, fs::EntryList *fresh, int32_t re
 		else m_emptyText->Hide(common::transition::Type_Reset);
 		if (!page->loaded)
 		{
-			page->list->Show(settings::Get().navigation3D
-				? common::transition::Type_Reset : common::transition::Type_FadeinFast);
+			// Native lists are already visible at their template reset state, as
+			// in the initial release. Re-showing Reset here can race the reverse
+			// transform. Simplified mode keeps its lightweight fade.
+			if (!settings::Get().navigation3D)
+				page->list->Show(common::transition::Type_FadeinFast);
 			page->list->SetActivate(true);
 		}
 	}
