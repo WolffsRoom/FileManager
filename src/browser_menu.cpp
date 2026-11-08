@@ -799,8 +799,11 @@ bool BrowserMenu::PopPage()
 		// Destroying the widget inside this animation was the original overlap
 		// and dangling-callback regression.
 		outgoing->list->SetActivate(false);
+		// This stack owns the ListView and destroys it after the reverse
+		// transition. DoReverse(auto_delete=true) could destroy the widget
+		// independently, leading to double-free or a dangling retained page.
 		common::transition::DoReverse(-100.0f, outgoing->list,
-			common::transition::Type_3D_SlideFromFront, true, false);
+			common::transition::Type_3D_SlideFromFront, false, false);
 		outgoing->retireFrames = 24;
 		m_retiredPages.push_back(outgoing);
 		m_transitionFrames = 24;
@@ -954,11 +957,14 @@ void BrowserMenu::CommitLoad(BrowserPage *page, fs::EntryList *fresh, int32_t re
 		else m_emptyText->Hide(common::transition::Type_Reset);
 		if (!page->loaded)
 		{
+			// A slow directory can finish loading AFTER the 20-frame 3D
+			// window has expired. Running SlideFromFront at that point leaves
+			// this ListView at its half-screen starting transform indefinitely.
+			// Animate the *parent* as the 3D background; the new foreground
+			// always enters at full 960px width with a native fast fade.
 			RestoreListGeometry(page);
-			const bool native3D = settings::Get().navigation3D && m_pages.size() > 1;
-			page->list->Show(native3D
-				? common::transition::Type_3D_SlideFromFront
-				: common::transition::Type_FadeinFast);
+			page->list->SetTransitionComplete(true);
+			page->list->Show(common::transition::Type_FadeinFast);
 			page->list->SetActivate(true);
 		}
 	}
