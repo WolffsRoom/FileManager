@@ -219,8 +219,9 @@ void SettingsMenu::ShowLevel(Level level)
 		for (int i = 0; i < 3; ++i)
 			m_root->FindChild(ids[i])->SetString(Str(texts[i]));
 		m_powerBar->Show(common::transition::Type_Reset);
-		m_list->SetSize(960.0f, 350.0f, 0.0f);
-		m_list->SetPos(0.0f, -225.0f, 0.0f);
+		// Leave a visible neutral gap between power actions and list rows.
+		m_list->SetSize(960.0f, 328.0f, 0.0f);
+		m_list->SetPos(0.0f, -242.0f, 0.0f);
 	}
 	else
 	{

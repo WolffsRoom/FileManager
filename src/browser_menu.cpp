@@ -556,10 +556,18 @@ void BrowserMenu::SetSearchVisible(bool visible)
 
 void BrowserMenu::ToggleSearch()
 {
+	if (m_pages.empty()) return;
 	BrowserPage *page = Top();
 	if (!page->loaded || fs::IsRootStyle(page->path))
 	{
 		return;
+	}
+	if (!m_searchVisible && page->cellCount > 0)
+	{
+		// Move to the head *before* opening the search keyboard.
+		// Previously the filter inherited an arbitrary scroll offset.
+		page->list->SetFocus(0, 0, ui::ListView::FOCUS_ALIGN_TYPE_HEAD, NULL);
+		page->focused = 0;
 	}
 	if (m_searchVisible)
 	{
@@ -690,13 +698,22 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	{
 		BrowserPage *previous = m_pages.at(i);
 		previous->list->SetActivate(false);
-		if (native3D && i + 1 == m_pages.size())
+		// Never show the main/root menu behind the first opened folder.
+		// Its device rows were the visible duplicate layer reported on Vita.
+		const bool hasFolderBackground = native3D &&
+			i + 1 == m_pages.size() &&
+			!previous->path.empty() &&
+			!fs::IsRootStyle(previous->path);
+		if (hasFolderBackground)
 		{
 			RestoreListGeometry(previous);
 			previous->list->Show(common::transition::Type_3D_SlideToBack1);
 		}
 		else
+		{
 			previous->list->Hide(common::transition::Type_Reset);
+			RestoreListGeometry(previous);
+		}
 	}
 	// Do not expose a freshly created PAF list until its cells are committed
 	// on the real UI thread. Otherwise the factory may run on the worker.
@@ -731,7 +748,29 @@ void BrowserMenu::FreePage(BrowserPage *page)
 
 void BrowserMenu::UpdateRetired()
 {
-	if (m_transitionFrames > 0) --m_transitionFrames;
+	if (m_transitionFrames > 0)
+	{
+		--m_transitionFrames;
+		if (m_transitionFrames == 0)
+		{
+			// The 3D parent exists only while the page is moving. Leaving
+			// it visible in steady state stacked two screens in the viewport.
+			for (uint32_t i = 0; i + 1 < m_pages.size(); ++i)
+			{
+				BrowserPage *hidden = m_pages.at(i);
+				hidden->list->Hide(common::transition::Type_Reset);
+				RestoreListGeometry(hidden);
+			}
+			// Clamp the current list once more after PAF's transition timers have
+			// completed. Otherwise a late 3D animation frame can reapply the
+			// half-width transform after the Back callback reset it.
+			if (!m_pages.empty() && Top()->loaded)
+			{
+				RestoreListGeometry(Top());
+				Top()->list->SetTransitionComplete(true);
+			}
+		}
+	}
 	for (uint32_t i = 0; i < m_retiredPages.size();)
 	{
 		BrowserPage *old = m_retiredPages.at(i);
@@ -777,13 +816,14 @@ bool BrowserMenu::PopPage()
 		SetRowIcon(current, wasOpened);
 		for (uint32_t i = 0; i + 1 < m_pages.size(); ++i)
 			m_pages.at(i)->list->Hide(common::transition::Type_Reset);
+		// A new 3D Hide() while restoring the page left its geometry
+		// reduced to half of the screen. Cancel that path and force
+		// the parent back to its canonical full-screen transform.
+		current->list->Hide(common::transition::Type_Reset);
 		RestoreListGeometry(current);
+		current->list->SetTransitionComplete(true);
 		if (native3D)
-		{
-			// The parent is behind the outgoing page and returns to full size.
-			current->list->Hide(common::transition::Type_3D_SlideToBack1);
 			current->list->Show(common::transition::Type_Reset);
-		}
 		else
 			current->list->Show(common::transition::Type_FadeinFast);
 		current->list->SetActivate(true);
@@ -798,6 +838,10 @@ void BrowserMenu::RestoreListGeometry(BrowserPage *page)
 {
 	if (!page || !page->list) return;
 	page->list->SetAdjust(ui::Widget::ADJUST_NONE, ui::Widget::ADJUST_NONE, ui::Widget::ADJUST_NONE);
+	// Reset the transform as well as size and position. A PAF 3D
+	// SlideToBack leaves scale/rotation behind when shown with Type_Reset.
+	page->list->SetScale(1.0f, 1.0f, 1.0f);
+	page->list->SetRot(0.0f, 0.0f, 0.0f);
 	page->list->SetSize(960.0f, m_searchVisible ? 368.0f : 448.0f, 0.0f);
 	page->list->SetPos(0.0f, m_searchVisible ? -232.0f : -272.0f, 0.0f);
 }
@@ -1268,6 +1312,10 @@ void BrowserMenu::OnSearch()
 	if (page->cellCount > 0)
 	{
 		page->list->InsertCell(0, 0, page->cellCount);
+		// Always display search results starting at their first row,
+		// even when the original folder was scrolled far down.
+		page->list->SetFocus(0, 0, ui::ListView::FOCUS_ALIGN_TYPE_HEAD, NULL);
+		page->focused = 0;
 		m_emptyText->Hide(common::transition::Type_Reset);
 	}
 	else
@@ -1417,7 +1465,7 @@ void BrowserMenu::ApplyItemDecide(int32_t index)
 
 void BrowserMenu::OnMarkToggle(int32_t index)
 {
-	if (m_markPending || m_pages.empty() || !Top()->loaded) return;
+	if (m_markPending || m_transitionFrames || m_pages.empty() || !Top()->loaded) return;
 	m_markPending = true;
 	m_markPage = Top();
 	m_markIndex = index;
@@ -1435,6 +1483,7 @@ void BrowserMenu::OnMarkToggle(int32_t index)
 
 void BrowserMenu::ApplyMarkToggle(int32_t index)
 {
+	if (m_pages.empty() || m_transitionFrames || !Top()->loaded) return;
 	BrowserPage *page = Top();
 	if (index < 0)
 	{
@@ -1467,18 +1516,24 @@ void BrowserMenu::ApplyMarkToggle(int32_t index)
 		{
 			continue;
 		}
+		// PAF GetListItem can return a recycled/incomplete placeholder rather
+		// than an actual file row. The latest PSP2 core crashed in SetColor
+		// with r0 == NULL immediately after FindChild(image_button_list_item).
 		ui::Widget *check = item->FindChild(plane_list_item_check);
+		ui::Widget *button = item->FindChild(image_button_list_item);
+		if (!check || !button) continue;
 		if (anyMarked)
 		{
 			check->SetTexture(Icon(page->entries.at(i)->marked ? tex_checkbox_on : tex_checkbox_off), 0, 0);
 			check->Show(common::transition::Type_Reset);
-			item->FindChild(image_button_list_item)->SetColor(page->entries.at(i)->marked ? 0.75f : 1.0f,
-				page->entries.at(i)->marked ? 0.42f : 1.0f, page->entries.at(i)->marked ? 0.95f : 1.0f, 1.0f);
+			button->SetColor(page->entries.at(i)->marked ? 0.75f : 1.0f,
+				page->entries.at(i)->marked ? 0.42f : 1.0f,
+				page->entries.at(i)->marked ? 0.95f : 1.0f, 1.0f);
 		}
 		else
 		{
 			check->Hide(common::transition::Type_Reset);
-			item->FindChild(image_button_list_item)->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+			button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 		}
 	}
 	if (anyMarked)
@@ -1505,15 +1560,23 @@ void BrowserMenu::SelectAll()
 
 void BrowserMenu::ApplySelectAll()
 {
+	if (m_pages.empty() || m_transitionFrames || !Top()->loaded) return;
 	BrowserPage *page = Top();
-	if (!page || fs::IsRootStyle(page->path)) return;
+	if (fs::IsRootStyle(page->path)) return;
 	for (uint32_t i = 0; i < page->entries.size(); i++)
 		page->entries.at(i)->marked = true;
-	// Rebuild visible cells once so checks and the Music-style tint stay in sync.
-	if (page->cellCount)
+	// Update instantiated rows in place. Rebuilding every cell on Select All
+	// produces heavy PAF allocations for Music-sized directories.
+	for (uint32_t i = 0; i < page->entries.size(); ++i)
 	{
-		page->list->DeleteCell(0, 0, page->cellCount);
-		page->list->InsertCell(0, 0, page->cellCount);
+		ui::ListItem *item = page->list->GetListItem(0, i);
+		if (!item) continue;
+		ui::Widget *check = item->FindChild(plane_list_item_check);
+		ui::Widget *button = item->FindChild(image_button_list_item);
+		if (!check || !button) continue; // recycled placeholder
+		check->SetTexture(Icon(tex_checkbox_on), 0, 0);
+		check->Show(common::transition::Type_Reset);
+		button->SetColor(0.75f, 0.42f, 0.95f, 1.0f);
 	}
 	m_selectionBar->Show(common::transition::Type_Reset);
 }
@@ -1731,13 +1794,33 @@ void BrowserMenu::DoAction(Action action)
 		break;
 
 	case Action_ClearSelection:
-		for (uint32_t i = 0; i < page->entries.size(); i++)
+		// Clear every mark in one deferred pass. The prior loop called
+		// OnMarkToggle for each row, but its pending guard processed only
+		// the first mark and left the remaining files selected.
+		if (m_selectAllPending || !page->loaded) break;
+		m_selectAllPending = true;
+		m_selectAllPage = page;
+		DeferCall([](void *userdata)
 		{
-			if (page->entries.at(i)->marked)
+			BrowserMenu *menu = static_cast<BrowserMenu *>(userdata);
+			BrowserPage *page = menu->m_selectAllPage;
+			menu->m_selectAllPending = false;
+			menu->m_selectAllPage = NULL;
+			if (menu->m_pages.empty() || menu->Top() != page || !page->loaded)
+				return;
+			for (uint32_t i = 0; i < page->entries.size(); ++i)
+				page->entries.at(i)->marked = false;
+			for (uint32_t i = 0; i < page->entries.size(); ++i)
 			{
-				OnMarkToggle(i);
+				ui::ListItem *item = page->list->GetListItem(0, i);
+				if (!item) continue;
+				ui::Widget *check = item->FindChild(plane_list_item_check);
+				ui::Widget *button = item->FindChild(image_button_list_item);
+				if (check) check->Hide(common::transition::Type_Reset);
+				if (button) button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 			}
-		}
+			menu->m_selectionBar->Hide(common::transition::Type_Reset);
+		}, this);
 		break;
 
 	case Action_Copy:

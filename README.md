@@ -327,3 +327,5 @@ All third-party components remain under their respective licenses. File Manager 
 Latest hardware follow-up (November 7): [v0.4 crash-fix 2 validation notes](docs/v0.4-test-crash-followup-20261107-2.md).
 
 Latest experimental build: [Native 3D navigation, Music/PFS fixes and Vita test guide](docs/v0.4-test-native3d-pfs-20261107.md).
+
+Latest selection/3D/search stability build: [November 7 test notes](docs/v0.4-test-3d-select-search-followup-20261107.md).
