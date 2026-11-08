@@ -65,11 +65,9 @@ public:
 
 		void Start(StartParam &param)
 		{
-			// Never add a Popup1 transition to every recycled Music-file row.
-			// Large directories have many recycled cells; only root menus
-			// keep the v0.2 row-entry effect.
-			param.list_item->Show(m_parent->AnimateRows(param.list_view)
-				? paf::common::transition::Type_Popup1 : paf::common::transition::Type_Reset);
+			// Match the initial File Manager on every page. Stop() resets a
+			// recycled cell before its next Popup1 so transforms never stack.
+			param.list_item->Show(paf::common::transition::Type_Popup1);
 		}
 
 		void Stop(StopParam &param)
@@ -109,7 +107,6 @@ public:
 	void LoadPage(BrowserPage *page, bool refresh);
 	/** Commit ListView changes on the real PAF UI frame; I/O is done by LoadJob. */
 	void CommitLoad(BrowserPage *page, fs::EntryList *fresh, int32_t result);
-	bool AnimateRows(paf::ui::ListView *list) const;
 
 	/** Worker-thread side of a file operation. */
 	void RunOperation();
@@ -135,6 +132,7 @@ public:
 	void SelectAll();
 	void ToggleSearch();
 	void SetSearchVisible(bool visible);
+	void CloseSearchForNavigation();
 	void SetRowIcon(BrowserPage *page, int32_t index);
 	void UpdateFtpIndicator();
 	void OnPreviewChanged();

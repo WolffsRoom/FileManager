@@ -586,6 +586,15 @@ void BrowserMenu::ToggleSearch()
 	SetSearchVisible(!m_searchVisible);
 }
 
+void BrowserMenu::CloseSearchForNavigation()
+{
+	if (!m_searchVisible) return;
+	paf::wstring empty;
+	m_search->SetString(empty);
+	FilterSearch(true);
+	SetSearchVisible(false);
+}
+
 void BrowserMenu::SetRowIcon(BrowserPage *page, int32_t index)
 {
 	if (index < 0 || index >= (int32_t)page->entries.size())
@@ -620,8 +629,7 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	// Normalize the current page before ScePaf captures it for the native
 	// back-plane transition. The shared search box must never resize a list
 	// after Type_3D_SlideToBack1 has started.
-	if (m_searchVisible)
-		SetSearchVisible(false);
+	CloseSearchForNavigation();
 
 	Plugin::TemplateOpenParam tmpParam;
 	paf::string physicalPath = path;
@@ -751,6 +759,7 @@ void BrowserMenu::FreePage(BrowserPage *page)
 bool BrowserMenu::PopPage()
 {
 	if (m_pages.empty()) return false;
+	CloseSearchForNavigation();
 	BrowserPage *outgoing = m_pages.back();
 	if (!outgoing->loaded) return false;
 	const bool isLast = m_pages.size() == 1;
@@ -808,14 +817,6 @@ void BrowserMenu::Refresh()
 	page->loaded = false;
 	m_busy->Start();
 	Enqueue(new LoadJob(this, page, true));
-}
-
-bool BrowserMenu::AnimateRows(ui::ListView *list) const
-{
-	for (uint32_t i = 0; i < m_pages.size(); ++i)
-		if (m_pages.at(i)->list == list)
-			return m_pages.at(i)->path.empty(); // only the small device menu
-	return false;
 }
 
 void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
