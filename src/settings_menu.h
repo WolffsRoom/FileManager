@@ -72,6 +72,7 @@ private:
 	void OnPowerDialog(int32_t buttonCode);
 	int32_t RowCount(Level level);
 	bool IsSelected(int32_t row);
+	bool ShowsToggle() const;
 	void UpdateChecks();
 
 	paf::ui::Widget *m_parentRoot;

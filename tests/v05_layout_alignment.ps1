@@ -8,8 +8,9 @@ if ($power.layout_hint.pos -ne '0, 130') {
 }
 $powerStyle = @($rco.resource.styletable.style_button | Where-Object id -eq 'style_button_power_native')[0]
 $powerBg = @($powerStyle.planeobj | Where-Object id -eq 'plane_obj1')[0]
-if ($powerBg.texture0 -or $powerBg.color -ne '1, 1, 1, 0') {
-    throw 'Settings action buttons are not transparent.'
+if ($powerBg.texture0 -ne '_common_texture_option_menu_button_single' -or
+    $powerBg.color -ne '1, 1, 1, 0.55') {
+    throw 'Settings action buttons lack semitransparent native boundaries.'
 }
 
 $browser = @($rco.resource.pagetable.page | Where-Object id -eq 'page_browser')[0]

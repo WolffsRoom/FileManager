@@ -430,7 +430,7 @@
     <style_button sound="_common_sound_button_enter" bottom_margin="6" right_margin="12"
       top_margin="6" left_margin="12" label_obj="label_obj1" bg_obj="plane_obj1"
       glow_obj="plane_obj2" id="style_button_power_native">
-      <planeobj color="1, 1, 1, 0" id="plane_obj1" />
+      <planeobj texture0="_common_texture_option_menu_button_single" color="1, 1, 1, 0.55" id="plane_obj1" />
       <textobj font_size="23" bold="1" ellipsis="1" align_y="1" align_x="1" id="label_obj1" />
       <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj2" />
     </style_button>
@@ -759,6 +759,9 @@
     <texture src="texture/new/cancell.png" type="texture/png" id="tex_new_cancell" />
     <texture src="texture/tex_checkbox_on.png" type="texture/png" id="tex_checkbox_on" />
     <texture src="texture/tex_checkbox_off.png" type="texture/png" id="tex_checkbox_off" />
+    <texture src="ui/toggle-on.png" type="texture/png" id="tex_ui_toggle_on" />
+    <texture src="ui/toggle-off.png" type="texture/png" id="tex_ui_toggle_off" />
+    <texture src="ui/AnimOptions.png" type="texture/png" id="tex_ui_anim_options" />
     <texture src="ui/favorite_folder.png" type="texture/png" id="tex_ui_favorite_folder" />
     <texture src="ui/favorite_file.png" type="texture/png" id="tex_ui_favorite_file" />
     <texture src="ui/game_iso.png" type="texture/png" id="tex_ui_game_iso" />

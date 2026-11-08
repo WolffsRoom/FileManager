@@ -20,7 +20,7 @@ namespace {
 	enum MainRow { Main_Themes, Main_FontSize, Main_Language, Main_Select, Main_AutoDecrypt, Main_Navigation, Main_Shortcuts, Main_Commands, Main_About, Main_Count };
 
 	const uint32_t k_mainLabels[Main_Count] = { msg_set_themes, msg_set_font_size, msg_set_language, msg_set_select, msg_set_auto_decrypt, msg_set_navigation, msg_set_shortcuts, msg_set_commands, msg_set_about };
-	const uint32_t k_mainIcons[Main_Count] = { tex_new_theme, tex_ui_text, tex_ui_text, tex_ui_ftp, tex_ui_encrypted, tex_new_arrow, tex_ui_bookmark, tex_new_gears, tex_about };
+	const uint32_t k_mainIcons[Main_Count] = { tex_new_theme, tex_ui_text, tex_ui_text, tex_ui_ftp, tex_ui_encrypted, tex_ui_anim_options, tex_ui_bookmark, tex_new_gears, tex_about };
 
 	const uint32_t k_languages[] = { msg_lang_system, msg_lang_ptbr, msg_lang_en, msg_lang_es, msg_lang_fr, msg_lang_de };
 	const uint32_t k_selectFunctions[] = { msg_ftp_server, msg_qr_code, msg_usb };
@@ -273,6 +273,11 @@ bool SettingsMenu::IsSelected(int32_t row)
 	}
 }
 
+bool SettingsMenu::ShowsToggle() const
+{
+	return m_level != Level_Main && m_level != Level_Commands;
+}
+
 ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &param)
 {
 	if (!param.list_view->GetName().GetIDHash() || param.cell_index >= m_rows)
@@ -304,7 +309,7 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		else if (row == Main_Select) icon = c.selectFunction == 2 ? tex_ui_usb :
 			(c.selectFunction == 1 ? tex_ui_qr : tex_ui_ftp);
 		else if (row == Main_AutoDecrypt) icon = c.autoDecrypt ? tex_ui_unlock : tex_ui_locked;
-		else if (row == Main_Navigation) icon = tex_new_arrow;
+		else if (row == Main_Navigation) icon = tex_ui_anim_options;
 		else if (row == Main_Shortcuts) icon = tex_ui_favorite_folder;
 		if (row == Main_Themes) info = Str(theme::At(c.theme).nameHash);
 		else if (row == Main_FontSize) info = Str(k_fontSizes[c.fontSize]);
@@ -348,7 +353,7 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		break;
 	case Level_Navigation:
 		label = Str(k_navigation[row]);
-		icon = tex_new_arrow;
+		icon = tex_ui_anim_options;
 		break;
 	case Level_Shortcuts:
 		label = Wide(m_shortcuts.at(row).c_str());
@@ -368,21 +373,24 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	ui::Widget *check = item->FindChild(plane_list_item_check);
 	ui::Widget *themePreview = button->FindChild(plane_theme_preview);
 	if (themePreview) themePreview->Hide(common::transition::Type_Reset);
-	if (m_level == Level_Shortcuts)
+	if (check && ShowsToggle())
 	{
-		// shortcuts use a check box that can be unticked
-		if (check) check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_checkbox_on : tex_checkbox_off), 0, 0);
+		check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_ui_toggle_on : tex_ui_toggle_off), 0, 0);
+		check->Show(common::transition::Type_Reset);
 	}
-	else if (check && !IsSelected(row))
-	{
-		check->Hide(common::transition::Type_Reset);
-	}
+	else if (check) check->Hide(common::transition::Type_Reset);
 
 	intrusive_ptr<graph::Surface> tex = g_appPlugin->GetTexture(icon);
 	if (tex.get())
 	{
 		button->SetTexture(tex);
 	}
+	// Settings list icons are uniformly 10% smaller than the shared file-row
+	// default. Power actions are separate widgets and keep their own size.
+	math::v3 iconSize;
+	float iconValues[4] = { 91.8f, 63.0f, 0.0f, 0.0f };
+	memcpy(&iconSize, iconValues, sizeof(iconSize));
+	static_cast<ui::ImageButton *>(button)->SetTextureSize(iconSize);
 	if (m_level == Level_Themes)
 	{
 		const theme::Info &preview = theme::At(row);
@@ -392,13 +400,6 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 			themePreview->SetColor(preview.bg[0], preview.bg[1], preview.bg[2], 0.88f);
 			themePreview->Show(common::transition::Type_Reset);
 		}
-	}
-	else if (m_level == Level_Commands)
-	{
-		math::v3 iconSize;
-		float values[4] = { 71.4f, 49.0f, 0.0f, 0.0f };
-		memcpy(&iconSize, values, sizeof(iconSize));
-		static_cast<ui::ImageButton *>(button)->SetTextureSize(iconSize);
 	}
 
 	button->AddEventCallback(ui::Button::CB_BTN_DECIDE,
@@ -421,12 +422,9 @@ void SettingsMenu::UpdateChecks()
 		}
 		ui::Widget *check = item->FindChild(plane_list_item_check);
 		if (!check) continue;
-		if (m_level == Level_Shortcuts)
+		if (ShowsToggle())
 		{
-			check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_checkbox_on : tex_checkbox_off), 0, 0);
-		}
-		else if (IsSelected(row))
-		{
+			check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_ui_toggle_on : tex_ui_toggle_off), 0, 0);
 			check->Show(common::transition::Type_Reset);
 		}
 		else
