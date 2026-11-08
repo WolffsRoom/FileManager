@@ -48,18 +48,18 @@
         </text>
       </plane>
       <plane style="style_plane_selection_bar" id="plane_selection_bar_page_browser">
-        <layout_hint size="840, 68" pos="-60, -238" />
+        <layout_hint size="840, 68" pos="0, -238" />
         <button style="style_button_selection_action" id="button_all_selection_page_browser">
-          <layout_hint size="185, 48" pos="-293, 0" />
+          <layout_hint size="168, 48" pos="-267, 0" />
         </button>
         <button style="style_button_selection_action" id="button_copy_selection_page_browser">
-          <layout_hint size="185, 48" pos="-98, 0" />
+          <layout_hint size="168, 48" pos="-89, 0" />
         </button>
         <button style="style_button_selection_action" id="button_move_selection_page_browser">
-          <layout_hint size="185, 48" pos="98, 0" />
+          <layout_hint size="168, 48" pos="89, 0" />
         </button>
         <button style="style_button_selection_action" id="button_delete_selection_page_browser">
-          <layout_hint size="185, 48" pos="293, 0" />
+          <layout_hint size="168, 48" pos="267, 0" />
         </button>
       </plane>
       <!-- Declared after the selection bar so the native options corner remains in front. -->
@@ -103,7 +103,7 @@
       </plane>
       <template_ref id="template_ref_top_title_bar_page_settings" template="template_top_title_bar" />
       <plane style="_common_style_plane_transparent" id="plane_power_actions_page_settings">
-        <layout_hint size="960, 70" pos="0, 174" />
+        <layout_hint size="960, 70" pos="0, 130" />
         <button style="style_button_power_native" id="button_power_off_page_settings">
           <layout_hint size="286, 60" pos="-306, 0" />
           <plane texture="tex_ui_turn_off" id="icon_power_off_page_settings">
@@ -430,7 +430,7 @@
     <style_button sound="_common_sound_button_enter" bottom_margin="6" right_margin="12"
       top_margin="6" left_margin="12" label_obj="label_obj1" bg_obj="plane_obj1"
       glow_obj="plane_obj2" id="style_button_power_native">
-      <planeobj texture0="_common_texture_option_menu_button_single" id="plane_obj1" />
+      <planeobj color="1, 1, 1, 0" id="plane_obj1" />
       <textobj font_size="23" bold="1" ellipsis="1" align_y="1" align_x="1" id="label_obj1" />
       <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj2" />
     </style_button>

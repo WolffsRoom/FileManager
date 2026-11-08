@@ -3,10 +3,10 @@ $xml = Get-Content -LiteralPath 'resource/file_manager_plugin.xml' -Raw
 $cpp = Get-Content -LiteralPath 'src/browser_menu.cpp' -Raw
 $header = Get-Content -LiteralPath 'src/browser_menu.h' -Raw
 
-if ($xml -notmatch 'plane_selection_bar_page_browser[\s\S]*?size="840, 68" pos="-60, -238"') {
-    throw 'Selection bar must leave the native options corner visible.'
+if ($xml -notmatch 'plane_selection_bar_page_browser[\s\S]*?size="840, 68" pos="0, -238"') {
+    throw 'Selection bar must be centered while leaving the native options corner in front.'
 }
-if (($xml | Select-String -Pattern 'size="185, 48"' -AllMatches).Matches.Count -lt 4) {
+if (($xml | Select-String -Pattern 'size="168, 48"' -AllMatches).Matches.Count -lt 4) {
     throw 'Selection action buttons were not narrowed consistently.'
 }
 if ($xml.IndexOf('plane_selection_bar_page_browser') -gt $xml.IndexOf('button_search_page_browser')) {
