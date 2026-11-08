@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- `build/FileManager (alpha).vpk` is the navigation/scroll reference.
+- `scripts/build/vpk/legacy/alpha/build/FileManager (alpha).vpk` is the navigation/scroll reference.
 - Labels are `Padrão` and `Simplificado` in Portuguese.
 - Preserve every prior VPK; new artifacts go under `scripts/build/vpk/v0.5-test/`.
 - Work on branch `test`; do not create a GitHub Release.

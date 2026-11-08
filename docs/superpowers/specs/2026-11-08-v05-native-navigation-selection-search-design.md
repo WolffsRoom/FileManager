@@ -2,11 +2,11 @@
 
 ## Intent
 
-Start v0.5 from commit `aa58cbb`, using `build/FileManager (alpha).vpk` as the authoritative reference for folder advance, return and list scrolling. Fix the Settings crash and selection/search regressions without changing the expected Vita-native interaction.
+Start v0.5 from commit `aa58cbb`, using `scripts/build/vpk/legacy/alpha/build/FileManager (alpha).vpk` as the authoritative reference for folder advance, return and list scrolling. Fix the Settings crash and selection/search regressions without changing the expected Vita-native interaction.
 
 ## Verified reference
 
-`build/FileManager (alpha).vpk` and `Release/FileManager-alpha.vpk` are identical (SHA-256 `46272F0938D7AE77C2B00B514F22C09120FA6BA075690D24D34D5715AC419511`). Its matching early implementation sends the parent list to `Type_3D_SlideToBack1`, brings it back with the native reverse transition, and lets the ScePaf ListView own scroll motion.
+The archived alpha packages under `scripts/build/vpk/legacy/alpha/` are identical (SHA-256 `46272F0938D7AE77C2B00B514F22C09120FA6BA075690D24D34D5715AC419511`). Their matching early implementation sends the parent list to `Type_3D_SlideToBack1`, brings it back with the native reverse transition, and lets the ScePaf ListView own scroll motion.
 
 ## Chosen approach
 
