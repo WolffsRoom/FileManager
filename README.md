@@ -331,3 +331,5 @@ Latest experimental build: [Native 3D navigation, Music/PFS fixes and Vita test 
 Latest selection/3D/search stability build: [November 7 test notes](docs/v0.4-test-3d-select-search-followup-20261107.md).
 
 Latest 3D navigation correction from real Vita video: [November 8 video-based test notes](docs/v0.4-test-video-3d-fix-20261108.md).
+
+Selection toolbar and checkbox improvements: [November 8 Vita test notes](docs/v0.4-test-selection-ui-20261108.md).

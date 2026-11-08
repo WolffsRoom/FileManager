@@ -208,7 +208,7 @@ namespace {
 }
 
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_inputAction(Action_Rename),
-	m_iconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_transitionFrames(0), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
+	m_iconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_transitionFrames(0), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -332,26 +332,33 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 	m_alphaButton->Hide(common::transition::Type_Reset);
 	m_selectionBar = m_root->FindChild(plane_selection_bar_page_browser);
 	m_selectionBar->Hide(common::transition::Type_Reset);
-	ui::Widget *selectionCancel = m_root->FindChild(button_cancel_selection_page_browser);
 	ui::Widget *selectionAll = m_root->FindChild(button_all_selection_page_browser);
 	ui::Widget *selectionCopy = m_root->FindChild(button_copy_selection_page_browser);
-	selectionCancel->SetString(g_appPlugin->GetString(msg_cancel));
+	ui::Widget *selectionMove = m_root->FindChild(button_move_selection_page_browser);
+	ui::Widget *selectionDelete = m_root->FindChild(button_delete_selection_page_browser);
 	selectionAll->SetString(g_appPlugin->GetString(msg_select_all));
 	selectionCopy->SetString(g_appPlugin->GetString(msg_opt_copy));
-	selectionCancel->AddEventCallback(ui::Button::CB_BTN_DECIDE,
-	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
-	{
-		reinterpret_cast<BrowserMenu *>(userdata)->DoActionPublic(Action_ClearSelection);
-	}, this);
+	selectionMove->SetString(g_appPlugin->GetString(msg_opt_move));
+	selectionDelete->SetString(g_appPlugin->GetString(msg_opt_delete));
 	selectionAll->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
 	{
-		reinterpret_cast<BrowserMenu *>(userdata)->SelectAll();
+		if (userdata) reinterpret_cast<BrowserMenu *>(userdata)->SelectAll();
 	}, this);
 	selectionCopy->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
 	{
-		reinterpret_cast<BrowserMenu *>(userdata)->DoActionPublic(Action_Copy);
+		if (userdata) reinterpret_cast<BrowserMenu *>(userdata)->DoActionPublic(Action_Copy);
+	}, this);
+	selectionMove->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		if (userdata) reinterpret_cast<BrowserMenu *>(userdata)->DoActionPublic(Action_Move);
+	}, this);
+	selectionDelete->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		if (userdata) reinterpret_cast<BrowserMenu *>(userdata)->DoActionPublic(Action_Delete);
 	}, this);
 	// No Music alphabetical index worker.
 
@@ -1008,7 +1015,8 @@ void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 	button->FindChild(text_list_item_info)->SetString(infoWide);
 
 	// Selection mode: every row shows a check box once anything is marked.
-	ui::Widget *check = button->FindChild(plane_list_item_check);
+	ui::Widget *check = button->GetParent() ? button->GetParent()->FindChild(plane_list_item_check) : NULL;
+	if (!check) return;
 	bool anyMarked = false;
 	for (uint32_t i = 0; i < page->entries.size() && !anyMarked; i++)
 	{
@@ -1017,8 +1025,8 @@ void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 	if (anyMarked)
 	{
 		check->SetTexture(Icon(entry->marked ? tex_checkbox_on : tex_checkbox_off), 0, 0);
-		button->SetColor(entry->marked ? 0.75f : 1.0f, entry->marked ? 0.42f : 1.0f,
-			entry->marked ? 0.95f : 1.0f, 1.0f);
+		check->Show(common::transition::Type_Reset);
+		button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 	else
 	{
@@ -1215,6 +1223,17 @@ ui::ListItem *BrowserMenu::CreateListItem(ui::listview::ItemFactory::CreateParam
 
 void BrowserMenu::OnBack()
 {
+	if (!m_pages.empty() && Top()->loaded)
+	{
+		bool marked = false;
+		for (uint32_t i = 0; i < Top()->entries.size(); ++i)
+			marked |= Top()->entries.at(i)->marked;
+		if (marked)
+		{
+			DoAction(Action_ClearSelection);
+			return;
+		}
+	}
 	// The button itself belongs to a PAF dispatch in progress. Destroying the
 	// outgoing ListView within that callback can invalidate its current handler.
 	if (m_backPending || m_transitionFrames || m_pages.size() <= 1 || !Top()->loaded) return;
@@ -1233,7 +1252,19 @@ void BrowserMenu::OnBack()
 
 void BrowserMenu::DoActionPublic(Action action)
 {
-	DoAction(action);
+	// Click handlers must not mutate selection or create confirmation dialogs
+	// during PAF's CB_BTN_DECIDE dispatch.
+	if (m_selectionActionPending || m_pages.empty() || !Top()->loaded) return;
+	m_selectionAction = action;
+	m_selectionActionPending = true;
+	// This action is only issued by the selection toolbar.
+	DeferCall([](void *userdata)
+	{
+		BrowserMenu *menu = static_cast<BrowserMenu *>(userdata);
+		menu->m_selectionActionPending = false;
+		if (!menu->m_pages.empty() && menu->Top()->loaded)
+			menu->DoAction(menu->m_selectionAction);
+	}, this);
 }
 
 void BrowserMenu::OnSelectButton()
@@ -1532,9 +1563,7 @@ void BrowserMenu::ApplyMarkToggle(int32_t index)
 		{
 			check->SetTexture(Icon(page->entries.at(i)->marked ? tex_checkbox_on : tex_checkbox_off), 0, 0);
 			check->Show(common::transition::Type_Reset);
-			button->SetColor(page->entries.at(i)->marked ? 0.75f : 1.0f,
-				page->entries.at(i)->marked ? 0.42f : 1.0f,
-				page->entries.at(i)->marked ? 0.95f : 1.0f, 1.0f);
+			button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 		}
 		else
 		{
@@ -1582,7 +1611,7 @@ void BrowserMenu::ApplySelectAll()
 		if (!check || !button) continue; // recycled placeholder
 		check->SetTexture(Icon(tex_checkbox_on), 0, 0);
 		check->Show(common::transition::Type_Reset);
-		button->SetColor(0.75f, 0.42f, 0.95f, 1.0f);
+		button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 	m_selectionBar->Show(common::transition::Type_Reset);
 }
@@ -1830,11 +1859,19 @@ void BrowserMenu::DoAction(Action action)
 		break;
 
 	case Action_Copy:
-		SetClipboard(false);
-		break;
-
 	case Action_Move:
-		SetClipboard(true);
+		// Capture all source paths first, then return to normal navigation so
+		// the user can choose the destination folder for Paste.
+		SetClipboard(action == Action_Move);
+		for (uint32_t i = 0; i < page->entries.size(); ++i)
+		{
+			page->entries.at(i)->marked = false;
+			ui::ListItem *item = page->list->GetListItem(0, i);
+			if (!item) continue;
+			ui::Widget *check = item->FindChild(plane_list_item_check);
+			if (check) check->Hide(common::transition::Type_Reset);
+		}
+		m_selectionBar->Hide(common::transition::Type_Reset);
 		break;
 
 	case Action_Paste:

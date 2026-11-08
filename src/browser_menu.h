@@ -226,6 +226,8 @@ private:
 	int32_t m_itemIndex;
 	bool m_optionsPending;
 	bool m_selectButtonPending;
+	bool m_selectionActionPending;
+	Action m_selectionAction;
 	paf::ui::Widget *m_musicIndicator;
 	paf::ui::Widget *m_alphaIndex;
 	paf::ui::Widget *m_alphaBubble;

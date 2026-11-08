@@ -49,15 +49,18 @@
         </text>
       </plane>
       <plane style="style_plane_selection_bar" id="plane_selection_bar_page_browser">
-        <layout_hint size="960, 58" pos="0, -243" />
-        <button style="style_button_selection_action" id="button_cancel_selection_page_browser">
-          <layout_hint size="250, 48" pos="-340, 0" />
-        </button>
+        <layout_hint size="960, 68" pos="0, -238" />
         <button style="style_button_selection_action" id="button_all_selection_page_browser">
-          <layout_hint size="250, 48" pos="0, 0" />
+          <layout_hint size="222, 48" pos="-348, 0" />
         </button>
         <button style="style_button_selection_action" id="button_copy_selection_page_browser">
-          <layout_hint size="250, 48" pos="340, 0" />
+          <layout_hint size="222, 48" pos="-116, 0" />
+        </button>
+        <button style="style_button_selection_action" id="button_move_selection_page_browser">
+          <layout_hint size="222, 48" pos="116, 0" />
+        </button>
+        <button style="style_button_selection_action" id="button_delete_selection_page_browser">
+          <layout_hint size="222, 48" pos="348, 0" />
         </button>
       </plane>
       <button style="_common_default_style_button_transparent" id="button_start_page_browser">
@@ -430,9 +433,9 @@
       <textobj font_size="23" bold="1" ellipsis="1" align_y="1" align_x="1" id="label_obj1" />
       <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj2" />
     </style_button>
-    <style_button sound="_common_sound_button_enter" bottom_margin="5" right_margin="10" top_margin="5" left_margin="10" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_selection_action">
-      <planeobj color="0.38, 0.08, 0.55, 0.72" id="plane_obj1" />
-      <textobj font_size="20" bold="1" align_y="1" align_x="1" id="label_obj1" />
+    <style_button sound="_common_sound_button_enter" bottom_margin="5" right_margin="8" top_margin="5" left_margin="8" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_selection_action">
+      <planeobj texture0="_common_texture_option_menu_button_single" id="plane_obj1" />
+      <textobj font_size="20" ellipsis="1" align_y="1" align_x="1" id="label_obj1" />
       <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj2" />
     </style_button>
     <style_button sound="_common_sound_button_enter" bottom_margin="12" right_margin="20" top_margin="12" left_margin="20" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_option_top">
@@ -483,7 +486,7 @@
 	<style_plane color="0, 0, 0, 0.48" planeobj="plane_obj1" id="style_plane_cover_shadow">
 	  <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj1" />
 	</style_plane>
-    <style_plane color="0.28, 0.02, 0.42, 0.88" planeobj="plane_obj1" id="style_plane_selection_bar">
+    <style_plane color="0.08, 0.08, 0.10, 0.92" planeobj="plane_obj1" id="style_plane_selection_bar">
       <planeobj id="plane_obj1" />
     </style_plane>
     <style_plane color="1, 1, 1, 0.94" planeobj="plane_obj1" id="style_plane_glyph">
@@ -653,13 +656,14 @@
           <text style="style_text_list_item_info" id="text_list_item_info">
             <layout_hint anchor="2, 0" align="2, 0" size="260, 40" pos="-24, 0" />
           </text>
-          <plane style="_common_default_style_plane" texture="_common_texture_check_mark" id="plane_list_item_check">
-            <layout_hint anchor="2, 0" align="2, 0" size="40, 40" pos="-4, 0" />
-          </plane>
 		  <plane texture="_common_texture_transparent" id="plane_theme_preview">
 			<layout_hint size="92, 64" pos="-369, 0" />
 		  </plane>
         </image_button>
+        <!-- Checkbox must be outside image_button label clipping. -->
+        <plane style="_common_default_style_plane" texture="tex_checkbox_off" id="plane_list_item_check">
+          <layout_hint size="32, 32" pos="411, 0" />
+        </plane>
       </list_item>
     </template>
 
