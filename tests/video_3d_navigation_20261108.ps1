@@ -8,22 +8,13 @@ $commit=$browser.Substring($commitStart,$commitEnd-$commitStart)
 if ($commit -match 'Show\(native3D' -or $commit -match 'Show\(common::transition::Type_3D_SlideFromFront') {
     throw 'Delayed folder load can run an unbounded half-screen 3D foreground transition'
 }
-if ($commit -notmatch 'RestoreListGeometry\(page\)' -or
-    $commit -notmatch 'page->list->SetTransitionComplete\(true\)' -or
-    $commit -notmatch 'page->list->Show\(common::transition::Type_FadeinFast\)') {
-    throw 'The incoming page must always be full screen with a safe foreground fade'
+if ($commit -notmatch 'page->list->Show\(settings::Get\(\).navigation3D') {
+    throw 'Loaded foreground does not select standard reset or simplified fade'
 }
-if ($browser -notmatch 'previous->list->Show\(common::transition::Type_3D_SlideToBack1\)') {
+if ($browser -notmatch 'current->list->Show\(common::transition::Type_3D_SlideToBack1\)') {
     throw 'The immediate parent must retain the native 3D background effect'
 }
-if ($browser -match 'Type_3D_SlideFromFront, true, false') {
-    throw 'DoReverse must not auto-delete widgets still owned by the retained-pages stack'
-}
-if ($browser -notmatch 'Type_3D_SlideFromFront, false, false') {
-    throw '3D return animation missing with non-owning cleanup'
-}
-if ($browser -notmatch 'hasFolderBackground = native3D' -or
-    $browser -notmatch '!previous->path.empty\(\)') {
-    throw 'Root/device list cannot appear as a second layer behind first folder'
+if ($browser -notmatch 'Type_3D_SlideFromFront, true, false') {
+    throw 'Alpha return transition must let ScePaf retire its ListView'
 }
 'Video 3D navigation regressions passed'

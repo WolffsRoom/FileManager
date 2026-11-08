@@ -98,7 +98,6 @@ public:
 		int32_t opened;             // row whose folder is open above this page
 		float width;                // current list width
 		volatile bool loaded;
-		uint32_t retireFrames;
 	};
 
 	BrowserMenu();
@@ -111,7 +110,6 @@ public:
 	/** Commit ListView changes on the real PAF UI frame; I/O is done by LoadJob. */
 	void CommitLoad(BrowserPage *page, fs::EntryList *fresh, int32_t result);
 	bool AnimateRows(paf::ui::ListView *list) const;
-	void UpdateRetired();
 
 	/** Worker-thread side of a file operation. */
 	void RunOperation();
@@ -151,7 +149,6 @@ private:
 	void PushPage(const paf::string &path, bool forceDecrypt = false, bool ownsPsarc = false);
 	bool PopPage();
 	void FreePage(BrowserPage *page);
-	void RestoreListGeometry(BrowserPage *page);
 	void Refresh();
 	BrowserPage *Top() { return m_pages.back(); }
 	void UpdateChrome();
@@ -250,8 +247,6 @@ private:
 	uint32_t m_iconCount;
 
 	paf::vector<BrowserPage *> m_pages;
-	paf::vector<BrowserPage *> m_retiredPages;
-	uint32_t m_transitionFrames;
 	paf::vector<Action> m_optionActions;
 
 	paf::vector<paf::string> m_clipboard;

@@ -15,10 +15,10 @@ if ($menu -notmatch 'Level_Navigation' -or $menu -notmatch 'Main_Navigation' -or
     $menu -notmatch 'c.navigation3D = row') {
     throw 'Settings must expose both navigation modes'
 }
-if ($browser -notmatch 'Type_3D_SlideToBack1' -or $browser -notmatch 'Type_3D_SlideFromFront' -or
-    $browser -notmatch 'm_retiredPages.push_back\(outgoing\)' -or $browser -notmatch 'void BrowserMenu::UpdateRetired\(\)' -or
-    $browser -notmatch 'outgoing->retireFrames = 24') {
-    throw 'Original 3D transition not restored with deferred widget release'
+if ($browser -notmatch 'current->list->Show\(common::transition::Type_3D_SlideToBack1\)' -or
+    $browser -notmatch 'Type_3D_SlideFromFront, true, false' -or
+    $browser -match 'm_transitionFrames|retireFrames|RestoreListGeometry') {
+    throw 'Original alpha ScePaf transition pair is not restored'
 }
 if ($browser -notmatch 'Type_FadeinFast') {
     throw 'Simple navigation setting must retain lightweight fade'

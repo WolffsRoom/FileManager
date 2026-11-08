@@ -14,7 +14,7 @@ if ($settings -notmatch 'themePreview->SetTexture\(g_appPlugin->GetTexture\(tex_
 if ($browser -notmatch 'Type_3D_SlideToBack1' -or
     $browser -notmatch 'Type_3D_SlideFromFront' -or
     $browser -notmatch 'DoReverse\(-100.0f, outgoing->list' -or
-    $browser -notmatch 'm_retiredPages.push_back\(outgoing\)' -or
+    $browser -notmatch 'Type_3D_SlideFromFront, true, false' -or
     $browser -notmatch 'Type_FadeinFast') {
     throw 'navigating forward/back must support native Vita 3D and simple fade'
 }

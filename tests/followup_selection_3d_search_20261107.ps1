@@ -28,27 +28,13 @@ Assert ($clear.Contains('page->entries.at(i)->marked = false;')) 'Cancel did not
 Assert ($clear.Contains('if (check)') -and $clear.Contains('if (button)')) 'Cancel still touches nonexistent child buttons'
 
 Assert (-not $mark.Contains('item->FindChild(image_button_list_item)->SetColor(')) 'Unguarded SetColor returned'
-$start = $browser.IndexOf('void BrowserMenu::PushPage(')
-$stop = $browser.IndexOf('void BrowserMenu::FreePage(', $start)
-Assert ($start -ge 0 -and $stop -gt $start) 'Missing page push'
-$push = $browser.Substring($start, $stop-$start)
-Assert ($push.Contains('const bool hasFolderBackground = native3D')) 'Root vs folder background distinction missing'
-Assert ($push.Contains('!previous->path.empty()')) 'Root/main is still rendered behind the first folder'
-Assert ($push.Contains('!fs::IsRootStyle(previous->path)')) 'Storage/device menu still remains as background'
 $start = $browser.IndexOf('bool BrowserMenu::PopPage()')
-$stop = $browser.IndexOf('void BrowserMenu::RestoreListGeometry(', $start)
+$stop = $browser.IndexOf('void BrowserMenu::Refresh()', $start)
 Assert ($start -ge 0 -and $stop -gt $start) 'Missing page pop'
 $pop = $browser.Substring($start,$stop-$start)
-Assert (-not $pop.Contains('current->list->Hide(common::transition::Type_3D_SlideToBack1)')) 'Broken double 3D Hide path is still present'
-Assert ($pop.Contains('current->list->SetTransitionComplete(true)')) 'Parent 3D transition not completed'
-$restore = $browser.Substring($stop, $browser.IndexOf('void BrowserMenu::Refresh()', $stop)-$stop)
-Assert ($restore.Contains('SetScale(1.0f, 1.0f, 1.0f)')) '3D scale not restored'
-Assert ($restore.Contains('SetRot(0.0f, 0.0f, 0.0f)')) '3D rotation not restored'
-$start = $browser.IndexOf('void BrowserMenu::UpdateRetired()')
-$stop = $browser.IndexOf('bool BrowserMenu::PopPage()', $start)
-$retire = $browser.Substring($start, $stop-$start)
-Assert ($retire.Contains('hidden->list->Hide(common::transition::Type_Reset)')) 'Inactive page still rendered after transition'
-Assert ($retire.Contains('RestoreListGeometry(hidden)')) 'Hidden page keeps its transformed geometry'
+Assert ($pop.Contains('current->list->Hide(common::transition::Type_3D_SlideToBack1)')) 'Alpha parent reverse sequence missing'
+Assert ($pop.Contains('current->list->Show(common::transition::Type_Reset)')) 'Alpha parent reset missing'
+Assert (-not $browser.Contains('m_transitionFrames')) 'Frame-count transition override remains'
 $start = $browser.IndexOf('void BrowserMenu::ToggleSearch()')
 $stop = $browser.IndexOf('void BrowserMenu::SetRowIcon(', $start)
 $search = $browser.Substring($start,$stop-$start)

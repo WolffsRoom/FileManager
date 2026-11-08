@@ -179,7 +179,6 @@ namespace {
 		BrowserMenu *menu = reinterpret_cast<BrowserMenu *>(userdata);
 		if (!menu) return;
 		menu->UpdateBackground();
-		menu->UpdateRetired();
 	}
 
 	void AlphaIndexTask(void *userdata)
@@ -208,7 +207,7 @@ namespace {
 }
 
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_inputAction(Action_Rename),
-	m_iconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_transitionFrames(0), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
+	m_iconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -402,12 +401,6 @@ BrowserMenu::~BrowserMenu()
 	{
 		BrowserPage *page = m_pages.back();
 		m_pages.pop_back();
-		FreePage(page);
-	}
-	while (!m_retiredPages.empty())
-	{
-		BrowserPage *page = m_retiredPages.back();
-		m_retiredPages.pop_back();
 		FreePage(page);
 	}
 	g_appPlugin->PageClose(page_browser, Plugin::PageCloseParam());
@@ -617,7 +610,6 @@ void BrowserMenu::UpdateFtpIndicator()
 
 void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool ownsPsarc)
 {
-	if (m_transitionFrames && !m_pages.empty()) return;
 	Plugin::TemplateOpenParam tmpParam;
 	paf::string physicalPath = path;
 	paf::string logicalPath = path;
@@ -688,7 +680,6 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	page->cellCount = 0;
 	page->focused = -1;
 	page->loaded = false;
-	page->retireFrames = 0;
 
 	g_appPlugin->TemplateOpen(m_browserRoot, template_list_view_generic, tmpParam);
 	page->list = static_cast<ui::ListView *>(m_browserRoot->GetChild(m_browserRoot->GetChildrenNum() - 1));
@@ -699,34 +690,25 @@ void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool owns
 	page->list->SetSegmentLayoutType(0, ui::ListView::LAYOUT_TYPE_LIST);
 
 	const bool native3D = settings::Get().navigation3D != 0 && !m_pages.empty();
-	// Hide all grandparent lists; keep only the immediate parent as the
-	// 3D background. The old code re-showed every page and left ghost lists.
-	for (uint32_t i = 0; i < m_pages.size(); ++i)
+	if (!m_pages.empty())
 	{
-		BrowserPage *previous = m_pages.at(i);
-		previous->list->SetActivate(false);
-		// Never show the main/root menu behind the first opened folder.
-		// Its device rows were the visible duplicate layer reported on Vita.
-		const bool hasFolderBackground = native3D &&
-			i + 1 == m_pages.size() &&
-			!previous->path.empty() &&
-			!fs::IsRootStyle(previous->path);
-		if (hasFolderBackground)
+		if (m_pages.size() > 1)
 		{
-			RestoreListGeometry(previous);
-			previous->list->Show(common::transition::Type_3D_SlideToBack1);
+			BrowserPage *older = m_pages.rbegin()[1];
+			older->list->Hide(common::transition::Type_Reset);
+			older->list->SetTransitionComplete(false);
 		}
+		BrowserPage *current = m_pages.back();
+		current->list->SetActivate(false);
+		if (native3D)
+			current->list->Show(common::transition::Type_3D_SlideToBack1);
 		else
-		{
-			previous->list->Hide(common::transition::Type_Reset);
-			RestoreListGeometry(previous);
-		}
+			current->list->Hide(common::transition::Type_FadeinFast);
+		current->list->SetTransitionComplete(false);
 	}
 	// Do not expose a freshly created PAF list until its cells are committed
 	// on the real UI thread. Otherwise the factory may run on the worker.
 	page->list->SetActivate(false);
-	page->list->Hide(common::transition::Type_Reset);
-	if (native3D) m_transitionFrames = 20;
 
 	m_pages.push_back(page);
 	UpdateChrome();
@@ -753,44 +735,6 @@ void BrowserMenu::FreePage(BrowserPage *page)
 	delete page;
 }
 
-void BrowserMenu::UpdateRetired()
-{
-	if (m_transitionFrames > 0)
-	{
-		--m_transitionFrames;
-		if (m_transitionFrames == 0)
-		{
-			// The 3D parent exists only while the page is moving. Leaving
-			// it visible in steady state stacked two screens in the viewport.
-			for (uint32_t i = 0; i + 1 < m_pages.size(); ++i)
-			{
-				BrowserPage *hidden = m_pages.at(i);
-				hidden->list->Hide(common::transition::Type_Reset);
-				RestoreListGeometry(hidden);
-			}
-			// Clamp the current list once more after PAF's transition timers have
-			// completed. Otherwise a late 3D animation frame can reapply the
-			// half-width transform after the Back callback reset it.
-			if (!m_pages.empty() && Top()->loaded)
-			{
-				RestoreListGeometry(Top());
-				Top()->list->SetTransitionComplete(true);
-			}
-		}
-	}
-	for (uint32_t i = 0; i < m_retiredPages.size();)
-	{
-		BrowserPage *old = m_retiredPages.at(i);
-		if (old->retireFrames > 0) --old->retireFrames;
-		if (old->retireFrames == 0)
-		{
-			FreePage(old);
-			m_retiredPages.erase(m_retiredPages.begin() + i);
-		}
-		else ++i;
-	}
-}
-
 bool BrowserMenu::PopPage()
 {
 	if (m_pages.empty()) return false;
@@ -802,18 +746,16 @@ bool BrowserMenu::PopPage()
 
 	if (native3D)
 	{
-		// Keep the front page alive until its reverse 3D animation finishes.
-		// Destroying the widget inside this animation was the original overlap
-		// and dangling-callback regression.
 		outgoing->list->SetActivate(false);
-		// This stack owns the ListView and destroys it after the reverse
-		// transition. DoReverse(auto_delete=true) could destroy the widget
-		// independently, leading to double-free or a dangling retained page.
 		common::transition::DoReverse(-100.0f, outgoing->list,
-			common::transition::Type_3D_SlideFromFront, false, false);
-		outgoing->retireFrames = 24;
-		m_retiredPages.push_back(outgoing);
-		m_transitionFrames = 24;
+			common::transition::Type_3D_SlideFromFront, true, false);
+		// ScePaf owns and retires the animated ListView, exactly as in the
+		// alpha VPK. Release only the page model here.
+		fs::FreeList(&outgoing->all);
+		outgoing->entries.clear();
+		if (outgoing->ownsMount) pfsUmount();
+		if (outgoing->ownsPsarc) psarcClose();
+		delete outgoing;
 	}
 	else
 		FreePage(outgoing);
@@ -824,16 +766,18 @@ bool BrowserMenu::PopPage()
 		const int32_t wasOpened = current->opened;
 		current->opened = -1;
 		SetRowIcon(current, wasOpened);
-		for (uint32_t i = 0; i + 1 < m_pages.size(); ++i)
-			m_pages.at(i)->list->Hide(common::transition::Type_Reset);
-		// A new 3D Hide() while restoring the page left its geometry
-		// reduced to half of the screen. Cancel that path and force
-		// the parent back to its canonical full-screen transform.
-		current->list->Hide(common::transition::Type_Reset);
-		RestoreListGeometry(current);
-		current->list->SetTransitionComplete(true);
 		if (native3D)
+		{
+			current->list->Hide(common::transition::Type_3D_SlideToBack1);
 			current->list->Show(common::transition::Type_Reset);
+			current->list->SetTransitionComplete(false);
+			if (m_pages.size() > 1)
+			{
+				BrowserPage *older = m_pages.rbegin()[1];
+				older->list->Show(common::transition::Type_Reset);
+				older->list->SetTransitionComplete(false);
+			}
+		}
 		else
 			current->list->Show(common::transition::Type_FadeinFast);
 		current->list->SetActivate(true);
@@ -842,18 +786,6 @@ bool BrowserMenu::PopPage()
 		else m_emptyText->Hide(common::transition::Type_Reset);
 	}
 	return true;
-}
-
-void BrowserMenu::RestoreListGeometry(BrowserPage *page)
-{
-	if (!page || !page->list) return;
-	page->list->SetAdjust(ui::Widget::ADJUST_NONE, ui::Widget::ADJUST_NONE, ui::Widget::ADJUST_NONE);
-	// Reset the transform as well as size and position. A PAF 3D
-	// SlideToBack leaves scale/rotation behind when shown with Type_Reset.
-	page->list->SetScale(1.0f, 1.0f, 1.0f);
-	page->list->SetRot(0.0f, 0.0f, 0.0f);
-	page->list->SetSize(960.0f, m_searchVisible ? 368.0f : 448.0f, 0.0f);
-	page->list->SetPos(0.0f, m_searchVisible ? -232.0f : -272.0f, 0.0f);
 }
 
 void BrowserMenu::Refresh()
@@ -964,14 +896,8 @@ void BrowserMenu::CommitLoad(BrowserPage *page, fs::EntryList *fresh, int32_t re
 		else m_emptyText->Hide(common::transition::Type_Reset);
 		if (!page->loaded)
 		{
-			// A slow directory can finish loading AFTER the 20-frame 3D
-			// window has expired. Running SlideFromFront at that point leaves
-			// this ListView at its half-screen starting transform indefinitely.
-			// Animate the *parent* as the 3D background; the new foreground
-			// always enters at full 960px width with a native fast fade.
-			RestoreListGeometry(page);
-			page->list->SetTransitionComplete(true);
-			page->list->Show(common::transition::Type_FadeinFast);
+			page->list->Show(settings::Get().navigation3D
+				? common::transition::Type_Reset : common::transition::Type_FadeinFast);
 			page->list->SetActivate(true);
 		}
 	}
@@ -1236,7 +1162,7 @@ void BrowserMenu::OnBack()
 	}
 	// The button itself belongs to a PAF dispatch in progress. Destroying the
 	// outgoing ListView within that callback can invalidate its current handler.
-	if (m_backPending || m_transitionFrames || m_pages.size() <= 1 || !Top()->loaded) return;
+	if (m_backPending || m_pages.size() <= 1 || !Top()->loaded) return;
 	m_backPending = true;
 	m_backPage = Top();
 	DeferCall([](void *userdata)
@@ -1407,8 +1333,7 @@ void BrowserMenu::RequestItemDecide(int32_t index)
 		const int32_t index = menu->m_itemIndex;
 		menu->m_itemPending = false;
 		menu->m_itemPage = NULL;
-		if (!menu->m_pages.empty() && menu->Top() == expected &&
-			expected->loaded && !menu->m_transitionFrames)
+		if (!menu->m_pages.empty() && menu->Top() == expected && expected->loaded)
 			menu->ApplyItemDecide(index);
 	}, this);
 }
@@ -1502,7 +1427,7 @@ void BrowserMenu::ApplyItemDecide(int32_t index)
 
 void BrowserMenu::OnMarkToggle(int32_t index)
 {
-	if (m_markPending || m_transitionFrames || m_pages.empty() || !Top()->loaded) return;
+	if (m_markPending || m_pages.empty() || !Top()->loaded) return;
 	m_markPending = true;
 	m_markPage = Top();
 	m_markIndex = index;
@@ -1520,7 +1445,7 @@ void BrowserMenu::OnMarkToggle(int32_t index)
 
 void BrowserMenu::ApplyMarkToggle(int32_t index)
 {
-	if (m_pages.empty() || m_transitionFrames || !Top()->loaded) return;
+	if (m_pages.empty() || !Top()->loaded) return;
 	BrowserPage *page = Top();
 	if (index < 0)
 	{
@@ -1595,7 +1520,7 @@ void BrowserMenu::SelectAll()
 
 void BrowserMenu::ApplySelectAll()
 {
-	if (m_pages.empty() || m_transitionFrames || !Top()->loaded) return;
+	if (m_pages.empty() || !Top()->loaded) return;
 	BrowserPage *page = Top();
 	if (fs::IsRootStyle(page->path)) return;
 	for (uint32_t i = 0; i < page->entries.size(); i++)
