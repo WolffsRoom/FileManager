@@ -46,5 +46,5 @@ Assert ($filter.Contains('page->list->SetFocus(0, 0, ui::ListView::FOCUS_ALIGN_T
 Assert ($settings.Contains('m_list->SetSize(960.0f, 328.0f, 0.0f)')) 'Settings main list has no extra room'
 $settingsPage = @($rco.resource.pagetable.page | Where-Object id -eq 'page_settings')[0]
 $bar = @($settingsPage.plane | Where-Object id -eq 'plane_power_actions_page_settings')[0]
-Assert ($bar.layout_hint.pos -eq '0, 174') 'Power bar was not raised'
+Assert ($bar.layout_hint.pos -eq '0, 130') 'Power bar is not below the Ajustes header'
 'PASS: Vita 3D root/return, null selection button, settings gap, search-to-head'

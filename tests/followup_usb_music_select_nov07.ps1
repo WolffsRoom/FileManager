@@ -36,9 +36,9 @@ if ($usb -notmatch 'void UsbMenu::StartConnection\(\)' -or
 }
 $styles = @($rco.resource.styletable.style_button | Where-Object id -eq 'style_button_power_native')
 if ($styles.Count -ne 1 -or
-    $styles[0].planeobj[0].texture0 -ne '_common_texture_option_menu_button_single' -or
+    $styles[0].planeobj[0].color -ne '1, 1, 1, 0' -or
     $styles[0].planeobj[1].texture0 -ne '_common_texture_option_menu_button_single_glow') {
-    throw 'Power buttons do not use neutral Sony-native texture and interaction glow'
+    throw 'Power buttons are not transparent with the Sony-native interaction glow'
 }
 foreach ($buttonId in @('button_power_off_page_settings','button_power_restart_page_settings','button_power_sleep_page_settings')) {
     $node = @($rco.resource.pagetable.page | Where-Object id -eq 'page_settings')[0]

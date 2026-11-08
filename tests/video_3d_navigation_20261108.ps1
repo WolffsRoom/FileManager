@@ -8,8 +8,9 @@ $commit=$browser.Substring($commitStart,$commitEnd-$commitStart)
 if ($commit -match 'Show\(native3D' -or $commit -match 'Show\(common::transition::Type_3D_SlideFromFront') {
     throw 'Delayed folder load can run an unbounded half-screen 3D foreground transition'
 }
-if ($commit -notmatch 'page->list->Show\(settings::Get\(\).navigation3D') {
-    throw 'Loaded foreground does not select standard reset or simplified fade'
+if ($commit -notmatch 'if \(!settings::Get\(\).navigation3D\)[\s\S]*?Type_FadeinFast' -or
+    $commit -match 'navigation3D[\s\S]{0,100}Type_Reset') {
+    throw 'Loaded foreground must keep native reset state and only fade in simplified mode'
 }
 if ($browser -notmatch 'current->list->Show\(common::transition::Type_3D_SlideToBack1\)') {
     throw 'The immediate parent must retain the native 3D background effect'
