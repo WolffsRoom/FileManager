@@ -365,15 +365,15 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	button->SetString(label);
 	button->FindChild(text_list_item_info)->SetString(info);
 
-	ui::Widget *check = button->FindChild(plane_list_item_check);
+	ui::Widget *check = item->FindChild(plane_list_item_check);
 	ui::Widget *themePreview = button->FindChild(plane_theme_preview);
-	themePreview->Hide(common::transition::Type_Reset);
+	if (themePreview) themePreview->Hide(common::transition::Type_Reset);
 	if (m_level == Level_Shortcuts)
 	{
 		// shortcuts use a check box that can be unticked
-		check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_checkbox_on : tex_checkbox_off), 0, 0);
+		if (check) check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_checkbox_on : tex_checkbox_off), 0, 0);
 	}
-	else if (!IsSelected(row))
+	else if (check && !IsSelected(row))
 	{
 		check->Hide(common::transition::Type_Reset);
 	}
@@ -386,7 +386,7 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	if (m_level == Level_Themes)
 	{
 		const theme::Info &preview = theme::At(row);
-		if (row != (int32_t)theme::CustomIndex())
+		if (themePreview && row != (int32_t)theme::CustomIndex())
 		{
 			themePreview->SetTexture(g_appPlugin->GetTexture(tex_new_theme), 0, 0);
 			themePreview->SetColor(preview.bg[0], preview.bg[1], preview.bg[2], 0.88f);
@@ -420,6 +420,7 @@ void SettingsMenu::UpdateChecks()
 			continue;
 		}
 		ui::Widget *check = item->FindChild(plane_list_item_check);
+		if (!check) continue;
 		if (m_level == Level_Shortcuts)
 		{
 			check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_checkbox_on : tex_checkbox_off), 0, 0);
