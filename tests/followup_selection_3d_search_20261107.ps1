@@ -10,14 +10,14 @@ $begin = $browser.IndexOf('void BrowserMenu::ApplyMarkToggle(int32_t index)')
 $end = $browser.IndexOf('void BrowserMenu::SelectAll()', $begin)
 Assert ($begin -ge 0 -and $end -gt $begin) 'Cannot inspect mark toggle'
 $mark = $browser.Substring($begin,$end-$begin)
-Assert ($mark.Contains('if (!check || !button) continue;')) 'Off-screen/empty list rows still reach native SetColor(NULL)'
-Assert ($mark.Contains('button->SetColor(')) 'Selected row coloring unexpectedly removed'
+Assert ($mark.Contains('if (!button) continue;')) 'Off-screen/empty list rows still reach native focused state'
+Assert ($mark.Contains('button->SetFocusedState(')) 'Selected row native highlight unexpectedly removed'
 
 $selAllBegin = $browser.IndexOf('void BrowserMenu::ApplySelectAll()')
 $selAllEnd = $browser.IndexOf('void BrowserMenu::OnOptions()', $selAllBegin)
 Assert ($selAllBegin -ge 0 -and $selAllEnd -gt $selAllBegin) 'Cannot inspect Select All'
 $all = $browser.Substring($selAllBegin, $selAllEnd-$selAllBegin)
-Assert ($all.Contains('if (!check || !button) continue;')) 'Select All still accesses recycled placeholder cells'
+Assert ($all.Contains('if (!button) continue;')) 'Select All still accesses recycled placeholder cells'
 Assert (-not $all.Contains('DeleteCell(')) 'Select All still destroys entire list'
 $clearBegin = $browser.IndexOf('case Action_ClearSelection:')
 $clearEnd = $browser.IndexOf('case Action_Copy:', $clearBegin)

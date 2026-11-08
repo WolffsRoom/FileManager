@@ -32,15 +32,16 @@ $start=$browser.IndexOf('void BrowserMenu::FillFileItem(')
 $end=$browser.IndexOf('void BrowserMenu::FillRootItem(', $start)
 $fileCode=$browser.Substring($start,$end-$start)
 if (!$fileCode.Contains('RowCheckbox(button->GetParent())') -or
- !$fileCode.Contains('check->Show(common::transition::Type_Reset);')) {throw 'Checkbox does not display when row is marked/selection active'}
+ !$fileCode.Contains('check->Hide(common::transition::Type_Reset)') -or
+ !$fileCode.Contains('button->SetFocusedState(entry->marked')) {throw 'File rows do not use native highlight with checkboxes hidden'}
 if ($fileCode.Contains('0.75f, entry->marked')) {throw 'Purple tint still applied to marked files'}
 $start=$browser.IndexOf('void BrowserMenu::ApplyMarkToggle(')
 $end=$browser.IndexOf('void BrowserMenu::SelectAll()', $start)
 $mark=$browser.Substring($start,$end-$start)
-if (!$mark.Contains('check->SetTexture(') -or !$mark.Contains('check->Show(common::transition::Type_Reset)') -or !$mark.Contains('if (!check || !button) continue;')) {throw 'Marking fails to update visible checkboxes safely'}
+if (!$mark.Contains('button->SetFocusedState(') -or !$mark.Contains('if (!button) continue;')) {throw 'Marking fails to update native highlight safely'}
 $start=$browser.IndexOf('void BrowserMenu::ApplySelectAll(')
 $end=$browser.IndexOf('void BrowserMenu::OnOptions()', $start)
 $all=$browser.Substring($start,$end-$start)
-if (!$all.Contains('check->Show(common::transition::Type_Reset)') -or !$all.Contains('if (!check || !button) continue;')) {throw 'Select All does not show checkboxes safely'}
+if (!$all.Contains('button->SetFocusedState(true)') -or !$all.Contains('if (!button) continue;')) {throw 'Select All does not highlight rows safely'}
 if (!$browser.Contains('DoAction(Action_ClearSelection);')) {throw 'Circle should cancel selection without backing out of the folder'}
-'Selection toolbar / file-folder checkboxes / native buttons: PASS'
+'Selection toolbar / native highlighted marks / native buttons: PASS'

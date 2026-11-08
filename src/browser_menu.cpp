@@ -957,25 +957,12 @@ void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 	}
 	button->FindChild(text_list_item_info)->SetString(infoWide);
 
-	// Selection mode: every row shows a check box once anything is marked.
+	// Browser marks deliberately use the same native highlighted state as the
+	// cursor. The shared check plane remains available to Settings only.
 	ui::Widget *check = RowCheckbox(button->GetParent());
-	if (!check) return;
-	bool anyMarked = false;
-	for (uint32_t i = 0; i < page->entries.size() && !anyMarked; i++)
-	{
-		anyMarked = page->entries.at(i)->marked;
-	}
-	if (anyMarked)
-	{
-		check->SetTexture(Icon(entry->marked ? tex_checkbox_on : tex_checkbox_off), 0, 0);
-		check->Show(common::transition::Type_Reset);
-		button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-	}
-	else
-	{
-		check->Hide(common::transition::Type_Reset);
-		button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-	}
+	if (check) check->Hide(common::transition::Type_Reset);
+	button->SetFocusedState(entry->marked ||
+		(int32_t)button->GetName().GetIDHash() == page->focused);
 }
 
 ui::Widget *BrowserMenu::RowCheckbox(ui::Widget *rowRoot)
@@ -1522,20 +1509,11 @@ void BrowserMenu::ApplyMarkToggle(int32_t index)
 		// PAF GetListItem can return a recycled/incomplete placeholder rather
 		// than an actual file row. The latest PSP2 core crashed in SetColor
 		// with r0 == NULL immediately after FindChild(image_button_list_item).
-		ui::Widget *check = RowCheckbox(item);
 		ui::Widget *button = item->FindChild(image_button_list_item);
-		if (!check || !button) continue;
-		if (anyMarked)
-		{
-			check->SetTexture(Icon(page->entries.at(i)->marked ? tex_checkbox_on : tex_checkbox_off), 0, 0);
-			check->Show(common::transition::Type_Reset);
-			button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-		}
-		else
-		{
-			check->Hide(common::transition::Type_Reset);
-			button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-		}
+		if (!button) continue;
+		ui::Widget *check = RowCheckbox(item);
+		if (check) check->Hide(common::transition::Type_Reset);
+		button->SetFocusedState(page->entries.at(i)->marked || (int32_t)i == page->focused);
 	}
 	if (anyMarked)
 		m_selectionBar->Show(common::transition::Type_SlideFromBottom1);
@@ -1572,12 +1550,11 @@ void BrowserMenu::ApplySelectAll()
 	{
 		ui::ListItem *item = page->list->GetListItem(0, i);
 		if (!item) continue;
-		ui::Widget *check = RowCheckbox(item);
 		ui::Widget *button = item->FindChild(image_button_list_item);
-		if (!check || !button) continue; // recycled placeholder
-		check->SetTexture(Icon(tex_checkbox_on), 0, 0);
-		check->Show(common::transition::Type_Reset);
-		button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+		if (!button) continue; // recycled placeholder
+		ui::Widget *check = RowCheckbox(item);
+		if (check) check->Hide(common::transition::Type_Reset);
+		button->SetFocusedState(true);
 	}
 	m_selectionBar->Show(common::transition::Type_Reset);
 }
@@ -1818,7 +1795,7 @@ void BrowserMenu::DoAction(Action action)
 				ui::Widget *check = menu->RowCheckbox(item);
 				ui::Widget *button = item->FindChild(image_button_list_item);
 				if (check) check->Hide(common::transition::Type_Reset);
-				if (button) button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+				if (button) button->SetFocusedState((int32_t)i == page->focused);
 			}
 			menu->m_selectionBar->Hide(common::transition::Type_Reset);
 		}, this);
@@ -1836,6 +1813,8 @@ void BrowserMenu::DoAction(Action action)
 			if (!item) continue;
 			ui::Widget *check = RowCheckbox(item);
 			if (check) check->Hide(common::transition::Type_Reset);
+			ui::Widget *button = item->FindChild(image_button_list_item);
+			if (button) button->SetFocusedState((int32_t)i == page->focused);
 		}
 		m_selectionBar->Hide(common::transition::Type_Reset);
 		break;
