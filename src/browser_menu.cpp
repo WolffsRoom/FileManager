@@ -179,6 +179,7 @@ namespace {
 		BrowserMenu *menu = reinterpret_cast<BrowserMenu *>(userdata);
 		if (!menu) return;
 		menu->UpdateBackground();
+		menu->PollSearch();
 	}
 
 	void AlphaIndexTask(void *userdata)
@@ -361,7 +362,8 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 	}, this);
 	// No Music alphabetical index worker.
 
-	// Search box: filters the list on Enter.
+	// Search box: the PAF RE header does not expose a reliable string-changed
+	// event ID, so PollSearch reads it on the registered main-thread tick.
 	m_search = static_cast<ui::TextBox *>(m_root->FindChild(text_box_search_page_browser));
 	m_search->Hide(common::transition::Type_Reset);
 	m_search->AddEventCallback(ui::TextBox::CB_TEXT_BOX_ENTER_PRESSED,
@@ -941,7 +943,7 @@ void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 	button->FindChild(text_list_item_info)->SetString(infoWide);
 
 	// Selection mode: every row shows a check box once anything is marked.
-	ui::Widget *check = button->GetParent() ? button->GetParent()->FindChild(plane_list_item_check) : NULL;
+	ui::Widget *check = RowCheckbox(button->GetParent());
 	if (!check) return;
 	bool anyMarked = false;
 	for (uint32_t i = 0; i < page->entries.size() && !anyMarked; i++)
@@ -959,6 +961,11 @@ void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 		check->Hide(common::transition::Type_Reset);
 		button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
+}
+
+ui::Widget *BrowserMenu::RowCheckbox(ui::Widget *rowRoot)
+{
+	return rowRoot ? rowRoot->FindChild(plane_list_item_check) : NULL;
 }
 
 void BrowserMenu::FillRootItem(BrowserPage *page, ui::Widget *button, fs::Entry *entry)
@@ -1246,6 +1253,23 @@ void BrowserMenu::JumpTo(bool end)
 
 void BrowserMenu::OnSearch()
 {
+	FilterSearch(true);
+}
+
+void BrowserMenu::PollSearch()
+{
+	if (!m_searchVisible || m_pages.empty() || !Top()->loaded) return;
+	paf::wstring text;
+	m_search->GetString(text);
+	paf::string query;
+	common::Utf16ToUtf8(text, &query);
+	if (query == m_lastSearchQuery) return;
+	m_lastSearchQuery = query;
+	FilterSearch(false);
+}
+
+void BrowserMenu::FilterSearch(bool finishEditing)
+{
 	BrowserPage *page = Top();
 	if (!page->loaded)
 	{
@@ -1255,7 +1279,9 @@ void BrowserMenu::OnSearch()
 	m_search->GetString(text);
 	paf::string query;
 	common::Utf16ToUtf8(text, &query);
-	m_search->EndEdit();
+	m_lastSearchQuery = query;
+	if (finishEditing)
+		m_search->EndEdit();
 
 	if (page->cellCount > 0)
 	{
@@ -1481,7 +1507,7 @@ void BrowserMenu::ApplyMarkToggle(int32_t index)
 		// PAF GetListItem can return a recycled/incomplete placeholder rather
 		// than an actual file row. The latest PSP2 core crashed in SetColor
 		// with r0 == NULL immediately after FindChild(image_button_list_item).
-		ui::Widget *check = item->FindChild(plane_list_item_check);
+		ui::Widget *check = RowCheckbox(item);
 		ui::Widget *button = item->FindChild(image_button_list_item);
 		if (!check || !button) continue;
 		if (anyMarked)
@@ -1531,7 +1557,7 @@ void BrowserMenu::ApplySelectAll()
 	{
 		ui::ListItem *item = page->list->GetListItem(0, i);
 		if (!item) continue;
-		ui::Widget *check = item->FindChild(plane_list_item_check);
+		ui::Widget *check = RowCheckbox(item);
 		ui::Widget *button = item->FindChild(image_button_list_item);
 		if (!check || !button) continue; // recycled placeholder
 		check->SetTexture(Icon(tex_checkbox_on), 0, 0);
@@ -1774,7 +1800,7 @@ void BrowserMenu::DoAction(Action action)
 			{
 				ui::ListItem *item = page->list->GetListItem(0, i);
 				if (!item) continue;
-				ui::Widget *check = item->FindChild(plane_list_item_check);
+				ui::Widget *check = menu->RowCheckbox(item);
 				ui::Widget *button = item->FindChild(image_button_list_item);
 				if (check) check->Hide(common::transition::Type_Reset);
 				if (button) button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -1793,7 +1819,7 @@ void BrowserMenu::DoAction(Action action)
 			page->entries.at(i)->marked = false;
 			ui::ListItem *item = page->list->GetListItem(0, i);
 			if (!item) continue;
-			ui::Widget *check = item->FindChild(plane_list_item_check);
+			ui::Widget *check = RowCheckbox(item);
 			if (check) check->Hide(common::transition::Type_Reset);
 		}
 		m_selectionBar->Hide(common::transition::Type_Reset);

@@ -14,13 +14,13 @@ if ($main -match 'class DeferJob') { throw 'Legacy worker-thread deferred UI rem
 if (([regex]::Matches($option, 'if \(!userdata \|\| !self\) return')).Count -ne 2) {
     throw 'OptionMenu callbacks still dereference null PAF user data'
 }
-if ($browser -notmatch 'outgoing->retireFrames = 24' -or
-    $browser -notmatch 'm_retiredPages.push_back\(outgoing\)' -or
+if ($browser -notmatch 'DoReverse\(-100\.0f, outgoing->list,[\s\S]*?Type_3D_SlideFromFront, true, false\)' -or
+    $browser -notmatch 'current->list->Hide\(common::transition::Type_3D_SlideToBack1\)' -or
     $browser -match 'RecreateList\(current\)') {
-    throw '3D navigation must defer outgoing-page disposal and never recreate the parent'
+    throw 'Standard navigation must match the alpha native reverse and never recreate the parent'
 }
-if ($browser -notmatch 'for \(uint32_t i = 0; i < m_pages.size\(\); \+\+i\)' -or
-    $browser -notmatch 'previous->list->Hide\(common::transition::Type_Reset\)') {
+if ($browser -notmatch 'BrowserPage \*older = m_pages\.rbegin\(\)\[1\]' -or
+    $browser -notmatch 'older->list->Hide\(common::transition::Type_Reset\)') {
     throw 'PushPage does not hide grandparent folder lists'
 }
 if ($browser -notmatch 'void BrowserMenu::ApplyMarkToggle\(int32_t index\)' -or

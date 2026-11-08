@@ -127,6 +127,8 @@ public:
 	void DoActionPublic(Action action);
 	void OnInstallAnswer(bool accepted);
 	void OnSearch();
+	void FilterSearch(bool finishEditing);
+	void PollSearch();
 	void JumpTo(bool end);
 	void OnSelectButton();
 	void ApplySelectButton();
@@ -155,6 +157,7 @@ private:
 	void OpenPreview(int32_t index);
 	void FillFileItem(BrowserPage *page, paf::ui::Widget *button, fs::Entry *entry);
 	void FillRootItem(BrowserPage *page, paf::ui::Widget *button, fs::Entry *entry);
+	paf::ui::Widget *RowCheckbox(paf::ui::Widget *rowRoot);
 	paf::intrusive_ptr<paf::graph::Surface> Icon(uint32_t hash);
 
 	void OnBack();
@@ -232,6 +235,7 @@ private:
 	paf::ui::Widget *m_alphaButton;
 	paf::ui::Widget *m_selectionBar;
 	bool m_searchVisible;
+	paf::string m_lastSearchQuery;
 	bool m_alphaTouch;
 	bool m_alphaVisible;
 	bool m_qrDownload;

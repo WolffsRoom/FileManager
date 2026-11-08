@@ -25,7 +25,6 @@
         <layout_hint size="1, 1" pos="-471, 271" />
         <focus_hint enable="0" />
       </button>
-      <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_search_page_browser" />
       <plane texture="tex_ui_ftp" id="plane_ftp_indicator_page_browser">
         <layout_hint size="36, 36" pos="-429, 208" />
       </plane>
@@ -49,20 +48,22 @@
         </text>
       </plane>
       <plane style="style_plane_selection_bar" id="plane_selection_bar_page_browser">
-        <layout_hint size="960, 68" pos="0, -238" />
+        <layout_hint size="840, 68" pos="-60, -238" />
         <button style="style_button_selection_action" id="button_all_selection_page_browser">
-          <layout_hint size="222, 48" pos="-348, 0" />
+          <layout_hint size="185, 48" pos="-293, 0" />
         </button>
         <button style="style_button_selection_action" id="button_copy_selection_page_browser">
-          <layout_hint size="222, 48" pos="-116, 0" />
+          <layout_hint size="185, 48" pos="-98, 0" />
         </button>
         <button style="style_button_selection_action" id="button_move_selection_page_browser">
-          <layout_hint size="222, 48" pos="116, 0" />
+          <layout_hint size="185, 48" pos="98, 0" />
         </button>
         <button style="style_button_selection_action" id="button_delete_selection_page_browser">
-          <layout_hint size="222, 48" pos="348, 0" />
+          <layout_hint size="185, 48" pos="293, 0" />
         </button>
       </plane>
+      <!-- Declared after the selection bar so the native options corner remains in front. -->
+      <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_search_page_browser" />
       <button style="_common_default_style_button_transparent" id="button_start_page_browser">
         <layout_hint size="1, 1" pos="-469, 271" />
         <focus_hint enable="0" />

@@ -8,7 +8,7 @@ if (!$bar) { throw 'Selection bar not in browser page' }
 $expected=@('button_all_selection_page_browser','button_copy_selection_page_browser','button_move_selection_page_browser','button_delete_selection_page_browser')
 $actual=@($bar.button | ForEach-Object { $_.id })
 if (($actual -join ';') -ne ($expected -join ';')) { throw "Expected exactly four buttons in order, got $($actual -join ',')" }
-if ($bar.layout_hint.size -ne '960, 68') {throw 'Toolbar layout must fit native Vita width'}
+if ($bar.layout_hint.size -ne '840, 68' -or $bar.layout_hint.pos -ne '-60, -238') {throw 'Toolbar must leave the native options corner visible'}
 $selectionStyle=@($rco.resource.styletable.style_button | Where-Object id -eq 'style_button_selection_action')[0]
 if (!$selectionStyle -or $selectionStyle.planeobj[0].texture0 -ne '_common_texture_option_menu_button_single') { throw 'Selection buttons do not use a neutral native texture' }
 if ($selectionStyle.planeobj[1].texture0 -ne '_common_texture_option_menu_button_single_glow') {throw 'Missing button touch/focus glow'}
@@ -31,7 +31,7 @@ if (!$browser.Contains('void BrowserMenu::DoActionPublic(Action action)') -or !$
 $start=$browser.IndexOf('void BrowserMenu::FillFileItem(')
 $end=$browser.IndexOf('void BrowserMenu::FillRootItem(', $start)
 $fileCode=$browser.Substring($start,$end-$start)
-if (!$fileCode.Contains('button->GetParent()->FindChild(plane_list_item_check)') -or
+if (!$fileCode.Contains('RowCheckbox(button->GetParent())') -or
  !$fileCode.Contains('check->Show(common::transition::Type_Reset);')) {throw 'Checkbox does not display when row is marked/selection active'}
 if ($fileCode.Contains('0.75f, entry->marked')) {throw 'Purple tint still applied to marked files'}
 $start=$browser.IndexOf('void BrowserMenu::ApplyMarkToggle(')

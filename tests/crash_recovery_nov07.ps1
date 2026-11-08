@@ -22,7 +22,7 @@ Check ($optionMenu -match 'closeParam.fade = false') 'OptionMenu releases its pa
 Check ($browser -match 'OptionMenu::Create') 'Browser bypasses checked option menu factory'
 
 Check ($browser -match 'page->list->DestroyWidget\(\)') 'Closed folder retains its ListView'
-Check ($browser -match 'current->list->Show\(common::transition::Type_Reset\)' -and $browser -match 'm_retiredPages.push_back\(outgoing\)' -and $browser -notmatch 'RecreateList\(current\)') 'Back must reverse the 3D transition and defer outgoing-widget deletion'
+Check ($browser -match 'DoReverse\(-100\.0f, outgoing->list,[\s\S]*?Type_3D_SlideFromFront, true, false\)' -and $browser -match 'current->list->Hide\(common::transition::Type_3D_SlideToBack1\)' -and $browser -notmatch 'RecreateList\(current\)') 'Back must use the alpha build native reverse transition without recreating the parent'
 Check ($browser -match 'm_backPending = true') 'Back may destroy a ListView inside its own button handler'
 Check ($browser -match 'fs::EntryList fresh') 'List refresh is not safely staged'
 Check ($browser -match 'while \(owner && owner != page->list\)') 'Stale row callback can target another page'
