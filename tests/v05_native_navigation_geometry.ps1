@@ -11,7 +11,7 @@ if ($setSearch -notmatch 'if \(target == m_searchVisible\) return;') {
 $pushStart = $source.IndexOf('void BrowserMenu::PushPage(')
 $pushEnd = $source.IndexOf('bool BrowserMenu::PopPage()', $pushStart)
 $push = $source.Substring($pushStart, $pushEnd - $pushStart)
-if ($push -notmatch 'if \(m_searchVisible\)\s+SetSearchVisible\(false\);') {
+if ($push -notmatch 'CloseSearchForNavigation\(\);') {
     throw 'An open search is not normalized before the parent starts its native transition.'
 }
 
