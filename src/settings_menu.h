@@ -59,6 +59,7 @@ public:
 	~SettingsMenu();
 
 	paf::ui::ListItem *CreateItem(paf::ui::listview::ItemFactory::CreateParam &param);
+	void AdvanceSwitchAnimation();
 
 	paf::ui::Scene *m_root;
 
@@ -75,6 +76,7 @@ private:
 	bool ShowsToggle() const;
 	void UpdateChecks();
 	void UpdateFontPreview();
+	void StartSwitchAnimation(int32_t row, bool target);
 
 	paf::ui::Widget *m_parentRoot;
 	paf::ui::ListView *m_list;
@@ -84,6 +86,11 @@ private:
 	bool m_levelQueued;
 	Level m_queuedLevel;
 	int32_t m_pendingPower;
+	bool m_switchAnimating;
+	bool m_switchTarget;
+	int32_t m_switchRow;
+	int32_t m_switchFrame;
+	uint64_t m_switchTick;
 	ChangeCallback m_cb;
 	void *m_userdata;
 	Level m_level;

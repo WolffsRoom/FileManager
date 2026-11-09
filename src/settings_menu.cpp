@@ -3,6 +3,7 @@
 #include <string.h>
 #include <psp2/power.h>
 #include <psp2/io/stat.h>
+#include <psp2/kernel/processmgr.h>
 
 #include "dialog.h"
 
@@ -15,6 +16,13 @@
 using namespace paf;
 
 namespace {
+	const uint32_t k_switchOffOn[] = { tex_switch_off_on_00, tex_switch_off_on_01, tex_switch_off_on_02, tex_switch_off_on_03, tex_switch_off_on_04, tex_switch_off_on_05, tex_switch_off_on_06, tex_switch_off_on_07, tex_switch_off_on_08, tex_switch_off_on_09, tex_switch_off_on_10, tex_switch_off_on_11, tex_switch_off_on_12, tex_switch_off_on_13, tex_switch_off_on_14, tex_switch_off_on_15, tex_switch_off_on_16 };
+	const uint32_t k_switchOnOff[] = { tex_switch_on_off_00, tex_switch_on_off_01, tex_switch_on_off_02, tex_switch_on_off_03, tex_switch_on_off_04, tex_switch_on_off_05, tex_switch_on_off_06, tex_switch_on_off_07, tex_switch_on_off_08, tex_switch_on_off_09, tex_switch_on_off_10, tex_switch_on_off_11, tex_switch_on_off_12, tex_switch_on_off_13, tex_switch_on_off_14, tex_switch_on_off_15, tex_switch_on_off_16 };
+
+	void SwitchAnimationTask(void *userdata)
+	{
+		static_cast<SettingsMenu *>(userdata)->AdvanceSwitchAnimation();
+	}
 
 	// Main level rows
 	enum MainRow { Main_Themes, Main_FontSize, Main_Language, Main_Select, Main_AutoDecrypt, Main_Navigation, Main_Shortcuts, Main_Commands, Main_About, Main_Count };
@@ -65,7 +73,8 @@ namespace {
 
 SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *userdata, bool openUsbDevice) :
 	m_parentRoot(parentRoot), m_cb(cb), m_userdata(userdata), m_level(Level_Main), m_rows(0),
-	m_levelQueued(false), m_queuedLevel(Level_Main), m_pendingPower(-1)
+	m_levelQueued(false), m_queuedLevel(Level_Main), m_pendingPower(-1),
+	m_switchAnimating(false), m_switchTarget(false), m_switchRow(-1), m_switchFrame(0), m_switchTick(0)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -123,10 +132,12 @@ SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *user
 	m_list->SetSegmentLayoutType(0, ui::ListView::LAYOUT_TYPE_LIST);
 
 	ShowLevel(openUsbDevice ? Level_UsbDevice : Level_Main);
+	common::MainThreadCallList::Register(SwitchAnimationTask, this);
 }
 
 SettingsMenu::~SettingsMenu()
 {
+	common::MainThreadCallList::Unregister(SwitchAnimationTask, this);
 	m_list->SetName(static_cast<uint32_t>(0));
 	Plugin::PageCloseParam closeParam;
 	closeParam.fade = true;
@@ -386,7 +397,7 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	if (themePreview) themePreview->Hide(common::transition::Type_Reset);
 	if (check && ShowsToggle())
 	{
-		check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_ui_toggle_on : tex_ui_toggle_off), 0, 0);
+		check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_switch_off_on_16 : tex_switch_off_on_00), 0, 0);
 		check->Show(common::transition::Type_Reset);
 	}
 	else if (check) check->Hide(common::transition::Type_Reset);
@@ -435,13 +446,52 @@ void SettingsMenu::UpdateChecks()
 		if (!check) continue;
 		if (ShowsToggle())
 		{
-			check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_ui_toggle_on : tex_ui_toggle_off), 0, 0);
+			if (!(m_switchAnimating && row == m_switchRow))
+				check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_switch_off_on_16 : tex_switch_off_on_00), 0, 0);
 			check->Show(common::transition::Type_Reset);
 		}
 		else
 		{
 			check->Hide(common::transition::Type_Reset);
 		}
+	}
+}
+
+void SettingsMenu::StartSwitchAnimation(int32_t row, bool target)
+{
+	if (m_switchAnimating) return;
+	ui::ListItem *item = m_list->GetListItem(0, row);
+	if (!item) return;
+	ui::Widget *check = item->FindChild(plane_list_item_check);
+	if (!check) return;
+	m_switchAnimating = true;
+	m_switchTarget = target;
+	m_switchRow = row;
+	m_switchFrame = 0;
+	m_switchTick = sceKernelGetProcessTimeWide();
+	const uint32_t *frames = target ? k_switchOffOn : k_switchOnOff;
+	check->SetTexture(g_appPlugin->GetTexture(frames[0]), 0, 0);
+}
+
+void SettingsMenu::AdvanceSwitchAnimation()
+{
+	if (!m_switchAnimating) return;
+	const uint64_t now = sceKernelGetProcessTimeWide();
+	if (now - m_switchTick < 25000ULL) return;
+	m_switchTick = now;
+	if (++m_switchFrame > 16) m_switchFrame = 16;
+	ui::ListItem *item = m_list->GetListItem(0, m_switchRow);
+	ui::Widget *check = item ? item->FindChild(plane_list_item_check) : NULL;
+	if (check)
+	{
+		const uint32_t *frames = m_switchTarget ? k_switchOffOn : k_switchOnOff;
+		check->SetTexture(g_appPlugin->GetTexture(frames[m_switchFrame]), 0, 0);
+	}
+	if (m_switchFrame >= 16)
+	{
+		m_switchAnimating = false;
+		m_switchRow = -1;
+		UpdateChecks();
 	}
 }
 
@@ -508,4 +558,5 @@ void SettingsMenu::OnRow(int32_t row)
 	}
 	settings::Save();
 	UpdateChecks();
+	if (ShowsToggle()) StartSwitchAnimation(row, true);
 }

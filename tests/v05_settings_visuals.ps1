@@ -5,8 +5,8 @@ $header = Get-Content -LiteralPath 'src/settings_menu.h' -Raw
 
 $textures = @($rco.resource.texturetable.texture)
 foreach ($pair in @(
-    @('tex_ui_toggle_on','ui/toggle-on.png'),
-    @('tex_ui_toggle_off','ui/toggle-off.png'),
+    @('tex_switch_off_on_16','ui/Switch/off_on_16.png'),
+    @('tex_switch_off_on_00','ui/Switch/off_on_00.png'),
     @('tex_ui_anim_options','ui/AnimOptions.png'))) {
     $node = @($textures | Where-Object id -eq $pair[0])[0]
     if (!$node -or $node.src -ne $pair[1]) { throw "Missing Settings texture $($pair[0])" }
@@ -16,7 +16,7 @@ if ($cpp -notmatch 'Main_Navigation\) icon = tex_ui_anim_options' -or
     throw 'Navigation Animation does not use AnimOptions.png.'
 }
 if ($header -notmatch 'bool ShowsToggle\(\) const;') { throw 'Settings choice pages have no toggle policy.' }
-if ($cpp -notmatch 'tex_ui_toggle_on.*tex_ui_toggle_off' -or
+if ($cpp -notmatch 'tex_switch_off_on_16.*tex_switch_off_on_00' -or
     $cpp -notmatch 'check->Show\(common::transition::Type_Reset\)') {
     throw 'Settings choices do not show explicit on/off toggles.'
 }
