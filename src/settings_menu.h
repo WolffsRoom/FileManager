@@ -76,7 +76,7 @@ private:
 	bool ShowsToggle() const;
 	void UpdateChecks();
 	void UpdateFontPreview();
-	void StartSwitchAnimation(int32_t row, bool target);
+	void StartSwitchAnimation(int32_t oldRow, int32_t newRow);
 
 	paf::ui::Widget *m_parentRoot;
 	paf::ui::ListView *m_list;
@@ -87,8 +87,8 @@ private:
 	Level m_queuedLevel;
 	int32_t m_pendingPower;
 	bool m_switchAnimating;
-	bool m_switchTarget;
-	int32_t m_switchRow;
+	int32_t m_switchOldRow;
+	int32_t m_switchNewRow;
 	int32_t m_switchFrame;
 	uint64_t m_switchTick;
 	ChangeCallback m_cb;

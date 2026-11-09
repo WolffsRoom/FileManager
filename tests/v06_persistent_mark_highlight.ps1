@@ -10,4 +10,8 @@ if ($body -notmatch 'entry->marked' -or $body -notmatch 'SetColor\(') { throw 'M
 if ($body -notmatch 'marked \? 0\.62f : 1\.0f' -or $body -notmatch 'marked \? 0\.88f : 1\.0f') { throw 'Marked color does not reset recycled unmarked rows to neutral' }
 if ($body -notmatch 'SetFocusedState\(index == page->focused\)') { throw 'Cursor focus is not independent from persistent marking' }
 if (($cpp | Select-String -Pattern 'ApplyRowHighlight\(' -AllMatches).Matches.Count -lt 4) { throw 'Create/toggle/select-all/clear paths do not share the highlight helper' }
+$optionStart = $cpp.IndexOf('void BrowserMenu::HighlightOptionTarget(')
+$optionEnd = $cpp.IndexOf('void BrowserMenu::OpenSortMenu(', $optionStart)
+$optionBody = $cpp.Substring($optionStart, $optionEnd - $optionStart)
+if ($optionBody -notmatch 'if \(!highlighted\)[\s\S]*?ApplyRowHighlight') { throw 'Closing Options does not restore persistent marked-row tint' }
 'v0.6 persistent mark highlight passed'

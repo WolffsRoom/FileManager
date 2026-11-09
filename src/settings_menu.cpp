@@ -74,7 +74,7 @@ namespace {
 SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *userdata, bool openUsbDevice) :
 	m_parentRoot(parentRoot), m_cb(cb), m_userdata(userdata), m_level(Level_Main), m_rows(0),
 	m_levelQueued(false), m_queuedLevel(Level_Main), m_pendingPower(-1),
-	m_switchAnimating(false), m_switchTarget(false), m_switchRow(-1), m_switchFrame(0), m_switchTick(0)
+	m_switchAnimating(false), m_switchOldRow(-1), m_switchNewRow(-1), m_switchFrame(0), m_switchTick(0)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -219,6 +219,10 @@ int32_t SettingsMenu::RowCount(Level level)
 
 void SettingsMenu::ShowLevel(Level level)
 {
+	// Rebuilding the page invalidates the list widgets used by an animation.
+	m_switchAnimating = false;
+	m_switchOldRow = -1;
+	m_switchNewRow = -1;
 	if (m_rows > 0)
 	{
 		m_list->DeleteCell(0, 0, m_rows);
@@ -449,7 +453,7 @@ void SettingsMenu::UpdateChecks()
 		if (!check) continue;
 		if (ShowsToggle())
 		{
-			if (!(m_switchAnimating && row == m_switchRow))
+			if (!(m_switchAnimating && (row == m_switchOldRow || row == m_switchNewRow)))
 				check->SetTexture(g_appPlugin->GetTexture(IsSelected(row) ? tex_switch_off_on_16 : tex_switch_off_on_00), 0, 0);
 			check->Show(common::transition::Type_Reset);
 		}
@@ -460,20 +464,21 @@ void SettingsMenu::UpdateChecks()
 	}
 }
 
-void SettingsMenu::StartSwitchAnimation(int32_t row, bool target)
+void SettingsMenu::StartSwitchAnimation(int32_t oldRow, int32_t newRow)
 {
 	if (m_switchAnimating) return;
-	ui::ListItem *item = m_list->GetListItem(0, row);
-	if (!item) return;
-	ui::Widget *check = item->FindChild(plane_list_item_check);
-	if (!check) return;
+	ui::ListItem *oldItem = oldRow >= 0 ? m_list->GetListItem(0, oldRow) : NULL;
+	ui::ListItem *newItem = newRow >= 0 ? m_list->GetListItem(0, newRow) : NULL;
+	ui::Widget *oldCheck = oldItem ? oldItem->FindChild(plane_list_item_check) : NULL;
+	ui::Widget *newCheck = newItem ? newItem->FindChild(plane_list_item_check) : NULL;
+	if (!oldCheck && !newCheck) return;
 	m_switchAnimating = true;
-	m_switchTarget = target;
-	m_switchRow = row;
+	m_switchOldRow = oldRow;
+	m_switchNewRow = newRow;
 	m_switchFrame = 0;
 	m_switchTick = sceKernelGetProcessTimeWide();
-	const uint32_t *frames = target ? k_switchOffOn : k_switchOnOff;
-	check->SetTexture(g_appPlugin->GetTexture(frames[0]), 0, 0);
+	if (oldCheck) oldCheck->SetTexture(g_appPlugin->GetTexture(k_switchOnOff[0]), 0, 0);
+	if (newCheck) newCheck->SetTexture(g_appPlugin->GetTexture(k_switchOffOn[0]), 0, 0);
 }
 
 void SettingsMenu::AdvanceSwitchAnimation()
@@ -483,17 +488,17 @@ void SettingsMenu::AdvanceSwitchAnimation()
 	if (now - m_switchTick < 25000ULL) return;
 	m_switchTick = now;
 	if (++m_switchFrame > 16) m_switchFrame = 16;
-	ui::ListItem *item = m_list->GetListItem(0, m_switchRow);
-	ui::Widget *check = item ? item->FindChild(plane_list_item_check) : NULL;
-	if (check)
-	{
-		const uint32_t *frames = m_switchTarget ? k_switchOffOn : k_switchOnOff;
-		check->SetTexture(g_appPlugin->GetTexture(frames[m_switchFrame]), 0, 0);
-	}
+	ui::ListItem *oldItem = m_switchOldRow >= 0 ? m_list->GetListItem(0, m_switchOldRow) : NULL;
+	ui::ListItem *newItem = m_switchNewRow >= 0 ? m_list->GetListItem(0, m_switchNewRow) : NULL;
+	ui::Widget *oldCheck = oldItem ? oldItem->FindChild(plane_list_item_check) : NULL;
+	ui::Widget *newCheck = newItem ? newItem->FindChild(plane_list_item_check) : NULL;
+	if (oldCheck) oldCheck->SetTexture(g_appPlugin->GetTexture(k_switchOnOff[m_switchFrame]), 0, 0);
+	if (newCheck) newCheck->SetTexture(g_appPlugin->GetTexture(k_switchOffOn[m_switchFrame]), 0, 0);
 	if (m_switchFrame >= 16)
 	{
 		m_switchAnimating = false;
-		m_switchRow = -1;
+		m_switchOldRow = -1;
+		m_switchNewRow = -1;
 		UpdateChecks();
 	}
 }
@@ -508,6 +513,16 @@ void SettingsMenu::UpdateFontPreview()
 void SettingsMenu::OnRow(int32_t row)
 {
 	settings::Config &c = settings::Get();
+	int32_t oldRow = -1;
+	if (ShowsToggle())
+	{
+		if (m_switchAnimating) return;
+		if (IsSelected(row)) return;
+		for (int32_t i = 0; i < m_rows; ++i)
+		{
+			if (IsSelected(i)) { oldRow = i; break; }
+		}
+	}
 	switch (m_level)
 	{
 	case Level_Main:
@@ -561,5 +576,5 @@ void SettingsMenu::OnRow(int32_t row)
 	}
 	settings::Save();
 	UpdateChecks();
-	if (ShowsToggle()) StartSwitchAnimation(row, true);
+	if (ShowsToggle()) StartSwitchAnimation(oldRow, row);
 }

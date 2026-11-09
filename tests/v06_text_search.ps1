@@ -13,5 +13,7 @@ foreach ($api in 'SetSearchVisible','ApplySearch','CloseSearch','OriginalRow') {
 if ($header -notmatch 'm_visibleLines' -or $cpp -notmatch 'm_visibleLines\.at') { throw 'Filtered rows do not map to original text lines' }
 if ($cpp -notmatch 'm_search->GetString' -or $cpp -notmatch 'ContainsNoCase') { throw 'Incremental search filtering missing' }
 if ($cpp -notmatch 'm_visibleLines\.empty\(\)') { throw 'No-match search is not guarded' }
+if ($header -notmatch 'm_editRow' -or $cpp -notmatch 'if \(row < 0 && index != Option_Save\) return;') { throw 'Line actions can target hidden row zero after a no-match search' }
+if ($cpp -notmatch 'm_editRow = row' -or $cpp -notmatch 'int32_t row = m_editRow') { throw 'Editor callback does not retain the validated original row' }
 if ($cpp -notmatch 'CloseSearch\(\)[\s\S]*?m_search->SetString\(empty\)') { throw 'Closing search does not restore the complete line set' }
 'v0.6 text search passed'

@@ -51,7 +51,7 @@ namespace {
 }
 
 TextView::TextView(ui::Widget *parentRoot, const char *path) :
-	m_parentRoot(parentRoot), m_path(path), m_rows(0), m_focused(-1), m_dirty(false), m_crlf(false), m_truncated(false), m_searchVisible(false), m_edit(Edit_Change)
+	m_parentRoot(parentRoot), m_path(path), m_rows(0), m_focused(-1), m_editRow(-1), m_dirty(false), m_crlf(false), m_truncated(false), m_searchVisible(false), m_edit(Edit_Change)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -362,12 +362,13 @@ void TextView::OnOption(int32_t index)
 		return;
 	}
 	int32_t row = OriginalRow(m_focused);
-	if (row < 0) row = 0;
+	if (row < 0 && index != Option_Save) return;
 	switch (index)
 	{
 	case Option_Edit:
 	{
 		m_edit = Edit_Change;
+		m_editRow = row;
 		paf::wstring current;
 		common::Utf8ToUtf16(m_lines.at(row), &current);
 		new TextInput(m_root, g_appPlugin->GetString(msg_text_edit_line), current, OnLineDone, this);
@@ -375,6 +376,7 @@ void TextView::OnOption(int32_t index)
 	}
 	case Option_Insert:
 		m_edit = Edit_Insert;
+		m_editRow = row;
 		new TextInput(m_root, g_appPlugin->GetString(msg_text_insert_line), paf::wstring(), OnLineDone, this);
 		break;
 	case Option_Delete:
@@ -420,8 +422,8 @@ void TextView::OnLineEntered(const paf::wstring &text)
 	}
 	paf::string line;
 	common::Utf16ToUtf8(text, &line);
-	int32_t row = OriginalRow(m_focused);
-	if (row < 0) row = 0;
+	int32_t row = m_editRow;
+	if (row < 0 || row >= (int32_t)m_lines.size()) return;
 	if (m_edit == Edit_Change)
 	{
 		m_lines.at(row) = line;
@@ -442,6 +444,7 @@ void TextView::OnLineEntered(const paf::wstring &text)
 		ApplySearch(false);
 	}
 	m_dirty = true;
+	m_editRow = -1;
 }
 
 int32_t TextView::Save()

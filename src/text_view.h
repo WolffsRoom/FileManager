@@ -61,6 +61,7 @@ private:
 	paf::string m_lastSearchQuery;
 	uint32_t m_rows;
 	int32_t m_focused;
+	int32_t m_editRow;
 	bool m_dirty;
 	bool m_crlf;        // keep the file's own line endings
 	bool m_truncated;   // only the first part of a big file was loaded: never save it

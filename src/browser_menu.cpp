@@ -1694,9 +1694,13 @@ void BrowserMenu::HighlightOptionTarget(bool highlighted)
 	if (!item) return;
 	ui::Widget *button = item->FindChild(image_button_list_item);
 	if (!button) return;
-	button->SetColor(highlighted ? 0.72f : 1.0f, highlighted ? 0.38f : 1.0f,
-		highlighted ? 0.92f : 1.0f, 1.0f);
-	if (!highlighted) m_optionTarget = -1;
+	if (!highlighted)
+	{
+		ApplyRowHighlight(page, m_optionTarget, button);
+		m_optionTarget = -1;
+		return;
+	}
+	button->SetColor(0.72f, 0.38f, 0.92f, 1.0f);
 }
 
 void BrowserMenu::OpenSortMenu()
