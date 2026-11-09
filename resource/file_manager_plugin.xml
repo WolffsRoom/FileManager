@@ -799,6 +799,15 @@
     <texture src="ui/Switch/on_off_15.png" type="texture/png" id="tex_switch_on_off_15" />
     <texture src="ui/Switch/on_off_16.png" type="texture/png" id="tex_switch_on_off_16" />
     <texture src="ui/AnimOptions.png" type="texture/png" id="tex_ui_anim_options" />
+    <texture src="ui/controls/cross.png" type="texture/png" id="tex_control_cross" />
+    <texture src="ui/controls/circle.png" type="texture/png" id="tex_control_circle" />
+    <texture src="ui/controls/triangle.png" type="texture/png" id="tex_control_triangle" />
+    <texture src="ui/controls/square.png" type="texture/png" id="tex_control_square" />
+    <texture src="ui/controls/select.png" type="texture/png" id="tex_control_select" />
+    <texture src="ui/controls/l.png" type="texture/png" id="tex_control_l" />
+    <texture src="ui/controls/r.png" type="texture/png" id="tex_control_r" />
+    <texture src="ui/controls/left.png" type="texture/png" id="tex_control_left" />
+    <texture src="ui/controls/right.png" type="texture/png" id="tex_control_right" />
     <texture src="ui/favorite_folder.png" type="texture/png" id="tex_ui_favorite_folder" />
     <texture src="ui/favorite_file.png" type="texture/png" id="tex_ui_favorite_file" />
     <texture src="ui/game_iso.png" type="texture/png" id="tex_ui_game_iso" />

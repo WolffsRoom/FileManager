@@ -20,7 +20,7 @@ if ($cpp -notmatch 'tex_switch_off_on_16.*tex_switch_off_on_00' -or
     $cpp -notmatch 'check->Show\(common::transition::Type_Reset\)') {
     throw 'Settings choices do not show explicit on/off toggles.'
 }
-if ($cpp -notmatch '91\.8f, 63\.0f' -or $cpp -match '71\.4f, 49\.0f') {
+if ($cpp -notmatch '91\.8f' -or $cpp -notmatch '63\.0f' -or $cpp -match '71\.4f, 49\.0f') {
     throw 'Settings list icons are not uniformly 10 percent smaller.'
 }
 $powerStyle = @($rco.resource.styletable.style_button | Where-Object id -eq 'style_button_power_native')[0]

@@ -39,16 +39,16 @@ namespace {
 
 	// Button, then what it does
 	const uint32_t k_commands[][3] = {
-		{ msg_btn_cross, msg_cmd_open, tex_button_cross },
-		{ msg_btn_circle, msg_cmd_back, tex_button_circle },
-		{ msg_btn_triangle, msg_cmd_settings, tex_button_triangle },
-		{ msg_btn_square, msg_cmd_mark, tex_button_square },
-		{ msg_btn_select, msg_cmd_select, tex_button_select },
+		{ msg_btn_cross, msg_cmd_open, tex_control_cross },
+		{ msg_btn_circle, msg_cmd_back, tex_control_circle },
+		{ msg_btn_triangle, msg_cmd_settings, tex_control_triangle },
+		{ msg_btn_square, msg_cmd_mark, tex_control_square },
+		{ msg_btn_select, msg_cmd_select, tex_control_select },
 		{ msg_btn_start, msg_cmd_options, tex_button_start },
-		{ msg_btn_l, msg_cmd_first, tex_button_l },
-		{ msg_btn_r, msg_cmd_last, tex_button_r },
-		{ msg_btn_left, msg_cmd_parent, tex_button_left },
-		{ msg_btn_right, msg_cmd_enter, tex_new_arrow },
+		{ msg_btn_l, msg_cmd_first, tex_control_l },
+		{ msg_btn_r, msg_cmd_last, tex_control_r },
+		{ msg_btn_left, msg_cmd_parent, tex_control_left },
+		{ msg_btn_right, msg_cmd_enter, tex_control_right },
 		{ msg_btn_hold, msg_cmd_mark, tex_button_touch },
 	};
 	const int32_t k_commandCount = sizeof(k_commands) / sizeof(k_commands[0]);
@@ -410,7 +410,10 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	// Settings list icons are uniformly 10% smaller than the shared file-row
 	// default. Power actions are separate widgets and keep their own size.
 	math::v3 iconSize;
-	float iconValues[4] = { 91.8f, 63.0f, 0.0f, 0.0f };
+	float iconValues[4] = {
+		m_level == Level_Commands ? 64.0f : 91.8f,
+		m_level == Level_Commands ? 44.0f : 63.0f, 0.0f, 0.0f
+	};
 	memcpy(&iconSize, iconValues, sizeof(iconSize));
 	static_cast<ui::ImageButton *>(button)->SetTextureSize(iconSize);
 	if (m_level == Level_Themes)
