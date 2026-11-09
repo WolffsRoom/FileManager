@@ -177,11 +177,16 @@
         <layout_hint size="960, 544" />
       </plane>
       <template_ref id="template_ref_top_title_bar_page_text_view" template="template_top_title_bar" />
+      <text_box auto_scroll="1" ime_type="0" edit_mode="1" paste_mode="1" edit_auto_transition_mode="0" style="style_text_box_input" id="text_box_search_page_text_view">
+        <layout_hint size="860, 44" pos="0, 174" />
+        <focus_hint focus_shape="0" />
+      </text_box>
       <list_view style="style_list_view_generic" id="list_view_page_text_view">
 		<layout_hint align="0, 1" size="960, 384" pos="0, -240" />
       </list_view>
       <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_text_view" />
       <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_options_page_text_view" />
+      <button style="_common_default_style_button_transparent" id="button_search_page_text_view"><layout_hint size="1, 1" /><focus_hint enable="0" /></button>
       <button style="_common_default_style_button_transparent" id="button_first_page_text_view"><layout_hint size="1, 1" /><focus_hint enable="0" /></button>
       <button style="_common_default_style_button_transparent" id="button_last_page_text_view"><layout_hint size="1, 1" /><focus_hint enable="0" /></button>
     </page>

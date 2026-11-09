@@ -6,8 +6,8 @@
 
 /**
  * Text viewer and line editor (as in VitaShell/FMVita): one list row per line.
- * Triangle opens Edit line, Insert line, Delete line and Save. Leaving with unsaved
- * changes asks whether to save them.
+ * Triangle opens incremental search. Start opens Edit line, Insert line, Delete
+ * line and Save. Leaving with unsaved changes asks whether to save them.
  */
 class TextView
 {
@@ -35,6 +35,7 @@ public:
 	void OnLineEntered(const paf::wstring &text);
 	void JumpTo(bool end);
 	void OnSaveAnswer(int32_t choice);
+	void PollSearch();
 
 private:
 
@@ -43,6 +44,10 @@ private:
 	void Rebuild();
 	int32_t Save();
 	void RefreshRow(int32_t row);
+	void SetSearchVisible(bool visible);
+	void ApplySearch(bool finishEditing);
+	void CloseSearch();
+	int32_t OriginalRow(int32_t visibleRow) const;
 
 	enum Edit { Edit_Change, Edit_Insert };
 
@@ -51,11 +56,15 @@ private:
 	paf::ui::ListView *m_list;
 	paf::string m_path;
 	paf::vector<paf::string> m_lines;
+	paf::vector<int32_t> m_visibleLines;
+	paf::ui::TextBox *m_search;
+	paf::string m_lastSearchQuery;
 	uint32_t m_rows;
 	int32_t m_focused;
 	bool m_dirty;
 	bool m_crlf;        // keep the file's own line endings
 	bool m_truncated;   // only the first part of a big file was loaded: never save it
+	bool m_searchVisible;
 	Edit m_edit;
 };
 

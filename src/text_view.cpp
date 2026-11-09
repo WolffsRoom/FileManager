@@ -32,10 +32,26 @@ namespace {
 	{
 		reinterpret_cast<TextView *>(userdata)->OnLineEntered(text);
 	}
+
+	bool ContainsNoCase(const char *text, const char *needle)
+	{
+		size_t n = strlen(needle);
+		if (!n) return true;
+		for (; *text; ++text)
+		{
+			if (strncasecmp(text, needle, n) == 0) return true;
+		}
+		return false;
+	}
+
+	void TextSearchTask(void *userdata)
+	{
+		static_cast<TextView *>(userdata)->PollSearch();
+	}
 }
 
 TextView::TextView(ui::Widget *parentRoot, const char *path) :
-	m_parentRoot(parentRoot), m_path(path), m_rows(0), m_focused(-1), m_dirty(false), m_crlf(false), m_truncated(false), m_edit(Edit_Change)
+	m_parentRoot(parentRoot), m_path(path), m_rows(0), m_focused(-1), m_dirty(false), m_crlf(false), m_truncated(false), m_searchVisible(false), m_edit(Edit_Change)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -59,11 +75,27 @@ TextView::TextView(ui::Widget *parentRoot, const char *path) :
 	}, this);
 
 	ui::Widget *options = m_root->FindChild(button_options_page_text_view);
-	options->SetKeycode(inputdevice::pad::Data::PAD_MENU);
+	options->SetKeycode(inputdevice::pad::Data::PAD_START);
 	options->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
 		reinterpret_cast<TextView *>(userdata)->OnOptions();
+	}, this);
+
+	ui::Widget *searchButton = m_root->FindChild(button_search_page_text_view);
+	searchButton->SetKeycode(inputdevice::pad::Data::PAD_MENU);
+	searchButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		TextView *view = static_cast<TextView *>(userdata);
+		view->SetSearchVisible(!view->m_searchVisible);
+	}, this);
+	m_search = static_cast<ui::TextBox *>(m_root->FindChild(text_box_search_page_text_view));
+	m_search->Hide(common::transition::Type_Reset);
+	m_search->AddEventCallback(ui::TextBox::CB_TEXT_BOX_ENTER_PRESSED,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		static_cast<TextView *>(userdata)->ApplySearch(true);
 	}, this);
 
 	ui::Widget *first = m_root->FindChild(button_first_page_text_view);
@@ -160,10 +192,12 @@ TextView::TextView(ui::Widget *parentRoot, const char *path) :
 	m_list->SetCellSizeDefault(0, cellSize);
 	m_list->SetSegmentLayoutType(0, ui::ListView::LAYOUT_TYPE_LIST);
 	Rebuild();
+	common::MainThreadCallList::Register(TextSearchTask, this);
 }
 
 TextView::~TextView()
 {
+	common::MainThreadCallList::Unregister(TextSearchTask, this);
 	m_list->SetName(static_cast<uint32_t>(0));
 	Plugin::PageCloseParam closeParam;
 	closeParam.fade = true;
@@ -178,17 +212,20 @@ void TextView::Rebuild()
 	{
 		m_list->DeleteCell(0, 0, m_rows);
 	}
-	m_rows = m_lines.size();
-	m_list->InsertCell(0, 0, m_rows);
+	m_visibleLines.clear();
+	for (uint32_t i = 0; i < m_lines.size(); ++i) m_visibleLines.push_back(i);
+	m_rows = m_visibleLines.size();
+	if (m_rows > 0) m_list->InsertCell(0, 0, m_rows);
 }
 
 void TextView::RefreshRow(int32_t row)
 {
 	ui::ListItem *item = m_list->GetListItem(0, row);
-	if (item && row >= 0 && row < (int32_t)m_lines.size())
+	int32_t original = OriginalRow(row);
+	if (item && original >= 0 && original < (int32_t)m_lines.size())
 	{
 		paf::wstring wide;
-		paf::string numbered = common::FormatString("%5d  %s", row + 1, m_lines.at(row).c_str());
+		paf::string numbered = common::FormatString("%5d  %s", original + 1, m_lines.at(original).c_str());
 		common::Utf8ToUtf16(numbered, &wide);
 		item->FindChild(button_text_line)->SetString(wide);
 	}
@@ -196,7 +233,7 @@ void TextView::RefreshRow(int32_t row)
 
 ui::ListItem *TextView::CreateLine(ui::listview::ItemFactory::CreateParam &param)
 {
-	if (!param.list_view->GetName().GetIDHash() || param.cell_index < 0 || param.cell_index >= (int32_t)m_lines.size())
+	if (!param.list_view->GetName().GetIDHash() || param.cell_index < 0 || param.cell_index >= (int32_t)m_visibleLines.size())
 	{
 		return new ui::ListItem(param.parent, 0);
 	}
@@ -209,7 +246,8 @@ ui::ListItem *TextView::CreateLine(ui::listview::ItemFactory::CreateParam &param
 	ui::Widget *button = item->FindChild(button_text_line);
 	button->SetName(param.cell_index);
 	paf::wstring wide;
-	paf::string numbered = common::FormatString("%5d  %s", param.cell_index + 1, m_lines.at(param.cell_index).c_str());
+	const int32_t original = m_visibleLines.at(param.cell_index);
+	paf::string numbered = common::FormatString("%5d  %s", original + 1, m_lines.at(original).c_str());
 	common::Utf8ToUtf16(numbered, &wide);
 	button->SetString(wide);
 
@@ -236,6 +274,73 @@ void TextView::JumpTo(bool end)
 	m_list->SetFocus(0, m_focused, end ? ui::ListView::FOCUS_ALIGN_TYPE_TAIL : ui::ListView::FOCUS_ALIGN_TYPE_HEAD, NULL);
 }
 
+int32_t TextView::OriginalRow(int32_t visibleRow) const
+{
+	if (visibleRow < 0 || visibleRow >= (int32_t)m_visibleLines.size()) return -1;
+	return m_visibleLines.at(visibleRow);
+}
+
+void TextView::SetSearchVisible(bool visible)
+{
+	if (visible == m_searchVisible) return;
+	m_searchVisible = visible;
+	if (visible)
+	{
+		m_search->Show(common::transition::Type_Reset);
+		m_search->SetFocusedState(true);
+		m_search->BeginEdit();
+	}
+	else CloseSearch();
+}
+
+void TextView::CloseSearch()
+{
+	paf::wstring empty;
+	m_search->SetString(empty);
+	m_search->EndEdit();
+	m_search->ReleaseFocus();
+	m_search->Hide(common::transition::Type_Reset);
+	m_searchVisible = false;
+	m_lastSearchQuery.clear();
+	ApplySearch(false);
+}
+
+void TextView::PollSearch()
+{
+	if (!m_searchVisible) return;
+	paf::wstring text;
+	m_search->GetString(text);
+	paf::string query;
+	common::Utf16ToUtf8(text, &query);
+	if (query == m_lastSearchQuery) return;
+	m_lastSearchQuery = query;
+	ApplySearch(false);
+}
+
+void TextView::ApplySearch(bool finishEditing)
+{
+	paf::wstring text;
+	m_search->GetString(text);
+	paf::string query;
+	common::Utf16ToUtf8(text, &query);
+	m_lastSearchQuery = query;
+	if (finishEditing) m_search->EndEdit();
+	if (m_rows > 0) m_list->DeleteCell(0, 0, m_rows);
+	m_visibleLines.clear();
+	for (uint32_t i = 0; i < m_lines.size(); ++i)
+	{
+		if (query.empty() || ContainsNoCase(m_lines.at(i).c_str(), query.c_str()))
+			m_visibleLines.push_back(i);
+	}
+	m_rows = m_visibleLines.size();
+	m_focused = m_visibleLines.empty() ? -1 : 0;
+	if (m_rows > 0)
+	{
+		m_list->InsertCell(0, 0, m_rows);
+		m_list->SetFocus(0, 0, ui::ListView::FOCUS_ALIGN_TYPE_HEAD, NULL);
+	}
+}
+
 void TextView::OnOptions()
 {
 	paf::vector<OptionMenu::Button> buttons;
@@ -256,7 +361,8 @@ void TextView::OnOption(int32_t index)
 		dialog::OpenOk(g_appPlugin, NULL, g_appPlugin->GetString(msg_text_too_big));
 		return;
 	}
-	int32_t row = m_focused >= 0 && m_focused < (int32_t)m_lines.size() ? m_focused : 0;
+	int32_t row = OriginalRow(m_focused);
+	if (row < 0) row = 0;
 	switch (index)
 	{
 	case Option_Edit:
@@ -281,7 +387,7 @@ void TextView::OnOption(int32_t index)
 			m_lines.at(0) = paf::string();
 		}
 		m_dirty = true;
-		Rebuild();
+		ApplySearch(false);
 		break;
 	case Option_Save:
 	{
@@ -314,11 +420,12 @@ void TextView::OnLineEntered(const paf::wstring &text)
 	}
 	paf::string line;
 	common::Utf16ToUtf8(text, &line);
-	int32_t row = m_focused >= 0 && m_focused < (int32_t)m_lines.size() ? m_focused : 0;
+	int32_t row = OriginalRow(m_focused);
+	if (row < 0) row = 0;
 	if (m_edit == Edit_Change)
 	{
 		m_lines.at(row) = line;
-		RefreshRow(row);
+		ApplySearch(false);
 	}
 	else
 	{
@@ -332,7 +439,7 @@ void TextView::OnLineEntered(const paf::wstring &text)
 			}
 		}
 		m_lines = rebuilt;
-		Rebuild();
+		ApplySearch(false);
 	}
 	m_dirty = true;
 }
@@ -384,6 +491,11 @@ void TextView::OnSaveAnswer(int32_t choice)
 
 void TextView::OnBack()
 {
+	if (m_searchVisible)
+	{
+		CloseSearch();
+		return;
+	}
 	if (m_dirty)
 	{
 		new NoticeMenu(m_root, msg_text_unsaved_title, msg_text_unsaved, msg_text_save, msg_text_discard,
