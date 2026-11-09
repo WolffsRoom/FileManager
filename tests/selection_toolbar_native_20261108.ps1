@@ -21,7 +21,7 @@ $button=$listItem.image_button
 if (@($button.plane | Where-Object id -eq 'plane_list_item_check').Count -ne 0) {throw 'Checkbox still clipped inside file button'}
 if (@($listItem.plane | Where-Object id -eq 'plane_list_item_check').Count -ne 1) {throw 'Checkbox not a single overlay beside file button'}
 $box=@($listItem.plane | Where-Object id -eq 'plane_list_item_check')[0]
-if ($box.texture -ne 'tex_checkbox_off' -or $box.layout_hint.pos -ne '411, 0') {throw 'Checkbox overlay needs correct off state and right edge'}
+if ($box.texture -ne 'tex_checkbox_off' -or $box.layout_hint.pos -ne '401, 0' -or $box.layout_hint.size -ne '72, 72') {throw 'Settings switch overlay needs correct size and right edge'}
 foreach($text in @('msg_select_all','msg_opt_copy','msg_opt_move','msg_opt_delete')) {
  if (-not $browser.Contains('g_appPlugin->GetString('+$text+')')) {throw ('Missing button label '+$text)}
 }
@@ -33,15 +33,15 @@ $end=$browser.IndexOf('void BrowserMenu::FillRootItem(', $start)
 $fileCode=$browser.Substring($start,$end-$start)
 if (!$fileCode.Contains('RowCheckbox(button->GetParent())') -or
  !$fileCode.Contains('check->Hide(common::transition::Type_Reset)') -or
- !$fileCode.Contains('button->SetFocusedState(entry->marked')) {throw 'File rows do not use native highlight with checkboxes hidden'}
+ !$fileCode.Contains('ApplyRowHighlight')) {throw 'File rows do not use persistent highlight with checkboxes hidden'}
 if ($fileCode.Contains('0.75f, entry->marked')) {throw 'Purple tint still applied to marked files'}
 $start=$browser.IndexOf('void BrowserMenu::ApplyMarkToggle(')
 $end=$browser.IndexOf('void BrowserMenu::SelectAll()', $start)
 $mark=$browser.Substring($start,$end-$start)
-if (!$mark.Contains('button->SetFocusedState(') -or !$mark.Contains('if (!button) continue;')) {throw 'Marking fails to update native highlight safely'}
+if (!$mark.Contains('ApplyRowHighlight(') -or !$mark.Contains('if (!button) continue;')) {throw 'Marking fails to update persistent highlight safely'}
 $start=$browser.IndexOf('void BrowserMenu::ApplySelectAll(')
 $end=$browser.IndexOf('void BrowserMenu::OnOptions()', $start)
 $all=$browser.Substring($start,$end-$start)
-if (!$all.Contains('button->SetFocusedState(true)') -or !$all.Contains('if (!button) continue;')) {throw 'Select All does not highlight rows safely'}
+if (!$all.Contains('ApplyRowHighlight(') -or !$all.Contains('if (!button) continue;')) {throw 'Select All does not highlight rows safely'}
 if (!$browser.Contains('DoAction(Action_ClearSelection);')) {throw 'Circle should cancel selection without backing out of the folder'}
 'Selection toolbar / native highlighted marks / native buttons: PASS'

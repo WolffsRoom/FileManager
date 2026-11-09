@@ -11,7 +11,7 @@ $end = $browser.IndexOf('void BrowserMenu::SelectAll()', $begin)
 Assert ($begin -ge 0 -and $end -gt $begin) 'Cannot inspect mark toggle'
 $mark = $browser.Substring($begin,$end-$begin)
 Assert ($mark.Contains('if (!button) continue;')) 'Off-screen/empty list rows still reach native focused state'
-Assert ($mark.Contains('button->SetFocusedState(')) 'Selected row native highlight unexpectedly removed'
+Assert ($mark.Contains('ApplyRowHighlight(')) 'Selected row persistent highlight unexpectedly removed'
 
 $selAllBegin = $browser.IndexOf('void BrowserMenu::ApplySelectAll()')
 $selAllEnd = $browser.IndexOf('void BrowserMenu::OnOptions()', $selAllBegin)
@@ -43,7 +43,7 @@ $start = $browser.IndexOf('void BrowserMenu::OnSearch()')
 $stop = $browser.IndexOf('void BrowserMenu::OnForward()', $start)
 $filter = $browser.Substring($start,$stop-$start)
 Assert ($filter.Contains('page->list->SetFocus(0, 0, ui::ListView::FOCUS_ALIGN_TYPE_HEAD')) 'Filtered results do not begin at top'
-Assert ($settings.Contains('m_list->SetSize(960.0f, 328.0f, 0.0f)')) 'Settings main list has no extra room'
+Assert ($settings.Contains('m_list->SetSize(960.0f, 304.0f, 0.0f)')) 'Settings main list has no extra room'
 $settingsPage = @($rco.resource.pagetable.page | Where-Object id -eq 'page_settings')[0]
 $bar = @($settingsPage.plane | Where-Object id -eq 'plane_power_actions_page_settings')[0]
 Assert ($bar.layout_hint.pos -eq '0, 130') 'Power bar is not below the Ajustes header'

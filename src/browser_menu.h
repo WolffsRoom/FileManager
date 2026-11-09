@@ -155,6 +155,7 @@ private:
 	void OpenPreview(int32_t index);
 	void FillFileItem(BrowserPage *page, paf::ui::Widget *button, fs::Entry *entry);
 	void FillRootItem(BrowserPage *page, paf::ui::Widget *button, fs::Entry *entry);
+	void ApplyRowHighlight(BrowserPage *page, int32_t index, paf::ui::Widget *button);
 	paf::ui::Widget *RowCheckbox(paf::ui::Widget *rowRoot);
 	paf::intrusive_ptr<paf::graph::Surface> Icon(uint32_t hash);
 

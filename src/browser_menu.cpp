@@ -940,6 +940,18 @@ intrusive_ptr<graph::Surface> BrowserMenu::Icon(uint32_t hash)
 	return tex;
 }
 
+void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget *button)
+{
+	if (!page || !button || index < 0 || index >= (int32_t)page->entries.size()) return;
+	fs::Entry *entry = page->entries.at(index);
+	const bool marked = entry->marked;
+	// Native focus owns the moving cursor. A separate cyan tint keeps marked
+	// rows visible after that cursor leaves and is reset on every recycled row.
+	button->SetColor(marked ? 0.62f : 1.0f, marked ? 0.88f : 1.0f,
+		marked ? 1.0f : 1.0f, 1.0f);
+	button->SetFocusedState(index == page->focused);
+}
+
 void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry *entry)
 {
 	paf::wstring label = ToWide(entry->name);
@@ -961,8 +973,7 @@ void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 	// cursor. The shared check plane remains available to Settings only.
 	ui::Widget *check = RowCheckbox(button->GetParent());
 	if (check) check->Hide(common::transition::Type_Reset);
-	button->SetFocusedState(entry->marked ||
-		(int32_t)button->GetName().GetIDHash() == page->focused);
+	ApplyRowHighlight(page, (int32_t)button->GetName().GetIDHash(), button);
 }
 
 ui::Widget *BrowserMenu::RowCheckbox(ui::Widget *rowRoot)
@@ -1513,7 +1524,7 @@ void BrowserMenu::ApplyMarkToggle(int32_t index)
 		if (!button) continue;
 		ui::Widget *check = RowCheckbox(item);
 		if (check) check->Hide(common::transition::Type_Reset);
-		button->SetFocusedState(page->entries.at(i)->marked || (int32_t)i == page->focused);
+		ApplyRowHighlight(page, i, button);
 	}
 	if (anyMarked)
 		m_selectionBar->Show(common::transition::Type_SlideFromBottom1);
@@ -1554,7 +1565,7 @@ void BrowserMenu::ApplySelectAll()
 		if (!button) continue; // recycled placeholder
 		ui::Widget *check = RowCheckbox(item);
 		if (check) check->Hide(common::transition::Type_Reset);
-		button->SetFocusedState(true);
+		ApplyRowHighlight(page, i, button);
 	}
 	m_selectionBar->Show(common::transition::Type_Reset);
 }
@@ -1795,7 +1806,7 @@ void BrowserMenu::DoAction(Action action)
 				ui::Widget *check = menu->RowCheckbox(item);
 				ui::Widget *button = item->FindChild(image_button_list_item);
 				if (check) check->Hide(common::transition::Type_Reset);
-				if (button) button->SetFocusedState((int32_t)i == page->focused);
+				if (button) menu->ApplyRowHighlight(page, i, button);
 			}
 			menu->m_selectionBar->Hide(common::transition::Type_Reset);
 		}, this);
@@ -1814,7 +1825,7 @@ void BrowserMenu::DoAction(Action action)
 			ui::Widget *check = RowCheckbox(item);
 			if (check) check->Hide(common::transition::Type_Reset);
 			ui::Widget *button = item->FindChild(image_button_list_item);
-			if (button) button->SetFocusedState((int32_t)i == page->focused);
+			if (button) ApplyRowHighlight(page, i, button);
 		}
 		m_selectionBar->Hide(common::transition::Type_Reset);
 		break;
