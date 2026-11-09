@@ -112,6 +112,9 @@ SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *user
 	m_emptyShortcuts = m_root->FindChild(text_shortcuts_empty_page_settings);
 	m_emptyShortcuts->SetString(Str(msg_shortcuts_empty));
 	m_emptyShortcuts->Hide(common::transition::Type_Reset);
+	m_fontPreview = m_root->FindChild(text_font_preview_page_settings);
+	m_fontPreview->SetString(Str(msg_font_preview));
+	m_fontPreview->Hide(common::transition::Type_Reset);
 	m_list = static_cast<ui::ListView *>(m_root->FindChild(list_view_page_settings));
 	m_list->SetItemFactory(new ListViewCb(this));
 	m_list->InsertSegment(0, 1);
@@ -220,8 +223,8 @@ void SettingsMenu::ShowLevel(Level level)
 			m_root->FindChild(ids[i])->SetString(Str(texts[i]));
 		m_powerBar->Show(common::transition::Type_Reset);
 		// Leave a visible neutral gap between power actions and list rows.
-		m_list->SetSize(960.0f, 328.0f, 0.0f);
-		m_list->SetPos(0.0f, -242.0f, 0.0f);
+		m_list->SetSize(960.0f, 304.0f, 0.0f);
+		m_list->SetPos(0.0f, -254.0f, 0.0f);
 	}
 	else
 	{
@@ -229,6 +232,14 @@ void SettingsMenu::ShowLevel(Level level)
 		m_list->SetSize(960.0f, 448.0f, 0.0f);
 		m_list->SetPos(0.0f, -272.0f, 0.0f);
 	}
+	if (level == Level_FontSize)
+	{
+		m_list->SetSize(960.0f, 240.0f, 0.0f);
+		m_list->SetPos(0.0f, -148.0f, 0.0f);
+		m_fontPreview->Show(common::transition::Type_Reset);
+		UpdateFontPreview();
+	}
+	else m_fontPreview->Hide(common::transition::Type_Reset);
 
 	if (level == Level_Shortcuts)
 	{
@@ -434,6 +445,13 @@ void SettingsMenu::UpdateChecks()
 	}
 }
 
+void SettingsMenu::UpdateFontPreview()
+{
+	if (!m_fontPreview) return;
+	const float scale = settings::FileFontSize() / 28.0f;
+	m_fontPreview->SetScale(scale, scale, 1.0f);
+}
+
 void SettingsMenu::OnRow(int32_t row)
 {
 	settings::Config &c = settings::Get();
@@ -456,6 +474,7 @@ void SettingsMenu::OnRow(int32_t row)
 		break;
 	case Level_FontSize:
 		c.fontSize = row;
+		UpdateFontPreview();
 		break;
 	case Level_Language:
 		c.language = row;

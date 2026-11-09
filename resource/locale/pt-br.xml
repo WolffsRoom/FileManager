@@ -91,6 +91,7 @@
   <string src="Instalado (%s). Já está na tela inicial." id="msg_install_done" />
   <string src="Temas" id="msg_set_themes" />
   <string src="Tamanho da fonte" id="msg_set_font_size" />
+  <string src="Um pequeno texto para visualizar o tamanho da fonte." id="msg_font_preview" />
   <string src="Pequeno" id="msg_font_small" />
   <string src="Normal" id="msg_font_normal" />
   <string src="Grande" id="msg_font_large" />

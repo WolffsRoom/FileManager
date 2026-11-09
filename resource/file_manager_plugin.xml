@@ -126,6 +126,9 @@
       <list_view style="style_list_view_generic" id="list_view_page_settings">
         <layout_hint align="0, 1" size="960, 328" pos="0, -242" />
       </list_view>
+      <text style="style_text_empty" id="text_font_preview_page_settings">
+        <layout_hint size="860, 54" pos="0, -160" />
+      </text>
       <text style="style_text_shortcuts_empty" id="text_shortcuts_empty_page_settings">
         <layout_hint size="850, 148" pos="0, -8" />
       </text>

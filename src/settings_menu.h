@@ -74,11 +74,13 @@ private:
 	bool IsSelected(int32_t row);
 	bool ShowsToggle() const;
 	void UpdateChecks();
+	void UpdateFontPreview();
 
 	paf::ui::Widget *m_parentRoot;
 	paf::ui::ListView *m_list;
 	paf::ui::Widget *m_emptyShortcuts;
 	paf::ui::Widget *m_powerBar;
+	paf::ui::Widget *m_fontPreview;
 	bool m_levelQueued;
 	Level m_queuedLevel;
 	int32_t m_pendingPower;

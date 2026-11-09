@@ -89,6 +89,7 @@
   <string src="Installed (%s). It is now on the home screen." id="msg_install_done" />
   <string src="Themes" id="msg_set_themes" />
   <string src="Tamaño de fuente" id="msg_set_font_size" />
+  <string src="The quick brown fox jumps over the lazy dog." id="msg_font_preview" />
   <string src="Small" id="msg_font_small" />
   <string src="Normal" id="msg_font_normal" />
   <string src="Large" id="msg_font_large" />
