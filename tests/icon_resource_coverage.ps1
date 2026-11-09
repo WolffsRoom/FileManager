@@ -43,11 +43,13 @@ $fs = Get-Content (Join-Path $root 'src/core/fs.cpp') -Raw
 $match = [regex]::Match($fs, '(?s)k_gameExtensions\[\]\s*=\s*\{(.*?)\};')
 if (-not $match.Success) { throw 'Game extension table missing' }
 $extensions = @([regex]::Matches($match.Groups[1].Value, '"(\.[^"]+)"') | ForEach-Object { $_.Groups[1].Value })
-if ($extensions.Count -ne 230) { throw "Expected 230 extensions, got $($extensions.Count)" }
+if ($extensions.Count -ne 229) { throw "Expected 229 extensions, got $($extensions.Count)" }
 if (($extensions | Select-Object -Unique).Count -ne $extensions.Count) { throw 'Duplicate game formats' }
 foreach ($ext in @('.iso','.chd','.gba','.3ds','.xci','.suprx','.vpk','.png','.001','.appxbundle')) {
     if ($ext -notin $extensions) { throw "Game extension absent: $ext" }
 }
+if ('.md' -in $extensions) { throw 'Markdown is incorrectly classified as a game image' }
+if ($fs -notmatch '\{ "\.md", fs::Kind_Text \}') { throw 'Markdown is not classified as text' }
 $browser = Get-Content (Join-Path $root 'src/browser_menu.cpp') -Raw
 $settings = Get-Content (Join-Path $root 'src/settings_menu.cpp') -Raw
 if ($browser -notmatch 'tex_ui_suprx' -or $browser -notmatch 'tex_ui_favorite_file' -or $browser -notmatch 'fs::IsGameFormat') { throw 'Browser icon mapping incomplete' }

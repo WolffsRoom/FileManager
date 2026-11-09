@@ -83,7 +83,7 @@ namespace {
 		".wad", ".wud", ".wux", ".wua", ".rpx", ".wup", ".app", ".tmd", ".nsp",
 		".xci", ".nsz", ".xcz", ".nca", ".nro", ".nso", ".vb", ".vboy", ".min",
 		".vpk", ".vci", ".pkg", ".pbp", ".self", ".elf", ".prx", ".suprx", ".skprx",
-		".psdp", ".sg", ".sms", ".md", ".gen", ".smd", ".68k", ".32x", ".gg",
+		".psdp", ".sg", ".sms", ".gen", ".smd", ".68k", ".32x", ".gg",
 		".dat", ".lst", ".xiso", ".xbe", ".xex", ".god", ".xcp", ".xvc", ".msixvc",
 		".appx", ".appxbundle", ".msix", ".msixbundle", ".a26", ".a52", ".a78", ".jag", ".j64",
 		".rom", ".lnx", ".lyx", ".atr", ".atx", ".xfd", ".car", ".cas", ".st",

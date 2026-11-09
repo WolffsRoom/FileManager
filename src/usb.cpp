@@ -133,7 +133,7 @@ int32_t usb::Toggle(Device device)
 		Stop();
 		return error;
 	}
-	res = sceUsbstorVStorSetDeviceInfo("File Manager USB", "0.50");
+	res = sceUsbstorVStorSetDeviceInfo("File Manager USB", "0.60");
 	UsbLog("DeviceInfo", res);
 	if (res >= 0)
 	{
