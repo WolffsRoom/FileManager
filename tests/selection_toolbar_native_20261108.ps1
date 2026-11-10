@@ -21,7 +21,7 @@ $button=$listItem.image_button
 if (@($button.plane | Where-Object id -eq 'plane_list_item_check').Count -ne 0) {throw 'Checkbox still clipped inside file button'}
 if (@($listItem.plane | Where-Object id -eq 'plane_list_item_check').Count -ne 1) {throw 'Checkbox not a single overlay beside file button'}
 $box=@($listItem.plane | Where-Object id -eq 'plane_list_item_check')[0]
-if ($box.texture -ne 'tex_checkbox_off' -or $box.layout_hint.pos -ne '401, 0' -or $box.layout_hint.size -ne '72, 72') {throw 'Settings switch overlay needs correct size and right edge'}
+if ($box.texture -ne '_common_texture_transparent' -or $box.layout_hint.pos -ne '401, 0' -or $box.layout_hint.size -ne '72, 72') {throw 'Settings switch overlay must start transparent at the correct size and right edge'}
 foreach($text in @('msg_select_all','msg_opt_copy','msg_opt_move','msg_opt_delete')) {
  if (-not $browser.Contains('g_appPlugin->GetString('+$text+')')) {throw ('Missing button label '+$text)}
 }

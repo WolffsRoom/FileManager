@@ -498,6 +498,9 @@
     <style_plane color="0.08, 0.08, 0.10, 0.92" planeobj="plane_obj1" id="style_plane_selection_bar">
       <planeobj id="plane_obj1" />
     </style_plane>
+    <style_plane color="0.20, 0.58, 1, 0" planeobj="plane_obj1" id="style_plane_selection_mark">
+      <planeobj id="plane_obj1" />
+    </style_plane>
     <style_plane color="1, 1, 1, 0.94" planeobj="plane_obj1" id="style_plane_glyph">
       <planeobj id="plane_obj1" />
     </style_plane>
@@ -659,6 +662,9 @@
     <template fast_open="1" id="template_list_item_file">
       <list_item style="style_list_view_item_generic" id="list_item_file">
         <layout_hint size="960, 80" />
+        <plane style="style_plane_selection_mark" id="plane_list_item_mark">
+          <layout_hint size="840, 76" />
+        </plane>
         <image_button sound="_common_sound_image_button" enable_long_press_text_auto_scroll="1" style="style_image_button_list_button" id="image_button_list_item">
           <focus_hint focus_shape="3" />
           <layout_hint size="840, 80" />
@@ -666,11 +672,11 @@
             <layout_hint anchor="2, 0" align="2, 0" size="260, 40" pos="-24, 0" />
           </text>
 		  <plane texture="_common_texture_transparent" id="plane_theme_preview">
-			<layout_hint size="92, 64" pos="-369, 0" />
+			<layout_hint size="91.8, 63" pos="-364.1, 0" />
 		  </plane>
         </image_button>
         <!-- Checkbox must be outside image_button label clipping. -->
-        <plane style="_common_default_style_plane" texture="tex_checkbox_off" id="plane_list_item_check">
+        <plane style="_common_default_style_plane" texture="_common_texture_transparent" id="plane_list_item_check">
           <layout_hint size="72, 72" pos="401, 0" />
         </plane>
       </list_item>

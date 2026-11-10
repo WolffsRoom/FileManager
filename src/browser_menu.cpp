@@ -545,6 +545,11 @@ void BrowserMenu::SetSearchVisible(bool visible)
 		m_search->Show(common::transition::Type_Reset);
 		page->list->SetSize(960.0f, 368.0f, 0.0f);
 		page->list->SetPos(0.0f, -232.0f, 0.0f);
+		if (page->cellCount > 0)
+		{
+			page->focused = 0;
+			page->list->SetFocus(0, 0, ui::ListView::FOCUS_ALIGN_TYPE_HEAD, NULL);
+		}
 		m_search->SetFocusedState(true);
 		m_search->BeginEdit();
 	}
@@ -568,13 +573,6 @@ void BrowserMenu::ToggleSearch()
 	if (!page->loaded || fs::IsRootStyle(page->path))
 	{
 		return;
-	}
-	if (!m_searchVisible && page->cellCount > 0)
-	{
-		// Move to the head *before* opening the search keyboard.
-		// Previously the filter inherited an arbitrary scroll offset.
-		page->list->SetFocus(0, 0, ui::ListView::FOCUS_ALIGN_TYPE_HEAD, NULL);
-		page->focused = 0;
 	}
 	if (m_searchVisible)
 	{
@@ -945,10 +943,10 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 	if (!page || !button || index < 0 || index >= (int32_t)page->entries.size()) return;
 	fs::Entry *entry = page->entries.at(index);
 	const bool marked = entry->marked;
-	// Native focus owns the moving cursor. A separate cyan tint keeps marked
-	// rows visible after that cursor leaves and is reset on every recycled row.
-	button->SetColor(marked ? 0.62f : 1.0f, marked ? 0.88f : 1.0f,
-		marked ? 1.0f : 1.0f, 1.0f);
+	// Native focus owns the moving cursor. The sibling plane is independent
+	// from ImageButton's focus animation, so a mark stays blue after focus moves.
+	ui::Widget *mark = button->GetParent()->FindChild(plane_list_item_mark);
+	if (mark) mark->SetColor(0.20f, 0.58f, 1.0f, marked ? 0.42f : 0.0f);
 	button->SetFocusedState(index == page->focused);
 }
 

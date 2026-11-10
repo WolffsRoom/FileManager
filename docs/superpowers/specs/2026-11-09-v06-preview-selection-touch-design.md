@@ -14,6 +14,7 @@ Corrigir as interações reportadas no hardware e aproximar os previews da lingu
 - O seek converte o tempo escolhido para a posição real esperada pelos decodificadores MP3/OGG.
 - Ao abrir a busca, a geometria da lista muda antes de ela ser alinhada ao primeiro item.
 - A seleção usa uma camada azul fixa própria, independente da animação de foco, e nenhum checkbox é mostrado.
+- Arquivos podem exibir uma segunda linha `TIPO · DD/MM/AAAA · HH:MM`, derivada da extensão e do horário de modificação já carregado. Pastas não exibem detalhes. A opção persistente “Mostrar detalhes”, ligada por padrão, controla essa linha.
 
 ## Referência investigada
 

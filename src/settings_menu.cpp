@@ -320,6 +320,9 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 
 	ui::Widget *button = item->FindChild(image_button_list_item);
 	button->SetName(row);
+	// The switch sits at x=401 with a 72 px hit area. Settings rows extend the
+	// touch target over it while browser rows retain their original width.
+	button->SetSize(920.0f, 80.0f, 0.0f);
 
 	paf::wstring label, info;
 	uint32_t icon = tex_new_settings;

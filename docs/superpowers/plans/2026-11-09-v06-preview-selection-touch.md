@@ -47,7 +47,7 @@
 - [ ] Reordenar abertura da busca para redimensionar primeiro e focar o primeiro item depois.
 - [ ] Rodar regressões relacionadas e fazer commit.
 
-### Task 2: Transparência configurável dos overlays
+### Task 2: Transparência e detalhes configuráveis
 
 **Files:**
 - Modify: `src/settings.h`
@@ -56,17 +56,20 @@
 - Modify: `src/settings_menu.cpp`
 - Modify: `src/preview_menu.cpp`
 - Modify: `src/music_menu.cpp`
+- Modify: `src/browser_menu.cpp`
 - Modify: `resource/file_manager_plugin.xml`
 - Modify: `resource/locale/{pt,en,es,fr,de}.xml`
 - Test: `tests/v06_preview_transparency.ps1`
 
 **Interfaces:**
-- Produces: `Config::previewOpacity`, persistido como percentual inteiro seguro; `settings::PreviewOpacity()` retorna alpha normalizado.
+- Produces: `Config::previewOpacity`, persistido como percentual inteiro seguro; `settings::PreviewOpacity()` retorna alpha normalizado; `Config::showDetails` controla a segunda linha dos arquivos.
 
 - [ ] Escrever regressões de default, limites, persistência, slider nativo e aplicação somente a imagem/música.
 - [ ] Confirmar RED.
 - [ ] Adicionar configuração com default legível e clamp na carga.
 - [ ] Adicionar a entrada Transparência em Settings e uma página com `ProgressBarTouch`, rótulo percentual e callbacks de mudança.
+- [ ] Adicionar “Mostrar detalhes” como switch persistente, ligado por padrão.
+- [ ] Formatar arquivos como `TIPO · DD/MM/AAAA · HH:MM`, sem detalhes em pastas, respeitando `showDetails`.
 - [ ] Trocar fundos opacos de imagem e música por camadas overlay que recebem `PreviewOpacity()`.
 - [ ] Confirmar GREEN e regressões de Settings/preview; fazer commit.
 
