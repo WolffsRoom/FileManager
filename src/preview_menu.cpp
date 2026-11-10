@@ -20,6 +20,7 @@ extern "C" int sceAvPlayerStart(SceAvPlayerHandle handle);
 
 #include "common.h"
 #include "dialog.h"
+#include "settings.h"
 #include "preview_menu.h"
 #include "option_menu.h"
 #include "text_input.h"
@@ -302,6 +303,7 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 
 	m_parentRoot->SetActivate(false);
 
+	m_background = m_root->FindChild(plane_black_page_preview);
 	m_plane = m_root->FindChild(plane_image_page_preview);
 	m_busy = static_cast<ui::BusyIndicator *>(m_root->FindChild(busyindicator_page_preview));
 	m_title = static_cast<ui::Text *>(m_root->FindChild(text_title_page_preview));
@@ -560,6 +562,8 @@ void PreviewMenu::Open(int32_t index)
 	m_error->Hide(common::transition::Type_Reset);
 
 	const paf::string &path = m_paths.at(index);
+	const float overlayAlpha = IsVideo(path.c_str()) ? 1.0f : settings::PreviewOpacity();
+	m_background->SetColor(0.0f, 0.0f, 0.0f, overlayAlpha);
 
 	const char *slash = strrchr(path.c_str(), '/');
 	paf::wstring title;

@@ -132,6 +132,12 @@
       <text style="style_text_shortcuts_empty" id="text_shortcuts_empty_page_settings">
         <layout_hint size="850, 148" pos="0, -8" />
       </text>
+      <progressbar_touch style="style_progressbar_touch_native" label_mode="2" id="progressbar_preview_opacity_page_settings">
+        <layout_hint size="620, 24" pos="0, 10" />
+      </progressbar_touch>
+      <text style="style_text_empty" id="text_preview_opacity_page_settings">
+        <layout_hint size="860, 48" pos="0, 70" />
+      </text>
       <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_settings" />
     </page>
     <page id="page_ftp">
@@ -513,6 +519,15 @@
     <style_plane color="1, 1, 1, 0.58" planeobj="plane_obj1" id="style_plane_index_icon">
       <planeobj id="plane_obj1" />
     </style_plane>
+    <style_progressbar_touch base_obj="plane_obj1" bar_fore_obj="plane_obj2" bar_back_obj="plane_obj3"
+      slider_obj="plane_obj4" slider_glow_obj="plane_obj5" glow_obj="plane_obj6" id="style_progressbar_touch_native">
+      <planeobj color="1, 1, 1, 0.18" id="plane_obj1" />
+      <planeobj color="0.32, 0.72, 1, 1" id="plane_obj2" />
+      <planeobj color="1, 1, 1, 0.10" id="plane_obj3" />
+      <planeobj color="0.72, 0.90, 1, 1" size="28, 28" id="plane_obj4" />
+      <planeobj color="0.45, 0.80, 1, 0.55" size="40, 40" blend="2" id="plane_obj5" />
+      <planeobj color="0.45, 0.80, 1, 0.25" blend="2" id="plane_obj6" />
+    </style_progressbar_touch>
     <style_plane color="1, 1, 1, 0.20" planeobj="plane_obj1" id="style_plane_qr_frame">
       <planeobj id="plane_obj1" />
     </style_plane>

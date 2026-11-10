@@ -25,10 +25,10 @@ namespace {
 	}
 
 	// Main level rows
-	enum MainRow { Main_Themes, Main_FontSize, Main_Language, Main_Select, Main_AutoDecrypt, Main_Navigation, Main_Shortcuts, Main_Commands, Main_About, Main_Count };
+	enum MainRow { Main_Themes, Main_FontSize, Main_PreviewOpacity, Main_ShowDetails, Main_Language, Main_Select, Main_AutoDecrypt, Main_Navigation, Main_Shortcuts, Main_Commands, Main_About, Main_Count };
 
-	const uint32_t k_mainLabels[Main_Count] = { msg_set_themes, msg_set_font_size, msg_set_language, msg_set_select, msg_set_auto_decrypt, msg_set_navigation, msg_set_shortcuts, msg_set_commands, msg_set_about };
-	const uint32_t k_mainIcons[Main_Count] = { tex_new_theme, tex_ui_text, tex_ui_text, tex_ui_ftp, tex_ui_encrypted, tex_ui_anim_options, tex_ui_bookmark, tex_new_gears, tex_about };
+	const uint32_t k_mainLabels[Main_Count] = { msg_set_themes, msg_set_font_size, msg_set_preview_opacity, msg_set_show_details, msg_set_language, msg_set_select, msg_set_auto_decrypt, msg_set_navigation, msg_set_shortcuts, msg_set_commands, msg_set_about };
+	const uint32_t k_mainIcons[Main_Count] = { tex_new_theme, tex_ui_text, tex_ui_image, tex_ui_text, tex_ui_text, tex_ui_ftp, tex_ui_encrypted, tex_ui_anim_options, tex_ui_bookmark, tex_new_gears, tex_about };
 
 	const uint32_t k_languages[] = { msg_lang_system, msg_lang_ptbr, msg_lang_en, msg_lang_es, msg_lang_fr, msg_lang_de };
 	const uint32_t k_selectFunctions[] = { msg_ftp_server, msg_qr_code, msg_usb };
@@ -124,6 +124,17 @@ SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *user
 	m_fontPreview = m_root->FindChild(text_font_preview_page_settings);
 	m_fontPreview->SetString(Str(msg_font_preview));
 	m_fontPreview->Hide(common::transition::Type_Reset);
+	m_opacitySlider = static_cast<ui::ProgressBarTouch *>(m_root->FindChild(progressbar_preview_opacity_page_settings));
+	m_opacityLabel = static_cast<ui::Text *>(m_root->FindChild(text_preview_opacity_page_settings));
+	m_opacitySlider->SetMinValue(25);
+	m_opacitySlider->SetMaxValue(90);
+	m_opacitySlider->AddEventCallback(ui::ProgressBarTouch::CB_PROGRESSBAR_CHANGED,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		reinterpret_cast<SettingsMenu *>(userdata)->OnOpacityChanged();
+	}, this);
+	m_opacitySlider->Hide(common::transition::Type_Reset);
+	m_opacityLabel->Hide(common::transition::Type_Reset);
 	m_list = static_cast<ui::ListView *>(m_root->FindChild(list_view_page_settings));
 	m_list->SetItemFactory(new ListViewCb(this));
 	m_list->InsertSegment(0, 1);
@@ -206,6 +217,8 @@ int32_t SettingsMenu::RowCount(Level level)
 	case Level_Main: return Main_Count;
 	case Level_Themes: return theme::Count();
 	case Level_FontSize: return 3;
+	case Level_PreviewOpacity: return 0;
+	case Level_ShowDetails: return 2;
 	case Level_Language: return sizeof(k_languages) / sizeof(k_languages[0]);
 	case Level_Select: return 3;
 	case Level_UsbDevice: return 4;
@@ -255,6 +268,20 @@ void SettingsMenu::ShowLevel(Level level)
 		UpdateFontPreview();
 	}
 	else m_fontPreview->Hide(common::transition::Type_Reset);
+	if (level == Level_PreviewOpacity)
+	{
+		m_list->Hide(common::transition::Type_Reset);
+		m_opacitySlider->SetValue(settings::Get().previewOpacity, false);
+		m_opacitySlider->Show(common::transition::Type_Reset);
+		m_opacityLabel->Show(common::transition::Type_Reset);
+		UpdateOpacityLabel();
+	}
+	else
+	{
+		m_list->Show(common::transition::Type_Reset);
+		m_opacitySlider->Hide(common::transition::Type_Reset);
+		m_opacityLabel->Hide(common::transition::Type_Reset);
+	}
 
 	if (level == Level_Shortcuts)
 	{
@@ -267,7 +294,7 @@ void SettingsMenu::ShowLevel(Level level)
 		}
 	}
 
-	static const uint32_t k_titles[] = { msg_opt_settings, msg_set_themes, msg_set_font_size, msg_set_language, msg_set_select, msg_usb_device, msg_set_auto_decrypt, msg_set_navigation, msg_set_shortcuts, msg_set_commands };
+	static const uint32_t k_titles[] = { msg_opt_settings, msg_set_themes, msg_set_font_size, msg_set_preview_opacity, msg_set_show_details, msg_set_language, msg_set_select, msg_usb_device, msg_set_auto_decrypt, msg_set_navigation, msg_set_shortcuts, msg_set_commands };
 	m_root->FindChild(text_top)->SetString(Str(k_titles[level]));
 
 	if (level == Level_Shortcuts && m_shortcuts.empty())
@@ -288,6 +315,7 @@ bool SettingsMenu::IsSelected(int32_t row)
 	{
 	case Level_Themes: return c.theme == row;
 	case Level_FontSize: return c.fontSize == row;
+	case Level_ShowDetails: return c.showDetails == row;
 	case Level_Language: return c.language == row;
 	case Level_Select: return c.selectFunction == row;
 	case Level_UsbDevice: return c.usbDevice == row;
@@ -301,7 +329,7 @@ bool SettingsMenu::IsSelected(int32_t row)
 
 bool SettingsMenu::ShowsToggle() const
 {
-	return m_level != Level_Main && m_level != Level_Commands;
+	return m_level != Level_Main && m_level != Level_Commands && m_level != Level_PreviewOpacity;
 }
 
 ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &param)
@@ -330,10 +358,14 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 
 	switch (m_level)
 	{
+	case Level_PreviewOpacity:
+		break;
 	case Level_Main:
 		label = Str(k_mainLabels[row]);
 		icon = k_mainIcons[row];
 		if (row == Main_FontSize) icon = tex_ui_font_size;
+		else if (row == Main_PreviewOpacity) icon = tex_ui_image;
+		else if (row == Main_ShowDetails) icon = tex_ui_text;
 		else if (row == Main_Language) icon = tex_ui_language;
 		else if (row == Main_Select) icon = c.selectFunction == 2 ? tex_ui_usb :
 			(c.selectFunction == 1 ? tex_ui_qr : tex_ui_ftp);
@@ -342,6 +374,8 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		else if (row == Main_Shortcuts) icon = tex_ui_favorite_folder;
 		if (row == Main_Themes) info = Str(theme::At(c.theme).nameHash);
 		else if (row == Main_FontSize) info = Str(k_fontSizes[c.fontSize]);
+		else if (row == Main_PreviewOpacity) info = Wide(common::FormatString("%d%%", c.previewOpacity).c_str());
+		else if (row == Main_ShowDetails) info = Str(k_enabled[c.showDetails]);
 		else if (row == Main_Language) info = Str(k_languages[c.language]);
 		else if (row == Main_Select)
 		{
@@ -363,6 +397,10 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	case Level_FontSize:
 		label = Str(k_fontSizes[row]);
 		icon = tex_ui_font_size;
+		break;
+	case Level_ShowDetails:
+		label = Str(k_enabled[row]);
+		icon = tex_ui_text;
 		break;
 	case Level_Language:
 		label = Str(k_languages[row]);
@@ -513,6 +551,25 @@ void SettingsMenu::UpdateFontPreview()
 	m_fontPreview->SetScale(scale, scale, 1.0f);
 }
 
+void SettingsMenu::UpdateOpacityLabel()
+{
+	if (!m_opacityLabel) return;
+	paf::string format;
+	common::Utf16ToUtf8(paf::wstring(g_appPlugin->GetString(msg_preview_opacity_hint)), &format);
+	paf::string value = common::FormatString(format.c_str(), settings::Get().previewOpacity);
+	m_opacityLabel->SetString(Wide(value.c_str()));
+}
+
+void SettingsMenu::OnOpacityChanged()
+{
+	int32_t value = (int32_t)(m_opacitySlider->GetValue() + 0.5f);
+	if (value < 25) value = 25;
+	if (value > 90) value = 90;
+	settings::Get().previewOpacity = value;
+	settings::Save();
+	UpdateOpacityLabel();
+}
+
 void SettingsMenu::OnRow(int32_t row)
 {
 	settings::Config &c = settings::Get();
@@ -528,9 +585,13 @@ void SettingsMenu::OnRow(int32_t row)
 	}
 	switch (m_level)
 	{
+	case Level_PreviewOpacity:
+		return;
 	case Level_Main:
 		if (row == Main_Themes) QueueLevel(Level_Themes);
 		else if (row == Main_FontSize) QueueLevel(Level_FontSize);
+		else if (row == Main_PreviewOpacity) QueueLevel(Level_PreviewOpacity);
+		else if (row == Main_ShowDetails) QueueLevel(Level_ShowDetails);
 		else if (row == Main_Language) QueueLevel(Level_Language);
 		else if (row == Main_Select) QueueLevel(Level_Select);
 		else if (row == Main_AutoDecrypt) QueueLevel(Level_AutoDecrypt);
@@ -546,6 +607,9 @@ void SettingsMenu::OnRow(int32_t row)
 	case Level_FontSize:
 		c.fontSize = row;
 		UpdateFontPreview();
+		break;
+	case Level_ShowDetails:
+		c.showDetails = row;
 		break;
 	case Level_Language:
 		c.language = row;

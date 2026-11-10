@@ -52,6 +52,7 @@ private:
 	void *m_userdata;
 	bool m_filesChanged;
 	paf::ui::Scene *m_root;
+	paf::ui::Widget *m_background;
 	paf::ui::Widget *m_plane;
 	paf::ui::BusyIndicator *m_busy;
 	paf::ui::Text *m_title;

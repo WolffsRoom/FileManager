@@ -36,6 +36,7 @@ private:
 
 	paf::ui::Widget *m_parentRoot;
 	paf::ui::Scene *m_root;
+	paf::ui::Widget *m_background;
 	paf::ui::Widget *m_cover;
 	paf::ui::Widget *m_title;
 	paf::ui::Widget *m_artist;

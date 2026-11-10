@@ -59,7 +59,10 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	m_root = g_appPlugin->PageOpen(page_music, openParam);
 	m_parentRoot->SetActivate(false);
 
-	theme::ApplyBackground(m_root->FindChild(plane_base_bg_page_music));
+	m_background = m_root->FindChild(plane_base_bg_page_music);
+	theme::ApplyBackground(m_background);
+	const theme::Info &overlayTheme = theme::At(settings::Get().theme);
+	m_background->SetColor(overlayTheme.bg[0], overlayTheme.bg[1], overlayTheme.bg[2], settings::PreviewOpacity());
 	SetText(m_root->FindChild(text_top), Utf8(msg_music_title).c_str());
 
 	m_cover = m_root->FindChild(plane_cover_page_music);

@@ -89,6 +89,9 @@
   <string src="Installed (%s). It is now on the home screen." id="msg_install_done" />
   <string src="Themes" id="msg_set_themes" />
   <string src="Schriftgröße" id="msg_set_font_size" />
+  <string src="Vorschautransparenz" id="msg_set_preview_opacity" />
+  <string src="Details anzeigen" id="msg_set_show_details" />
+  <string src="Deckkraft: %d%%" id="msg_preview_opacity_hint" />
   <string src="The quick brown fox jumps over the lazy dog." id="msg_font_preview" />
   <string src="Small" id="msg_font_small" />
   <string src="Normal" id="msg_font_normal" />

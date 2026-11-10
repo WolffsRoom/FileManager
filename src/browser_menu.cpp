@@ -141,6 +141,27 @@ namespace {
 		default:               return tex_ui_file;
 		}	}
 
+	paf::string FileDetails(const fs::Entry *entry)
+	{
+		if (entry->isDir || !settings::Get().showDetails) return paf::string();
+		char type[16] = "FILE";
+		const char *dot = strrchr(entry->name.c_str(), '.');
+		if (dot && dot[1])
+		{
+			uint32_t i = 0;
+			for (++dot; *dot && i + 1 < sizeof(type); ++dot)
+				type[i++] = (char)toupper((unsigned char)*dot);
+			type[i] = 0;
+		}
+		const uint32_t year = (uint32_t)(entry->modified >> 48) & 0xFFFF;
+		const uint32_t month = (uint32_t)(entry->modified >> 40) & 0xFF;
+		const uint32_t day = (uint32_t)(entry->modified >> 32) & 0xFF;
+		const uint32_t hour = (uint32_t)(entry->modified >> 24) & 0xFF;
+		const uint32_t minute = (uint32_t)(entry->modified >> 16) & 0xFF;
+		return common::FormatString("%s - %02u/%02u/%04u - %02u:%02u",
+			type, day, month, year, hour, minute);
+	}
+
 	bool Previewable(const fs::Entry *entry)
 	{
 		if (entry->kind == fs::Kind_Image)
@@ -960,11 +981,7 @@ void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 		labelObj->SetStyleAttribute(graph::TextStyleAttribute_Point, 0, label.size(), settings::FileFontSize());
 	}
 
-	paf::wstring infoWide;
-	if (!entry->isDir)
-	{
-		infoWide = ToWide(format::Size(entry->size));
-	}
+	paf::wstring infoWide = ToWide(FileDetails(entry));
 	button->FindChild(text_list_item_info)->SetString(infoWide);
 
 	// Browser marks deliberately use the same native highlighted state as the

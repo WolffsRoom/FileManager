@@ -28,9 +28,12 @@ namespace settings {
 		int32_t autoDecrypt;     // mount protected application data automatically
 		int32_t sortMode;        // 0 name, 1 date, 2 type
 		int32_t navigation3D;    // 1 original Vita 3D, 0 simple fade
+		int32_t previewOpacity; // 25..90 percent; image/music overlay background
+		int32_t showDetails;     // file type and modification date below file names
 	};
 
 	float FileFontSize();
+	float PreviewOpacity();
 
 	void Load();
 

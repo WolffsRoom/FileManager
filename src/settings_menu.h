@@ -20,6 +20,8 @@ public:
 		Level_Main,
 		Level_Themes,
 		Level_FontSize,
+		Level_PreviewOpacity,
+		Level_ShowDetails,
 		Level_Language,
 		Level_Select,
 		Level_UsbDevice,
@@ -76,6 +78,8 @@ private:
 	bool ShowsToggle() const;
 	void UpdateChecks();
 	void UpdateFontPreview();
+	void UpdateOpacityLabel();
+	void OnOpacityChanged();
 	void StartSwitchAnimation(int32_t oldRow, int32_t newRow);
 
 	paf::ui::Widget *m_parentRoot;
@@ -83,6 +87,8 @@ private:
 	paf::ui::Widget *m_emptyShortcuts;
 	paf::ui::Widget *m_powerBar;
 	paf::ui::Widget *m_fontPreview;
+	paf::ui::ProgressBarTouch *m_opacitySlider;
+	paf::ui::Text *m_opacityLabel;
 	bool m_levelQueued;
 	Level m_queuedLevel;
 	int32_t m_pendingPower;

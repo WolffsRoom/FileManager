@@ -89,6 +89,9 @@
   <string src="Installed (%s). It is now on the home screen." id="msg_install_done" />
   <string src="Themes" id="msg_set_themes" />
   <string src="Taille de la police" id="msg_set_font_size" />
+  <string src="Transparence de l'aperçu" id="msg_set_preview_opacity" />
+  <string src="Afficher les détails" id="msg_set_show_details" />
+  <string src="Opacité : %d%%" id="msg_preview_opacity_hint" />
   <string src="The quick brown fox jumps over the lazy dog." id="msg_font_preview" />
   <string src="Small" id="msg_font_small" />
   <string src="Normal" id="msg_font_normal" />
