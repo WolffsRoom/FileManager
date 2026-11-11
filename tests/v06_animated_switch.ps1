@@ -15,7 +15,7 @@ if ($cpp -notmatch '25000ULL') { throw 'Switch animation does not step every 25 
 if ($cpp -notmatch 'if \(m_switchAnimating\) return;') { throw 'Repeated switch input is not guarded' }
 if ($cpp -notmatch 'm_switchFrame >= 16') { throw 'Switch animation does not stop on its terminal frame' }
 if ($cpp -notmatch 'k_switchOnOff\[m_switchFrame\]' -or $cpp -notmatch 'k_switchOffOn\[m_switchFrame\]') { throw 'Both on-to-off and off-to-on directions are not rendered' }
-if ($cpp -notmatch 'if \(IsSelected\(row\)\) return;' -or $cpp.IndexOf('if (m_switchAnimating) return;') -gt $cpp.IndexOf('settings::Save();')) { throw 'Switch guard does not precede settings mutation' }
+if ($cpp -notmatch 'if \(IsSelected\(row\) && !customToggle\) return;' -or $cpp.IndexOf('if (m_switchAnimating) return;') -gt $cpp.IndexOf('settings::Save();')) { throw 'Switch guard does not precede settings mutation' }
 if ($cpp -notmatch 'm_switchAnimating = false;[\s\S]{0,100}m_switchOldRow = -1') { throw 'Page rebuild does not cancel stale switch animation rows' }
 $template = $rco.resource.templatetable.template | Where-Object id -eq 'template_list_item_file'
 $check = $template.list_item.plane | Where-Object id -eq 'plane_list_item_check'

@@ -907,6 +907,8 @@ bool PreviewMenu::StartVideo(const char *path)
 			if (info.duration > m_duration) m_duration = info.duration;
 		}
 	}
+	int32_t started = sceAvPlayerStart(m_player);
+	VideoLog("sceAvPlayerStart: 0x%08X", started);
 
 	s_audioPlayer = m_player;
 	s_audioRun = true;

@@ -61,6 +61,8 @@ private:
 	bool m_closing;
 	bool m_seekChanging;
 	bool m_minimized;
+	bool m_minimizePending;
+	int32_t m_minimizeFrames;
 };
 
 #endif

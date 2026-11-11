@@ -49,7 +49,7 @@ namespace {
 }
 
 MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &paths, int32_t index) :
-	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false), m_seekChanging(false), m_minimized(false)
+	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false), m_seekChanging(false), m_minimized(false), m_minimizePending(false), m_minimizeFrames(0)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -287,14 +287,12 @@ void MusicMenu::OpenInMusic()
 
 void MusicMenu::ListenInBackground()
 {
-	if (m_closing || m_minimized) return;
-	m_minimized = true;
-	s_minimizedPlayer = this;
-	m_cover->SetPos(-375.0f, 208.0f, 0.0f, new Timer(0.28f, Timer::FUNC_SINE_INOUT));
-	m_cover->SetScale(0.18f, 0.18f, 1.0f, new Timer(0.28f, Timer::FUNC_SINE_INOUT));
+	if (m_closing || m_minimized || m_minimizePending) return;
+	m_minimizePending = true;
+	m_minimizeFrames = 22;
+	m_cover->SetPos(-375.0f, 208.0f, 0.0f, new Timer(0.38f, Timer::FUNC_SINE_INOUT));
+	m_cover->SetScale(0.13f, 0.13f, 1.0f, new Timer(0.38f, Timer::FUNC_SINE_INOUT));
 	m_root->SetActivate(false);
-	m_root->Hide(common::transition::Type_FadeinFast);
-	m_parentRoot->SetActivate(true);
 }
 
 void MusicMenu::OnOptions()
@@ -346,16 +344,26 @@ void MusicMenu::RestoreMinimized()
 	s_minimizedPlayer = NULL;
 	menu->m_minimized = false;
 	menu->m_parentRoot->SetActivate(false);
-	menu->m_root->Show(common::transition::Type_FadeinFast);
+	menu->m_root->SetColor(1.0f, 1.0f, 1.0f, 0.0f);
+	menu->m_root->Show(common::transition::Type_Reset);
+	menu->m_root->SetColor(1.0f, 1.0f, 1.0f, 1.0f, new Timer(0.42f, Timer::FUNC_SINE_OUT));
 	menu->m_cover->SetPos(-375.0f, 208.0f, 0.0f);
-	menu->m_cover->SetScale(0.18f, 0.18f, 1.0f);
-	menu->m_cover->SetPos(-260.0f, 6.0f, 0.0f, new Timer(0.32f, Timer::FUNC_SINE_INOUT));
-	menu->m_cover->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.32f, Timer::FUNC_SINE_INOUT));
+	menu->m_cover->SetScale(0.13f, 0.13f, 1.0f);
+	menu->m_cover->SetPos(-260.0f, 6.0f, 0.0f, new Timer(0.42f, Timer::FUNC_SINE_INOUT));
+	menu->m_cover->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.42f, Timer::FUNC_SINE_INOUT));
 	menu->m_root->SetActivate(true);
 }
 
 void MusicMenu::Update()
 {
+	if (m_minimizePending && --m_minimizeFrames <= 0)
+	{
+		m_minimizePending = false;
+		m_minimized = true;
+		s_minimizedPlayer = this;
+		m_root->Hide(common::transition::Type_Reset);
+		m_parentRoot->SetActivate(true);
+	}
 	if (!m_playing || m_frame++ % 15 != 0)
 	{
 		return;

@@ -31,6 +31,7 @@ namespace settings {
 		int32_t previewOpacity; // 25..90 percent; image/music overlay background
 		int32_t showDetails;     // file type and modification date below file names
 		int32_t showVpkIcons;    // extract and show the package bubble in file lists
+		int32_t customBackground; // combine the selected theme with custom PNGs
 	};
 
 	float FileFontSize();

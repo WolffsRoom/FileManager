@@ -1013,12 +1013,9 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 	if (check)
 	{
 		check->SetActivate(false);
-		if (marked)
-		{
-			check->SetTexture(g_appPlugin->GetTexture(tex_checkbox_on), 0, 0);
-			check->Show(common::transition::Type_Popup1);
-		}
-		else check->Hide(common::transition::Type_Reset);
+		check->SetTexture(g_appPlugin->GetTexture(tex_checkbox_on), 0, 0);
+		check->SetColor(1.0f, 1.0f, 1.0f, marked ? 1.0f : 0.0f);
+		check->Show(common::transition::Type_Reset);
 	}
 	button->SetFocusedState(index == page->focused);
 }

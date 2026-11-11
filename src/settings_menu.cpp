@@ -317,7 +317,7 @@ bool SettingsMenu::IsSelected(int32_t row)
 	settings::Config &c = settings::Get();
 	switch (m_level)
 	{
-	case Level_Themes: return c.theme == row;
+	case Level_Themes: return row == (int32_t)theme::CustomIndex() ? c.customBackground != 0 : c.theme == row;
 	case Level_FontSize: return c.fontSize == row;
 	case Level_ShowDetails: return c.showDetails == row;
 	case Level_ShowVpkIcons: return c.showVpkIcons == row;
@@ -576,7 +576,8 @@ void SettingsMenu::OnRow(int32_t row)
 	if (ShowsToggle())
 	{
 		if (m_switchAnimating) return;
-		if (IsSelected(row)) return;
+		const bool customToggle = m_level == Level_Themes && row == (int32_t)theme::CustomIndex();
+		if (IsSelected(row) && !customToggle) return;
 		for (int32_t i = 0; i < m_rows; ++i)
 		{
 			if (IsSelected(i)) { oldRow = i; break; }
@@ -601,7 +602,8 @@ void SettingsMenu::OnRow(int32_t row)
 		else new AboutMenu(m_root);
 		return;
 	case Level_Themes:
-		c.theme = row;
+		if (row == (int32_t)theme::CustomIndex()) c.customBackground = !c.customBackground;
+		else c.theme = row;
 		theme::ApplyBackground(m_root->FindChild(plane_base_bg_page_settings));
 		break;
 	case Level_FontSize:
@@ -646,5 +648,6 @@ void SettingsMenu::OnRow(int32_t row)
 	}
 	settings::Save();
 	UpdateChecks();
-	if (ShowsToggle()) StartSwitchAnimation(oldRow, row);
+	if (ShowsToggle() && !(m_level == Level_Themes && row == (int32_t)theme::CustomIndex()))
+		StartSwitchAnimation(oldRow, row);
 }

@@ -8,7 +8,7 @@ $bheader=Get-Content -Raw "$root/src/browser_menu.h"
 $pfs=Get-Content -Raw "$root/src/core/pfs.c"
 $legacy=Get-Content -Raw "$root/legacy/pfs.c"
 if ($cfg -notmatch 'navigation_3d=%d' -or $cfg -notmatch 'navigation3D = v' -or
-    $cfg -notmatch 'settings::Config s_config = \{[^\r\n]*, 1 \};') {
+    $cfg -notmatch 'settings::Config s_config = \{ 0, settings::View_List, 0, 0, -1, 1, 1, 0, 1, 70, 1, 1, 0 \};') {
     throw '3D navigation must persist and default enabled'
 }
 if ($menu -notmatch 'Level_Navigation' -or $menu -notmatch 'Main_Navigation' -or

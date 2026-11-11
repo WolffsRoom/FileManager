@@ -14,6 +14,8 @@ if ($video -notmatch 'haveVideo' -or $video -notmatch 'sceAvPlayerDisableStream'
 if ($menu -notmatch 'Main_ShowVpkIcons' -or $browser -notmatch 'showVpkIcons' -or $browser -notmatch 'makeBubblePng') { throw 'Configurable VPK bubble icons missing' }
 if ($browser -notmatch '122\.4f, 84\.0f') { throw 'VPK icons are not 20 percent larger' }
 if ($browser -notmatch 'BrowserMenu::VpkIcon' -or $browser -notmatch 'm_vpkIcons') { throw 'VPK icons are not cached for the browser session' }
+if ($browser -notmatch 'tex_checkbox_on' -or $browser -notmatch 'marked \? 1\.0f : 0\.0f') { throw 'Selected rows do not expose a native checkbox' }
+if ($settings -notmatch 'customBackground' -or $settings -notmatch 'settings::PreviewOpacity\(\)') { throw 'Custom backgrounds cannot combine with theme and preview opacity' }
 if ($music -notmatch 'MinimizedCover' -or $music -notmatch 'SetPos\(-375\.0f, 208\.0f') { throw 'Animated minimized album cover missing' }
 
 [xml]$xml = $rcoRaw

@@ -12,7 +12,7 @@ using namespace paf;
 
 namespace {
 
-	settings::Config s_config = { 0, settings::View_List, 0, 0, -1, 1, 1, 0, 1, 70, 1, 1 };
+	settings::Config s_config = { 0, settings::View_List, 0, 0, -1, 1, 1, 0, 1, 70, 1, 1, 0 };
 
 	const theme::Info k_themes[] = {
 		{ msg_theme_default,  { 0.34f, 0.36f, 0.40f }, { 0.85f, 0.88f, 0.92f } },
@@ -172,6 +172,19 @@ void settings::Load()
 		int32_t v = atoi(p + 15);
 		if (v == 0 || v == 1) s_config.showVpkIcons = v;
 	}
+	p = strstr(buf, "custom_background=");
+	if (p)
+	{
+		int32_t v = atoi(p + 18);
+		if (v == 0 || v == 1) s_config.customBackground = v;
+	}
+	// v0.6 stored Custom as a mutually exclusive theme. Preserve that choice
+	// while moving it to an independent overlay toggle in v0.7.
+	if (s_config.theme == (int32_t)theme::CustomIndex())
+	{
+		s_config.theme = 0;
+		s_config.customBackground = 1;
+	}
 }
 
 void settings::Save()
@@ -182,10 +195,10 @@ void settings::Save()
 		return;
 	}
 	char buf[256];
-	int32_t n = snprintf(buf, sizeof(buf), "theme=%d\nview=%d\nlanguage=%d\nselect=%d\nusb_device=%d\nfont=%d\nauto_decrypt=%d\nsort=%d\nnavigation_3d=%d\npreview_opacity=%d\nshow_details=%d\nshow_vpk_icons=%d\n",
+	int32_t n = snprintf(buf, sizeof(buf), "theme=%d\nview=%d\nlanguage=%d\nselect=%d\nusb_device=%d\nfont=%d\nauto_decrypt=%d\nsort=%d\nnavigation_3d=%d\npreview_opacity=%d\nshow_details=%d\nshow_vpk_icons=%d\ncustom_background=%d\n",
 		(int)s_config.theme, (int)s_config.view, (int)s_config.language, (int)s_config.selectFunction,
 		(int)s_config.usbDevice, (int)s_config.fontSize, (int)s_config.autoDecrypt, (int)s_config.sortMode, (int)s_config.navigation3D,
-		(int)s_config.previewOpacity, (int)s_config.showDetails, (int)s_config.showVpkIcons);
+		(int)s_config.previewOpacity, (int)s_config.showDetails, (int)s_config.showVpkIcons, (int)s_config.customBackground);
 	sceIoWrite(fd, buf, n);
 	sceIoClose(fd);
 }
@@ -247,27 +260,32 @@ void theme::ApplyBackground(ui::Widget *plane)
 	const Info &info = At(index);
 
 	intrusive_ptr<graph::Surface> tex;
-	if (index == CustomIndex())
+	bool customLoaded = false;
+	if (settings::Get().customBackground)
 	{
 		FindBackgrounds();
-		if (!s_backgrounds.empty()) tex = LoadBackground(s_backgrounds.at(0));
+		if (!s_backgrounds.empty())
+		{
+			tex = LoadBackground(s_backgrounds.at(0));
+			customLoaded = tex.get() != NULL;
+		}
 	}
 	if (!tex.get())
 	{
 		// Without a usable image the custom theme falls back to the default look.
-		tex = g_appPlugin->GetTexture(index == CustomIndex() ? tex_common_bg : tex_bg_neutral);
+		tex = g_appPlugin->GetTexture(tex_bg_neutral);
 	}
 
 	if (tex.get())
 	{
 		plane->SetTexture(tex, 0, 0);
 	}
-	plane->SetColor(info.bg[0], info.bg[1], info.bg[2], 1.0f);
+	plane->SetColor(info.bg[0], info.bg[1], info.bg[2], customLoaded ? settings::PreviewOpacity() : 1.0f);
 }
 
 void theme::UpdateBackground(ui::Widget *plane)
 {
-	if (settings::Get().theme != CustomIndex() || s_backgrounds.size() < 2 || !plane)
+	if (!settings::Get().customBackground || s_backgrounds.size() < 2 || !plane)
 		return;
 	uint64_t now = sceKernelGetProcessTimeWide();
 	if (now - s_backgroundTick < 8000000ULL)
