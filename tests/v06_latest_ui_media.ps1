@@ -18,13 +18,6 @@ if ($music -notmatch 'MinimizedCover' -or $music -notmatch 'SetPos\(-375\.0f, 20
 
 [xml]$xml = $rcoRaw
 $template = $xml.resource.templatetable.template | Where-Object id -eq 'template_list_item_file'
-$children = @($template.list_item.ChildNodes | Where-Object NodeType -eq 'Element')
-$buttonIndex = -1
-$markIndex = -1
-for ($i = 0; $i -lt $children.Count; $i++) {
-    if ($children[$i].id -eq 'image_button_list_item') { $buttonIndex = $i }
-    if ($children[$i].id -eq 'plane_list_item_mark') { $markIndex = $i }
-}
-if ($markIndex -le $buttonIndex) { throw 'Persistent selection mark is still behind the row background' }
+if ($template.list_item.plane | Where-Object id -eq 'plane_list_item_mark') { throw 'Selection overlay can block list touch input' }
 
 'v0.6 latest UI/media refinements passed'

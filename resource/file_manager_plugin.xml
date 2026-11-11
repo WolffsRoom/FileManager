@@ -690,10 +690,6 @@
 			<layout_hint size="91.8, 63" pos="-364.1, 0" />
 		  </plane>
         </image_button>
-        <!-- Draw after the row background so a selected item remains visibly blue. -->
-        <plane style="style_plane_selection_mark" id="plane_list_item_mark">
-          <layout_hint size="840, 76" />
-        </plane>
         <!-- Checkbox must be outside image_button label clipping. -->
         <plane style="_common_default_style_plane" texture="_common_texture_transparent" id="plane_list_item_check">
           <layout_hint size="72, 72" pos="401, 0" />

@@ -1002,13 +1002,19 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 	if (!page || !button || index < 0 || index >= (int32_t)page->entries.size()) return;
 	fs::Entry *entry = page->entries.at(index);
 	const bool marked = entry->marked;
-	// Native focus owns the moving cursor. The sibling plane is independent
-	// from ImageButton's focus animation, so a mark stays blue after focus moves.
-	ui::Widget *mark = button->GetParent()->FindChild(plane_list_item_mark);
-	if (mark)
+	// Never place an overlay above the row: PAF can retain it in the touch hit
+	// test after page transitions. Tint the actual content instead.
+	ui::Widget *name = button->FindChild(text_list_item_name);
+	ui::Widget *info = button->FindChild(text_list_item_info);
+	if (name) name->SetColor(marked ? 0.25f : 1.0f, marked ? 0.72f : 1.0f, 1.0f, 1.0f);
+	if (info) info->SetColor(marked ? 0.25f : 0.75f, marked ? 0.72f : 0.78f, marked ? 1.0f : 0.82f, 1.0f);
+	graph::DrawObj *image = button->GetDrawObj(ui::ImageButton::OBJ_IMAGE);
+	if (image)
 	{
-		mark->SetActivate(false);
-		mark->SetColor(0.12f, 0.55f, 1.0f, marked ? 0.72f : 0.0f);
+		math::v4 color;
+		float values[4] = { marked ? 0.25f : 1.0f, marked ? 0.72f : 1.0f, 1.0f, 1.0f };
+		memcpy(&color, values, sizeof(color));
+		image->SetColor(color);
 	}
 	button->SetFocusedState(index == page->focused);
 }
