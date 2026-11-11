@@ -289,9 +289,12 @@ void MusicMenu::ListenInBackground()
 {
 	if (m_closing || m_minimized || m_minimizePending) return;
 	m_minimizePending = true;
-	m_minimizeFrames = 22;
-	m_cover->SetPos(-375.0f, 208.0f, 0.0f, new Timer(0.38f, Timer::FUNC_SINE_INOUT));
-	m_cover->SetScale(0.13f, 0.13f, 1.0f, new Timer(0.38f, Timer::FUNC_SINE_INOUT));
+	m_minimizeFrames = 32;
+	// Brief anticipation before the cover collapses into the browser thumbnail.
+	m_cover->SetPos(-375.0f, 208.0f, 0.0f, new Timer(0.52f, Timer::FUNC_BACK_IN));
+	m_cover->SetScale(0.11f, 0.11f, 1.0f, new Timer(0.52f, Timer::FUNC_BACK_IN));
+	m_cover->SetColor(1.0f, 1.0f, 1.0f, 0.65f, new Timer(0.42f, Timer::FUNC_SINE_IN));
+	m_root->SetColor(1.0f, 1.0f, 1.0f, 0.82f, new Timer(0.48f, Timer::FUNC_SINE_IN));
 	m_root->SetActivate(false);
 }
 
@@ -346,11 +349,13 @@ void MusicMenu::RestoreMinimized()
 	menu->m_parentRoot->SetActivate(false);
 	menu->m_root->SetColor(1.0f, 1.0f, 1.0f, 0.0f);
 	menu->m_root->Show(common::transition::Type_Reset);
-	menu->m_root->SetColor(1.0f, 1.0f, 1.0f, 1.0f, new Timer(0.42f, Timer::FUNC_SINE_OUT));
+	menu->m_root->SetColor(1.0f, 1.0f, 1.0f, 1.0f, new Timer(0.36f, Timer::FUNC_SINE_OUT));
 	menu->m_cover->SetPos(-375.0f, 208.0f, 0.0f);
-	menu->m_cover->SetScale(0.13f, 0.13f, 1.0f);
-	menu->m_cover->SetPos(-260.0f, 6.0f, 0.0f, new Timer(0.42f, Timer::FUNC_SINE_INOUT));
-	menu->m_cover->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.42f, Timer::FUNC_SINE_INOUT));
+	menu->m_cover->SetScale(0.11f, 0.11f, 1.0f);
+	menu->m_cover->SetColor(1.0f, 1.0f, 1.0f, 0.45f);
+	menu->m_cover->SetPos(-260.0f, 6.0f, 0.0f, new Timer(0.58f, Timer::FUNC_BACK_OUT));
+	menu->m_cover->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.58f, Timer::FUNC_BACK_OUT));
+	menu->m_cover->SetColor(1.0f, 1.0f, 1.0f, 1.0f, new Timer(0.34f, Timer::FUNC_SINE_OUT));
 	menu->m_root->SetActivate(true);
 }
 

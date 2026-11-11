@@ -128,6 +128,7 @@ public:
 	const paf::string &InstalledTitle() const { return m_installedTitle; }
 	void DoActionPublic(Action action);
 	void OnInstallAnswer(bool accepted);
+	void OnBackgroundInstallChoice(int32_t choice);
 	void OnSearch();
 	void FilterSearch(bool finishEditing);
 	void PollSearch();
@@ -186,6 +187,7 @@ private:
 	void SetClipboard(bool isMove);
 	void CollectSelection(paf::vector<paf::string> *out);
 	void StartOperation(int32_t type);
+	void StartBackgroundInstall();
 	void FinishOperation(int32_t result);
 	void FinishUndo(int32_t result);
 	void HighlightOptionTarget(bool highlighted);
@@ -196,6 +198,7 @@ private:
 		Op_Move,
 		Op_Delete,
 		Op_Install,
+		Op_InstallBackground,
 		Op_Extract,
 		Op_CreateZip,
 		Op_ExportMedia,
@@ -250,6 +253,7 @@ private:
 	bool m_alphaVisible;
 	bool m_qrDownload;
 	int32_t m_alphaCurrent;
+	uint32_t m_bgInstallPoll;
 
 	// Fetching an icon's texture once per list cell is a likely cause of slow lists.
 	struct CachedIcon

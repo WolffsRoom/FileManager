@@ -98,6 +98,12 @@
   <string src="Installiere..." id="msg_install_title" />
   <string src="M&#xF6;chtest du dieses Paket installieren?" id="msg_install_confirm" />
   <string src="Installiere..." id="msg_installing" />
+  <string src="Hintergrundinstallation" id="msg_bg_install_title" />
+  <string src="Dieses VPK ist größer als 100 MB. Im Hintergrund installieren? Die Installation läuft auch nach dem Schließen von File Manager weiter." id="msg_bg_install_question" />
+  <string src="Hintergrund" id="msg_bg_install_button" />
+  <string src="Jetzt installieren" id="msg_bg_install_now" />
+  <string src="Die Hintergrundinstallation wurde gestartet und läuft über das Systemmodul weiter." id="msg_bg_install_queued" />
+  <string src="Die Hintergrundinstallation ist abgeschlossen. Die Anwendung ist jetzt auf dem Home-Bildschirm." id="msg_bg_install_done" />
   <string src="Installed (%s). It is now on the home screen." id="msg_install_done" />
   <string src="Themes" id="msg_set_themes" />
   <string src="Schriftgröße" id="msg_set_font_size" />

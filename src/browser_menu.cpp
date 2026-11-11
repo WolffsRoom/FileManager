@@ -3,6 +3,7 @@
 #include <paf.h>
 #include <string.h>
 #include <strings.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <psp2/touch.h>
 
@@ -36,6 +37,7 @@
 #include <psp2/net/http.h>
 #include <psp2/libssl.h>
 #include <psp2/sysmodule.h>
+#include <taihen.h>
 #include <new>
 
 // Second option menu ("More..."): its own page, since the first is still fading out.
@@ -253,7 +255,7 @@ namespace {
 }
 
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_operationRunning(false), m_inputAction(Action_Rename),
-	m_iconCount(0), m_vpkIconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
+	m_iconCount(0), m_vpkIconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_bgInstallPoll(0), m_optionTarget(-1), m_undoType(Undo_None)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -468,9 +470,11 @@ void BrowserMenu::UpdateBackground()
 			ui::Widget *picture = m_musicIndicator->FindChild(plane_music_indicator_page_browser);
 			intrusive_ptr<graph::Surface> cover = MusicMenu::MinimizedCover();
 			if (picture && cover.get()) picture->SetTexture(cover, 0, 0);
-			m_musicIndicator->SetScale(0.25f, 0.25f, 1.0f);
+			m_musicIndicator->SetScale(0.10f, 0.10f, 1.0f);
+			m_musicIndicator->SetColor(1.0f, 1.0f, 1.0f, 0.35f);
 			m_musicIndicator->Show(common::transition::Type_Reset);
-			m_musicIndicator->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.28f, Timer::FUNC_SINE_OUT));
+			m_musicIndicator->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.48f, Timer::FUNC_ELASTIC_OUT));
+			m_musicIndicator->SetColor(1.0f, 1.0f, 1.0f, 1.0f, new Timer(0.22f, Timer::FUNC_SINE_OUT));
 		}
 		else m_musicIndicator->Hide(common::transition::Type_Reset);
 	}
@@ -479,6 +483,36 @@ void BrowserMenu::UpdateBackground()
 		m_ftpShown = ftpActive;
 		if (ftpActive) m_ftpIndicator->Show(common::transition::Type_Reset);
 		else m_ftpIndicator->Hide(common::transition::Type_Reset);
+	}
+
+	// The SceShell helper survives File Manager. Check its small status file at
+	// a low frequency so completion is reported now or on the next app launch.
+	if (++m_bgInstallPoll % 120 == 0 && !m_operationRunning && !dialog::IsActive())
+	{
+		SceUID fd = sceIoOpen("ux0:data/FileManager/bginstall.status", SCE_O_RDONLY, 0);
+		if (fd >= 0)
+		{
+			char status[128];
+			int length = sceIoRead(fd, status, sizeof(status) - 1);
+			sceIoClose(fd);
+			if (length > 0)
+			{
+				status[length] = 0;
+				if (strstr(status, "state=done"))
+				{
+					sceIoRemove("ux0:data/FileManager/bginstall.status");
+					dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_bg_install_title),
+						g_appPlugin->GetString(msg_bg_install_done));
+				}
+				else if (strstr(status, "state=error"))
+				{
+					const char *value = strstr(status, "result=");
+					int32_t error = value ? atoi(value + 7) : (int32_t)0x80010016;
+					sceIoRemove("ux0:data/FileManager/bginstall.status");
+					dialog::OpenError(g_appPlugin, error);
+				}
+			}
+		}
 	}
 }
 
@@ -1033,13 +1067,17 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 	ui::Widget *info = button->FindChild(text_list_item_info);
 	if (name) name->SetColor(marked ? 0.25f : 1.0f, marked ? 0.72f : 1.0f, 1.0f, 1.0f);
 	if (info) info->SetColor(marked ? 0.25f : 0.75f, marked ? 0.72f : 0.78f, marked ? 1.0f : 0.82f, 1.0f);
+	// Tint the row icon through its existing ImageButton, never through a touch-blocking overlay.
+	button->SetColor(marked ? 0.38f : 1.0f, marked ? 0.76f : 1.0f, 1.0f, 1.0f);
 	ui::Widget *check = RowCheckbox(button->GetParent());
 	if (check)
 	{
 		check->SetActivate(false);
 		check->SetTexture(g_appPlugin->GetTexture(tex_checkbox_on), 0, 0);
-		check->SetColor(1.0f, 1.0f, 1.0f, marked ? 1.0f : 0.0f);
-		check->Show(common::transition::Type_Reset);
+		check->SetSize(56.0f, 56.0f, 0.0f);
+		check->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+		if (marked) check->Show(common::transition::Type_Reset);
+		else check->Hide(common::transition::Type_Reset);
 	}
 	button->SetFocusedState(index == page->focused);
 }
@@ -1876,14 +1914,71 @@ namespace {
 	{
 		reinterpret_cast<BrowserMenu *>(userdata)->OnInstallAnswer(accepted);
 	}
+
+	void OnBackgroundInstallChoiceCb(int32_t choice, void *userdata)
+	{
+		reinterpret_cast<BrowserMenu *>(userdata)->OnBackgroundInstallChoice(choice);
+	}
 }
 
 void BrowserMenu::OnInstallAnswer(bool accepted)
 {
-	if (accepted)
+	if (!accepted || m_opSources.empty()) return;
+
+	SceIoStat stat;
+	memset(&stat, 0, sizeof(stat));
+	if (sceIoGetstat(m_opSources.at(0).c_str(), &stat) >= 0 &&
+		stat.st_size > 100LL * 1024LL * 1024LL)
+	{
+		new NoticeMenu(m_root, msg_bg_install_title, msg_bg_install_question,
+			msg_bg_install_button, msg_bg_install_now, OnBackgroundInstallChoiceCb, this);
+		return;
+	}
+	StartOperation(Op_Install);
+}
+
+void BrowserMenu::OnBackgroundInstallChoice(int32_t choice)
+{
+	if (choice != 0)
 	{
 		StartOperation(Op_Install);
+		return;
 	}
+	StartBackgroundInstall();
+}
+
+void BrowserMenu::StartBackgroundInstall()
+{
+	if (m_opSources.empty()) return;
+	sceIoMkdir("ux0:data/FileManager", 0777);
+	sceIoRemove("ux0:data/FileManager/bginstall.command");
+	sceIoRemove("ux0:data/FileManager/bginstall.status");
+	sceIoRemove("ux0:data/FileManager/bginstall.ready");
+
+	SceUID shellPid = -1;
+	int32_t result = sceAppMgrGetIdByName(&shellPid, "NPXS19999");
+	if (result >= 0)
+	{
+		result = taiLoadStartModuleForPid(shellPid,
+			"ux0:app/FILEMGR01/module/bginstaller.suprx",
+			0, NULL, 0);
+	}
+	if (result < 0)
+	{
+		// Loading an already resident service returns an error; the ready marker
+		// below distinguishes that harmless case from a real taiHEN failure.
+	}
+	sceKernelDelayThread(350000);
+	SceIoStat ready;
+	memset(&ready, 0, sizeof(ready));
+	if (sceIoGetstat("ux0:data/FileManager/bginstall.ready", &ready) < 0)
+	{
+		dialog::OpenError(g_appPlugin, result < 0 ? result : (int32_t)0x80010002);
+		return;
+	}
+	new NoticeMenu(m_root, msg_bg_install_title, msg_bg_install_queued,
+		msg_ok, 0, NULL, NULL);
+	StartOperation(Op_InstallBackground);
 }
 
 namespace {
@@ -2230,7 +2325,7 @@ void BrowserMenu::StartOperation(int32_t type)
 	uint32_t title = msg_deleting;
 	if (type == Op_Copy) title = msg_copying;
 	else if (type == Op_Move) title = msg_moving;
-	else if (type == Op_Install || type == Op_InstallFolder) title = msg_installing;
+	else if (type == Op_Install || type == Op_InstallBackground || type == Op_InstallFolder) title = msg_installing;
 	else if (type == Op_Extract) title = msg_extracting;
 	else if (type == Op_CreateZip) title = msg_compressing;
 	else if (type == Op_ExportMedia) title = msg_exporting_media;
@@ -2238,7 +2333,7 @@ void BrowserMenu::StartOperation(int32_t type)
 
 	m_opType = type;
 	m_operationRunning = true;
-	const bool backgroundInstall = type == Op_InstallFolder;
+	const bool backgroundInstall = type == Op_InstallFolder || type == Op_InstallBackground;
 	m_pending = backgroundInstall ? Pending_None : Pending_Operation;
 	s_cancel = false;
 	s_lastPercent = 0;
@@ -2255,7 +2350,7 @@ void BrowserMenu::StartOperation(int32_t type)
 		m_undoTo.clear();
 		m_undoType = Undo_None;
 	}
-	else if ((type == Op_Install || type == Op_InstallFolder) && !m_opSources.empty())
+	else if ((type == Op_Install || type == Op_InstallBackground || type == Op_InstallFolder) && !m_opSources.empty())
 	{
 		const char *path = m_opSources.at(0).c_str();
 		const char *slash = strrchr(path, '/');
@@ -2288,6 +2383,28 @@ void BrowserMenu::StartOperation(int32_t type)
 
 void BrowserMenu::RunOperation()
 {
+	if (m_opType == Op_InstallBackground)
+	{
+		uint64_t value = 0;
+		int64_t total = archiveTotalSize(m_opSources.at(0).c_str());
+		FileProcessParam param = { &value, total > 0 ? (uint64_t)total : 1, NULL, IsCancelled };
+		char titleid[12] = { 0 };
+		int32_t result = prepareVpk(m_opSources.at(0).c_str(), &param, titleid);
+		m_installedTitle = titleid;
+		if (result > 0)
+		{
+			SceUID command = sceIoOpen("ux0:data/FileManager/bginstall.command",
+				SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0666);
+			if (command < 0) result = command;
+			else
+			{
+				sceIoWrite(command, "promote", 8);
+				sceIoClose(command);
+			}
+		}
+		FinishOperation(result);
+		return;
+	}
 	if (m_opType == Op_Install)
 	{
 		uint64_t value = 0;
@@ -2425,7 +2542,7 @@ void BrowserMenu::FinishOperation(int32_t result)
 {
 	const int32_t completedType = m_opType;
 	m_pending = Pending_None;
-	const bool backgroundInstall = completedType == Op_InstallFolder;
+	const bool backgroundInstall = completedType == Op_InstallFolder || completedType == Op_InstallBackground;
 	if (!backgroundInstall) dialog::Close();
 
 	if (result >= 0 && completedType == Op_Move)

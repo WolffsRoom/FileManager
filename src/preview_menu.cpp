@@ -19,6 +19,43 @@ extern "C" int sceAvPlayerStreamCount(SceAvPlayerHandle handle);
 extern "C" int sceAvPlayerStart(SceAvPlayerHandle handle);
 extern "C" int sceAvPlayerEnableStream(SceAvPlayerHandle handle, uint32_t streamIndex);
 extern "C" int sceAvPlayerDisableStream(SceAvPlayerHandle handle, uint32_t streamIndex);
+extern "C" int sceAvPlayerPostInit(SceAvPlayerHandle handle, void *postInit);
+
+// WebMAF's extended frame descriptor.  NetStream's RGBA AvPlayer returns a
+// GPU-ready RGBA8888 buffer and, critically, its real pitch.  Treating that
+// buffer as tightly packed YUV (the old path) produced a permanent loader or a
+// black frame on 1080p MP4 files.
+typedef struct FmAvPlayerVideoEx {
+	uint32_t width;
+	uint32_t height;
+	float aspectRatio;
+	uint8_t languageCode[4];
+	uint32_t framerate;
+	uint32_t cropLeftOffset;
+	uint32_t cropRightOffset;
+	uint32_t cropTopOffset;
+	uint32_t cropBottomOffset;
+	uint16_t cropLeftPixels;
+	uint16_t cropRightPixels;
+	uint16_t cropTopPixels;
+	uint16_t cropBottomPixels;
+	uint32_t pitch;
+	uint8_t reserved[32];
+} FmAvPlayerVideoEx;
+
+typedef union FmAvPlayerStreamDetailsEx {
+	FmAvPlayerVideoEx video;
+	uint8_t reserved[80];
+} FmAvPlayerStreamDetailsEx;
+
+typedef struct FmAvPlayerFrameInfoEx {
+	void *pData;
+	uint8_t reserved[4];
+	uint64_t timeStamp;
+	FmAvPlayerStreamDetailsEx details;
+} FmAvPlayerFrameInfoEx;
+
+extern "C" int sceAvPlayerGetVideoDataEx(SceAvPlayerHandle handle, FmAvPlayerFrameInfoEx *frame);
 
 #include "common.h"
 #include "dialog.h"
@@ -44,6 +81,8 @@ namespace {
 	int s_frameCount = 0;
 	SceUID s_videoFd = -1;
 	SceOff s_videoSize = 0;
+	SceUID s_rgbaPlayerModule = -1;
+	volatile SceAvPlayerHandle s_startPlayer = 0;
 
 	void *VideoAlloc(void *arg, uint32_t alignment, uint32_t size)
 	{
@@ -143,6 +182,34 @@ namespace {
 			sceIoWrite(fd, line, n);
 			sceIoWrite(fd, "\n", 1);
 			sceIoClose(fd);
+		}
+	}
+
+	void VideoEvent(void *object, int32_t eventId, int32_t sourceId, void *eventData)
+	{
+		(void)object;
+		(void)sourceId;
+		(void)eventData;
+		VideoLog("event: 0x%08X", eventId);
+		// WebMAF is initialized with autoStart disabled. Starting only after its
+		// READY event avoids the AddSource/start race seen on retail firmware.
+		if (eventId == 1 && s_startPlayer)
+		{
+			int32_t count = sceAvPlayerStreamCount(s_startPlayer);
+			bool video = false, audio = false;
+			for (int32_t i = 0; i < count && i < 16; ++i)
+			{
+				SceAvPlayerStreamInfo info;
+				sce_paf_memset(&info, 0, sizeof(info));
+				if (sceAvPlayerGetStreamInfo(s_startPlayer, i, &info) < 0) continue;
+				const bool enable = (info.type == SCE_AVPLAYER_VIDEO && !video) ||
+					(info.type == SCE_AVPLAYER_AUDIO && !audio);
+				if (enable) sceAvPlayerEnableStream(s_startPlayer, i);
+				else sceAvPlayerDisableStream(s_startPlayer, i);
+				if (info.type == SCE_AVPLAYER_VIDEO && enable) video = true;
+				if (info.type == SCE_AVPLAYER_AUDIO && enable) audio = true;
+			}
+			VideoLog("sceAvPlayerStart: 0x%08X", sceAvPlayerStart(s_startPlayer));
 		}
 	}
 
@@ -905,9 +972,11 @@ void PreviewMenu::OnImageTouch()
 bool PreviewMenu::StartVideo(const char *path)
 {
 	sceIoRemove("ux0:data/FileManager/video.log");
-	int32_t mod = sceSysmoduleLoadModule(SCE_SYSMODULE_AVPLAYER);
-	VideoLog("load AVPLAYER: 0x%08X", mod);
-	if (mod < 0)
+	if (s_rgbaPlayerModule < 0)
+		s_rgbaPlayerModule = sceKernelLoadStartModule(
+			"app0:module/libSceAvPlayerPSVitaRGBA8888.suprx", 0, NULL, 0, NULL, NULL);
+	VideoLog("load RGBA AVPLAYER: 0x%08X", s_rgbaPlayerModule);
+	if (s_rgbaPlayerModule < 0)
 	{
 		return false;
 	}
@@ -924,11 +993,11 @@ bool PreviewMenu::StartVideo(const char *path)
 	init.fileReplacement.close = VideoCloseFile;
 	init.fileReplacement.readOffset = VideoReadOffset;
 	init.fileReplacement.size = VideoSizeFile;
+	init.eventReplacement.objectPointer = this;
+	init.eventReplacement.eventCallback = VideoEvent;
 	init.basePriority = 0x10000100;
-	init.numOutputVideoFrameBuffers = 16;
-	// Match VitaShell/FM Vita: retail firmware starts playback from AddSource.
-	// Explicit sceAvPlayerStart with autoStart disabled fails on some firmwares.
-	init.autoStart = SCE_TRUE;
+	init.numOutputVideoFrameBuffers = 3;
+	init.autoStart = SCE_FALSE;
 
 	m_player = sceAvPlayerInit(&init);
 	VideoLog("sceAvPlayerInit: 0x%08X", m_player);
@@ -939,11 +1008,25 @@ bool PreviewMenu::StartVideo(const char *path)
 		m_player = 0;
 		return false;
 	}
+	// The RGBA WebMAF module expects its post-init stage even for local files.
+	// All optional HTTP fields remain zero.
+	uint8_t postInit[136];
+	sce_paf_memset(postInit, 0, sizeof(postInit));
+	int32_t post = sceAvPlayerPostInit(m_player, postInit);
+	VideoLog("sceAvPlayerPostInit: 0x%08X", post);
+	if (post < 0)
+	{
+		sceAvPlayerClose(m_player);
+		m_player = 0;
+		return false;
+	}
+	s_startPlayer = m_player;
 
 	int32_t added = sceAvPlayerAddSource(m_player, path);
 	VideoLog("sceAvPlayerAddSource: 0x%08X", added);
 	if (added < 0)
 	{
+		s_startPlayer = 0;
 		sceAvPlayerClose(m_player);
 		VideoCloseFile(NULL);
 		// Some firmware revisions reject custom file callbacks for MP4 sources.
@@ -952,38 +1035,28 @@ bool PreviewMenu::StartVideo(const char *path)
 		m_player = sceAvPlayerInit(&init);
 		VideoLog("native sceAvPlayerInit: 0x%08X", m_player);
 		if (!m_player) { m_player = 0; return false; }
-		added = sceAvPlayerAddSource(m_player, path);
-		VideoLog("native sceAvPlayerAddSource: 0x%08X", added);
-		if (added < 0)
+		post = sceAvPlayerPostInit(m_player, postInit);
+		VideoLog("native sceAvPlayerPostInit: 0x%08X", post);
+		if (post < 0)
 		{
 			sceAvPlayerClose(m_player);
 			m_player = 0;
 			return false;
 		}
-	}
-	// Duration from the video stream, for the progress bar.
-	m_duration = 0;
-	int32_t streams = sceAvPlayerStreamCount(m_player);
-	if (streams <= 0 || streams > 16) streams = 2;
-	VideoLog("streams: %d", streams);
-	bool haveVideo = false, haveAudio = false;
-	for (int32_t i = 0; i < streams; i++)
-	{
-		SceAvPlayerStreamInfo info;
-		sce_paf_memset(&info, 0, sizeof(info));
-		if (sceAvPlayerGetStreamInfo(m_player, i, &info) >= 0)
+		s_startPlayer = m_player;
+		paf::string nativePath("localfile:");
+		nativePath += path;
+		added = sceAvPlayerAddSource(m_player, nativePath.c_str());
+		VideoLog("native sceAvPlayerAddSource: 0x%08X", added);
+		if (added < 0)
 		{
-			const bool firstVideo = info.type == SCE_AVPLAYER_VIDEO && !haveVideo;
-			const bool firstAudio = info.type == SCE_AVPLAYER_AUDIO && !haveAudio;
-			if (firstVideo || firstAudio) sceAvPlayerEnableStream(m_player, i);
-			else sceAvPlayerDisableStream(m_player, i);
-			if (firstVideo) haveVideo = true;
-			if (firstAudio) haveAudio = true;
-			if (info.duration > m_duration) m_duration = info.duration;
+			s_startPlayer = 0;
+			sceAvPlayerClose(m_player);
+			m_player = 0;
+			return false;
 		}
 	}
-	int32_t started = sceAvPlayerStart(m_player);
-	VideoLog("sceAvPlayerStart: 0x%08X", started);
+	m_duration = 0;
 
 	s_audioPlayer = m_player;
 	s_audioRun = true;
@@ -1017,6 +1090,7 @@ void PreviewMenu::StopVideo()
 		s_audioThread = -1;
 	}
 	s_audioPlayer = 0;
+	s_startPlayer = 0;
 	sceAvPlayerStop(m_player);
 	sceAvPlayerClose(m_player);
 	VideoCloseFile(NULL);
@@ -1036,9 +1110,9 @@ void PreviewMenu::OnVideoFrame()
 
 	sceKernelPowerTick(SCE_KERNEL_POWER_TICK_DISABLE_AUTO_SUSPEND);
 
-	SceAvPlayerFrameInfo frame;
+	FmAvPlayerFrameInfoEx frame;
 	sce_paf_memset(&frame, 0, sizeof(frame));
-	if (sceAvPlayerGetVideoData(m_player, &frame) != SCE_TRUE || !frame.pData)
+	if (sceAvPlayerGetVideoDataEx(m_player, &frame) != SCE_TRUE || !frame.pData)
 	{
 		return;
 	}
@@ -1070,8 +1144,9 @@ void PreviewMenu::OnVideoFrame()
 	{
 		VideoSurfaceEntry entry;
 		entry.data = frame.pData;
-		entry.surface = new graph::Surface(w, h, ImageMode_YUV420P3, ImageOrder_Linear,
-			1, frame.pData, w, 1, 0);
+		const uint32_t pitch = frame.details.video.pitch ? frame.details.video.pitch : w;
+		entry.surface = new graph::Surface(w, h, ImageMode_RGBA8888, ImageOrder_Linear,
+			1, frame.pData, pitch * 4, 1, 0);
 		surface = entry.surface;
 		m_videoSurfaces.push_back(entry);
 	}
@@ -1100,6 +1175,14 @@ void PreviewMenu::OnVideoFrame()
 
 	if (!m_frameShown)
 	{
+		const int32_t streams = sceAvPlayerStreamCount(m_player);
+		for (int32_t i = 0; i < streams && i < 16; ++i)
+		{
+			SceAvPlayerStreamInfo info;
+			sce_paf_memset(&info, 0, sizeof(info));
+			if (sceAvPlayerGetStreamInfo(m_player, i, &info) >= 0 && info.duration > m_duration)
+				m_duration = info.duration;
+		}
 		m_frameShown = true;
 		m_busy->Stop();
 		m_plane->SetColor(1.0f, 1.0f, 1.0f, 1.0f);

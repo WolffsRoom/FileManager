@@ -100,6 +100,12 @@
   <string src="Install" id="msg_install_title" />
   <string src="Install this package?" id="msg_install_confirm" />
   <string src="Installing..." id="msg_installing" />
+  <string src="Background installation" id="msg_bg_install_title" />
+  <string src="This VPK is larger than 100 MB. Install it in the background? Installation continues even if File Manager is closed." id="msg_bg_install_question" />
+  <string src="Background" id="msg_bg_install_button" />
+  <string src="Install now" id="msg_bg_install_now" />
+  <string src="Background installation started. Progress continues through the system helper." id="msg_bg_install_queued" />
+  <string src="Background installation completed. The application is now on the home screen." id="msg_bg_install_done" />
   <string src="Installed (%s). It is now on the home screen." id="msg_install_done" />
   <string src="Themes" id="msg_set_themes" />
   <string src="Font size" id="msg_set_font_size" />

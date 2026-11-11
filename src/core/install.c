@@ -19,7 +19,9 @@
 #include "core/install.h"
 
 #define HEAD_BIN FM_PACKAGE_DIR "/sce_sys/package/head.bin"
+#ifndef HEAD_BIN_TEMPLATE
 #define HEAD_BIN_TEMPLATE "app0:resource/head.bin"
+#endif
 
 typedef struct {
   uint32_t magic, version, keyofs, valofs, count;
@@ -341,7 +343,7 @@ static int extract(const char *archive_path, const char *dest, FileProcessParam 
   return result;
 }
 
-int installVpk(const char *vpk, FileProcessParam *param, char *titleid) {
+int prepareVpk(const char *vpk, FileProcessParam *param, char *titleid) {
   removePath(FM_PACKAGE_DIR, NULL);
   sceIoMkdir(FM_PACKAGE_DIR, 0777);
 
@@ -356,6 +358,13 @@ int installVpk(const char *vpk, FileProcessParam *param, char *titleid) {
     removePath(FM_PACKAGE_DIR, NULL);
     return res;
   }
+
+  return 1;
+}
+
+int installVpk(const char *vpk, FileProcessParam *param, char *titleid) {
+  int res = prepareVpk(vpk, param, titleid);
+  if (res <= 0) return res;
 
   res = promoteApp(FM_PACKAGE_DIR);
   // The promoter moves the files away; whatever is left is debris.

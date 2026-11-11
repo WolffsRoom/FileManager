@@ -17,6 +17,9 @@ extern "C" {
  */
 int installVpk(const char *vpk, FileProcessParam *param, char *titleid);
 
+/** Extracts and signs a VPK in FM_PACKAGE_DIR without promoting it yet. */
+int prepareVpk(const char *vpk, FileProcessParam *param, char *titleid);
+
 /** Copies an extracted application folder to the staging area and promotes it. */
 int installAppFolder(const char *folder, FileProcessParam *param, char *titleid);
 
