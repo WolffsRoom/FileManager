@@ -11,6 +11,7 @@
 #include <archive_entry.h>
 #include <psp2/io/fcntl.h>
 #include <psp2/io/stat.h>
+#include <psp2/io/dirent.h>
 #include <psp2/sysmodule.h>
 #include <psp2/promoterutil.h>
 
@@ -397,4 +398,28 @@ int refreshLiveAreaApp(const char *folder, char *titleid) {
   if (res < 0) return res;
   res = promoteApp(folder);
   return res < 0 ? res : 1;
+}
+
+int refreshLiveAreaAll(const char *appsRoot, uint32_t *refreshed) {
+  SceUID dfd = sceIoDopen(appsRoot);
+  if (dfd < 0) return dfd;
+  uint32_t count = 0;
+  int result = 1;
+  SceIoDirent entry;
+  while (1) {
+    memset(&entry, 0, sizeof(entry));
+    int read = sceIoDread(dfd, &entry);
+    if (read <= 0) break;
+    if (entry.d_name[0] == '.' && (!entry.d_name[1] || (entry.d_name[1] == '.' && !entry.d_name[2]))) continue;
+    if (!SCE_S_ISDIR(entry.d_stat.st_mode)) continue;
+    char folder[MAX_PATH_LENGTH];
+    snprintf(folder, sizeof(folder), "%s/%s", appsRoot, entry.d_name);
+    if (!isAppFolder(folder)) continue;
+    int current = refreshLiveAreaApp(folder, NULL);
+    if (current < 0) result = current;
+    else ++count;
+  }
+  sceIoDclose(dfd);
+  if (refreshed) *refreshed = count;
+  return count && result > 0 ? 1 : result;
 }

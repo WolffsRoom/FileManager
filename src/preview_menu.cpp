@@ -83,6 +83,8 @@ namespace {
 	SceOff s_videoSize = 0;
 	SceUID s_rgbaPlayerModule = -1;
 	volatile SceAvPlayerHandle s_startPlayer = 0;
+	volatile bool s_startIssued = false;
+	volatile uint32_t s_startWaitFrames = 0;
 
 	void *VideoAlloc(void *arg, uint32_t alignment, uint32_t size)
 	{
@@ -136,7 +138,8 @@ namespace {
 
 	int VideoOpenFile(void *p, const char *filename)
 	{
-		s_videoFd = sceIoOpen(filename, SCE_O_RDONLY, 0);
+		const char *localPath = strncmp(filename, "localfile:", 10) == 0 ? filename + 10 : filename;
+		s_videoFd = sceIoOpen(localPath, SCE_O_RDONLY, 0);
 		if (s_videoFd < 0)
 		{
 			return -1;
@@ -209,7 +212,9 @@ namespace {
 				if (info.type == SCE_AVPLAYER_VIDEO && enable) video = true;
 				if (info.type == SCE_AVPLAYER_AUDIO && enable) audio = true;
 			}
-			VideoLog("sceAvPlayerStart: 0x%08X", sceAvPlayerStart(s_startPlayer));
+			int32_t started = sceAvPlayerStart(s_startPlayer);
+			VideoLog("sceAvPlayerStart: 0x%08X", started);
+			if (started >= 0) s_startIssued = true;
 		}
 	}
 
@@ -1021,8 +1026,11 @@ bool PreviewMenu::StartVideo(const char *path)
 		return false;
 	}
 	s_startPlayer = m_player;
-
-	int32_t added = sceAvPlayerAddSource(m_player, path);
+	s_startIssued = false;
+	s_startWaitFrames = 0;
+	paf::string sourcePath("localfile:");
+	sourcePath += path;
+	int32_t added = sceAvPlayerAddSource(m_player, sourcePath.c_str());
 	VideoLog("sceAvPlayerAddSource: 0x%08X", added);
 	if (added < 0)
 	{
@@ -1091,6 +1099,8 @@ void PreviewMenu::StopVideo()
 	}
 	s_audioPlayer = 0;
 	s_startPlayer = 0;
+	s_startIssued = false;
+	s_startWaitFrames = 0;
 	sceAvPlayerStop(m_player);
 	sceAvPlayerClose(m_player);
 	VideoCloseFile(NULL);
@@ -1103,8 +1113,21 @@ void PreviewMenu::StopVideo()
 
 void PreviewMenu::OnVideoFrame()
 {
-	if (!m_videoActive || !sceAvPlayerIsActive(m_player))
+	if (!m_videoActive)
 	{
+		return;
+	}
+	if (!sceAvPlayerIsActive(m_player))
+	{
+		// Some retail revisions never emit READY for a local source even though
+		// AddSource succeeded. NetStream's localfile scheme plus this delayed
+		// start covers both event orders without racing AddSource.
+		if (!s_startIssued && ++s_startWaitFrames == 90 && s_startPlayer)
+		{
+			int32_t started = sceAvPlayerStart(s_startPlayer);
+			VideoLog("delayed sceAvPlayerStart: 0x%08X", started);
+			if (started >= 0) s_startIssued = true;
+		}
 		return;
 	}
 

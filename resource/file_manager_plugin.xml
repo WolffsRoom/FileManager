@@ -26,7 +26,7 @@
         <focus_hint enable="0" />
       </button>
       <plane texture="tex_ui_ftp" id="plane_ftp_indicator_page_browser">
-        <layout_hint size="36, 36" pos="-429, 208" />
+        <layout_hint size="32, 32" pos="-428, 158" />
       </plane>
       <text_box auto_scroll="1" ime_type="0" edit_mode="1" paste_mode="1" edit_auto_transition_mode="0" style="style_text_box_input" id="text_box_search_page_browser">
         <layout_hint size="860, 44" pos="0, 174" />
@@ -90,10 +90,10 @@
         <focus_hint enable="0" />
       </button>
       <button style="_common_default_style_button_transparent" id="button_music_indicator_page_browser">
-        <layout_hint size="48, 48" pos="-375, 208" />
+        <layout_hint size="52, 52" pos="-428, 208" />
         <focus_hint enable="0" />
-        <plane style="style_plane_music_indicator" texture="tex_ui_musical" id="plane_music_indicator_page_browser">
-          <layout_hint size="36, 36" />
+        <plane texture="tex_ui_musical" id="plane_music_indicator_page_browser">
+          <layout_hint size="48, 48" />
         </plane>
       </button>
     </page>
@@ -272,6 +272,14 @@
       <plane style="_common_default_style_plane" texture="_common_texture_transparent" id="plane_cover_page_music">
         <layout_hint size="374, 370" pos="-260, 6" />
       </plane>
+      <!-- Six cropped cover strips create the Vita-friendly "genie" funnel
+           between the full player and the mini album art. -->
+      <plane texture="_common_texture_transparent" id="plane_cover_slice_0_page_music"><layout_hint size="374, 62" pos="-260, 160" /></plane>
+      <plane texture="_common_texture_transparent" id="plane_cover_slice_1_page_music"><layout_hint size="374, 62" pos="-260, 98" /></plane>
+      <plane texture="_common_texture_transparent" id="plane_cover_slice_2_page_music"><layout_hint size="374, 62" pos="-260, 36" /></plane>
+      <plane texture="_common_texture_transparent" id="plane_cover_slice_3_page_music"><layout_hint size="374, 62" pos="-260, -26" /></plane>
+      <plane texture="_common_texture_transparent" id="plane_cover_slice_4_page_music"><layout_hint size="374, 62" pos="-260, -88" /></plane>
+      <plane texture="_common_texture_transparent" id="plane_cover_slice_5_page_music"><layout_hint size="374, 62" pos="-260, -150" /></plane>
       <text style="style_text_info_title" id="text_song_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="500, 44" pos="440, 118" />
       </text>

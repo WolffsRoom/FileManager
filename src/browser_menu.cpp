@@ -255,7 +255,7 @@ namespace {
 }
 
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_operationRunning(false), m_inputAction(Action_Rename),
-	m_iconCount(0), m_vpkIconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_bgInstallPoll(0), m_optionTarget(-1), m_undoType(Undo_None)
+	m_iconCount(0), m_vpkIconCount(0), m_ftpShown(false), m_ftpBusy(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_bgInstallPoll(0), m_optionTarget(-1), m_undoType(Undo_None)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -482,7 +482,38 @@ void BrowserMenu::UpdateBackground()
 	{
 		m_ftpShown = ftpActive;
 		if (ftpActive) m_ftpIndicator->Show(common::transition::Type_Reset);
-		else m_ftpIndicator->Hide(common::transition::Type_Reset);
+		else
+		{
+			m_ftpBusy = false;
+			m_ftpIndicator->SetScale(1.0f, 1.0f, 1.0f);
+			m_ftpIndicator->SetColor(1.0f, 1.0f, 1.0f, 0.5f);
+			m_ftpIndicator->Hide(common::transition::Type_Reset);
+		}
+	}
+	bool ftpBusy = false;
+	if (ftpActive)
+	{
+		ftp::Status status;
+		ftp::GetStatus(&status);
+		ftpBusy = status.activity == ftp::Activity_Sending || status.activity == ftp::Activity_Receiving;
+	}
+	if (ftpBusy != m_ftpBusy)
+	{
+		m_ftpBusy = ftpBusy;
+		if (ftpBusy)
+		{
+			m_ftpIndicator->SetScale(0.86f, 0.86f, 1.0f);
+			m_ftpIndicator->SetColor(0.45f, 0.78f, 1.0f, 0.42f);
+			m_ftpIndicator->SetScale(1.14f, 1.14f, 1.0f,
+				new Timer(0.55f, Timer::FUNC_SINE_INOUT, Timer::REPEAT_ROUND));
+			m_ftpIndicator->SetColor(0.45f, 0.78f, 1.0f, 1.0f,
+				new Timer(0.55f, Timer::FUNC_SINE_INOUT, Timer::REPEAT_ROUND));
+		}
+		else
+		{
+			m_ftpIndicator->SetScale(1.0f, 1.0f, 1.0f);
+			m_ftpIndicator->SetColor(1.0f, 1.0f, 1.0f, 0.5f);
+		}
 	}
 
 	// The SceShell helper survives File Manager. Check its small status file at
@@ -1065,6 +1096,13 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 	// Tint only public child widgets, which is safe for touch and page changes.
 	ui::Widget *name = button->FindChild(text_list_item_name);
 	ui::Widget *info = button->FindChild(text_list_item_info);
+	if (name)
+	{
+		paf::wstring label;
+		if (marked) label = L"\u2713  ";
+		label += ToWide(entry->name);
+		name->SetString(label);
+	}
 	if (name) name->SetColor(marked ? 0.25f : 1.0f, marked ? 0.72f : 1.0f, 1.0f, 1.0f);
 	if (info) info->SetColor(marked ? 0.25f : 0.75f, marked ? 0.72f : 0.78f, marked ? 1.0f : 0.82f, 1.0f);
 	// Tint the row icon through its existing ImageButton, never through a touch-blocking overlay.
@@ -1080,6 +1118,12 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 		else check->Hide(common::transition::Type_Reset);
 	}
 	button->SetFocusedState(index == page->focused);
+	graph::PlaneObj *background = static_cast<graph::PlaneObj *>(button->GetDrawObj(ui::Button::OBJ_BG));
+	if (background)
+	{
+		background->SetColor(math::v4(marked ? 0.12f : 1.0f, marked ? 0.48f : 1.0f,
+			marked ? 0.95f : 1.0f, marked ? 0.96f : 1.0f));
+	}
 }
 
 void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry *entry)
@@ -1747,6 +1791,7 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		{
 			const paf::string targetPath = fs::Join(page->path, target->name);
 			const bool appFolder = target->isDir && HasAppSfo(targetPath);
+			if (IsArchive(target)) m_optionActions.push_back(Action_Extract);
 			if (appFolder && strncasecmp(targetPath.c_str(), "ux0:app/", 8) == 0)
 				m_optionActions.push_back(Action_RefreshLiveArea);
 			m_optionActions.push_back(Action_CompressZip);
@@ -1777,6 +1822,7 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 	}
 	else
 	{
+		const bool ux0Root = strcmp(page->path.c_str(), "ux0:") == 0;
 		const paf::string targetPath = target ? fs::Join(page->path, target->name) : paf::string();
 		const bool appFolder = target && target->isDir && !anyMarked && HasAppSfo(targetPath);
 		const bool targetSpecial = target && !anyMarked && (IsArchive(target) || IsExportableMedia(target) || appFolder);
@@ -1786,6 +1832,8 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 			m_optionActions.push_back(Action_ExportMedia);
 		if (appFolder)
 			m_optionActions.push_back(Action_InstallFolder);
+		if (ux0Root)
+			m_optionActions.push_back(Action_RefreshLiveArea);
 		if (anyMarked)
 			m_optionActions.push_back(Action_CompressZip);
 		if (target || anyMarked)
@@ -2132,7 +2180,13 @@ void BrowserMenu::DoAction(Action action)
 
 	case Action_InstallFolder:
 	case Action_RefreshLiveArea:
-		if (page->focused >= 0)
+		if (action == Action_RefreshLiveArea && strcmp(page->path.c_str(), "ux0:") == 0)
+		{
+			m_opSources.clear();
+			m_opSources.push_back("ux0:app");
+			StartOperation(Op_RefreshLiveArea);
+		}
+		else if (page->focused >= 0)
 		{
 			m_opSources.clear();
 			m_opSources.push_back(fs::Join(page->path, page->entries.at(page->focused)->name));
@@ -2470,7 +2524,10 @@ void BrowserMenu::RunOperation()
 	if (m_opType == Op_RefreshLiveArea)
 	{
 		char titleid[12] = { 0 };
-		int32_t result = refreshLiveAreaApp(m_opSources.at(0).c_str(), titleid);
+		uint32_t refreshed = 0;
+		int32_t result = strcmp(m_opSources.at(0).c_str(), "ux0:app") == 0 ?
+			refreshLiveAreaAll(m_opSources.at(0).c_str(), &refreshed) :
+			refreshLiveAreaApp(m_opSources.at(0).c_str(), titleid);
 		m_installedTitle = titleid;
 		FinishOperation(result);
 		return;

@@ -49,7 +49,7 @@ namespace {
 }
 
 MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &paths, int32_t index) :
-	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false), m_seekChanging(false), m_minimized(false), m_minimizePending(false), m_minimizeFrames(0)
+	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false), m_seekChanging(false), m_minimized(false), m_minimizePending(false), m_minimizeFrames(0), m_restorePending(false), m_restoreFrames(0)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -66,6 +66,17 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	SetText(m_root->FindChild(text_top), Utf8(msg_music_title).c_str());
 
 	m_cover = m_root->FindChild(plane_cover_page_music);
+	m_coverShadow = m_root->FindChild(plane_cover_shadow_page_music);
+	const uint32_t sliceIds[GenieSlices] = {
+		plane_cover_slice_0_page_music, plane_cover_slice_1_page_music,
+		plane_cover_slice_2_page_music, plane_cover_slice_3_page_music,
+		plane_cover_slice_4_page_music, plane_cover_slice_5_page_music
+	};
+	for (int32_t i = 0; i < GenieSlices; ++i)
+	{
+		m_genie[i] = m_root->FindChild(sliceIds[i]);
+		m_genie[i]->Hide(common::transition::Type_Reset);
+	}
 	graph::PlaneObj *po = static_cast<graph::PlaneObj *>(m_cover->GetDrawObj(ui::Plane::OBJ_PLANE));
 	po->SetScaleMode(graph::PlaneObj::SCALE_ASPECT_SIZE, graph::PlaneObj::SCALE_ASPECT_SIZE);
 	m_title = m_root->FindChild(text_song_page_music);
@@ -190,6 +201,47 @@ void MusicMenu::ShowCover(const char *path, int32_t type, int32_t offset, int32_
 	}
 	m_cover->SetTexture(tex, 0, 0);
 	m_coverSurface = tex;
+	for (int32_t i = 0; i < GenieSlices; ++i)
+	{
+		m_genie[i]->SetTexture(tex, 0, 0);
+		graph::PlaneObj *slice = static_cast<graph::PlaneObj *>(m_genie[i]->GetDrawObj(ui::Plane::OBJ_PLANE));
+		if (slice) slice->SetTexRegion(math::v4(0.0f, (float)i / GenieSlices, 1.0f, 1.0f / GenieSlices));
+	}
+}
+
+void MusicMenu::StartGenie(bool expanding)
+{
+	static const float sourceY[GenieSlices] = { 160.0f, 98.0f, 36.0f, -26.0f, -88.0f, -150.0f };
+	const float miniX = -428.0f;
+	const float miniY = 208.0f;
+	m_cover->Hide(common::transition::Type_Reset);
+	m_coverShadow->Hide(common::transition::Type_Reset);
+	for (int32_t i = 0; i < GenieSlices; ++i)
+	{
+		ui::Widget *slice = m_genie[i];
+		const float bend = (float)(i - 2) * 2.6f;
+		const float duration = 0.38f + (expanding ? (GenieSlices - 1 - i) : i) * 0.035f;
+		if (expanding)
+		{
+			slice->SetPos(miniX + bend, miniY - i * 1.5f, 0.0f);
+			slice->SetScale(0.12f, 0.12f, 1.0f);
+			slice->SetColor(1.0f, 1.0f, 1.0f, 0.35f);
+			slice->Show(common::transition::Type_Reset);
+			slice->SetPos(-260.0f, sourceY[i], 0.0f, new Timer(duration, Timer::FUNC_BACK_OUT));
+			slice->SetScale(1.0f, 1.0f, 1.0f, new Timer(duration, Timer::FUNC_BACK_OUT));
+			slice->SetColor(1.0f, 1.0f, 1.0f, 1.0f, new Timer(duration * 0.72f, Timer::FUNC_SINE_OUT));
+		}
+		else
+		{
+			slice->SetPos(-260.0f, sourceY[i], 0.0f);
+			slice->SetScale(1.0f, 1.0f, 1.0f);
+			slice->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+			slice->Show(common::transition::Type_Reset);
+			slice->SetPos(miniX + bend, miniY - i * 1.5f, 0.0f, new Timer(duration, Timer::FUNC_BACK_IN));
+			slice->SetScale(0.12f, 0.12f, 1.0f, new Timer(duration, Timer::FUNC_BACK_IN));
+			slice->SetColor(1.0f, 1.0f, 1.0f, 0.30f, new Timer(duration * 0.86f, Timer::FUNC_SINE_IN));
+		}
+	}
 }
 
 void MusicMenu::Play(int32_t index)
@@ -289,11 +341,8 @@ void MusicMenu::ListenInBackground()
 {
 	if (m_closing || m_minimized || m_minimizePending) return;
 	m_minimizePending = true;
-	m_minimizeFrames = 32;
-	// Brief anticipation before the cover collapses into the browser thumbnail.
-	m_cover->SetPos(-375.0f, 208.0f, 0.0f, new Timer(0.52f, Timer::FUNC_BACK_IN));
-	m_cover->SetScale(0.11f, 0.11f, 1.0f, new Timer(0.52f, Timer::FUNC_BACK_IN));
-	m_cover->SetColor(1.0f, 1.0f, 1.0f, 0.65f, new Timer(0.42f, Timer::FUNC_SINE_IN));
+	m_minimizeFrames = 38;
+	StartGenie(false);
 	m_root->SetColor(1.0f, 1.0f, 1.0f, 0.82f, new Timer(0.48f, Timer::FUNC_SINE_IN));
 	m_root->SetActivate(false);
 }
@@ -346,21 +395,28 @@ void MusicMenu::RestoreMinimized()
 	MusicMenu *menu = s_minimizedPlayer;
 	s_minimizedPlayer = NULL;
 	menu->m_minimized = false;
+	menu->m_restorePending = true;
+	menu->m_restoreFrames = 40;
 	menu->m_parentRoot->SetActivate(false);
 	menu->m_root->SetColor(1.0f, 1.0f, 1.0f, 0.0f);
 	menu->m_root->Show(common::transition::Type_Reset);
 	menu->m_root->SetColor(1.0f, 1.0f, 1.0f, 1.0f, new Timer(0.36f, Timer::FUNC_SINE_OUT));
-	menu->m_cover->SetPos(-375.0f, 208.0f, 0.0f);
-	menu->m_cover->SetScale(0.11f, 0.11f, 1.0f);
-	menu->m_cover->SetColor(1.0f, 1.0f, 1.0f, 0.45f);
-	menu->m_cover->SetPos(-260.0f, 6.0f, 0.0f, new Timer(0.58f, Timer::FUNC_BACK_OUT));
-	menu->m_cover->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.58f, Timer::FUNC_BACK_OUT));
-	menu->m_cover->SetColor(1.0f, 1.0f, 1.0f, 1.0f, new Timer(0.34f, Timer::FUNC_SINE_OUT));
-	menu->m_root->SetActivate(true);
+	menu->StartGenie(true);
 }
 
 void MusicMenu::Update()
 {
+	if (m_restorePending && --m_restoreFrames <= 0)
+	{
+		m_restorePending = false;
+		for (int32_t i = 0; i < GenieSlices; ++i) m_genie[i]->Hide(common::transition::Type_Reset);
+		m_cover->SetPos(-260.0f, 6.0f, 0.0f);
+		m_cover->SetScale(1.0f, 1.0f, 1.0f);
+		m_cover->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+		m_cover->Show(common::transition::Type_Reset);
+		m_coverShadow->Show(common::transition::Type_Reset);
+		m_root->SetActivate(true);
+	}
 	if (m_minimizePending && --m_minimizeFrames <= 0)
 	{
 		m_minimizePending = false;

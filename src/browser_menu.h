@@ -226,6 +226,7 @@ private:
 	paf::ui::Widget *m_searchButton;
 	paf::ui::Widget *m_ftpIndicator;
 	bool m_ftpShown;
+	bool m_ftpBusy;
 	bool m_musicShown;
 	bool m_backPending;
 	BrowserPage *m_backPage;

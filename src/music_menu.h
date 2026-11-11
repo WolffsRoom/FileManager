@@ -36,6 +36,7 @@ private:
 	static const int32_t OptionTag = 0x4d555349;
 
 	void ShowCover(const char *path, int32_t type, int32_t offset, int32_t length);
+	void StartGenie(bool expanding);
 	void UpdateSeekPreview(float percent);
 	int32_t ExportCurrent(bool notify);
 
@@ -43,6 +44,9 @@ private:
 	paf::ui::Scene *m_root;
 	paf::ui::Widget *m_background;
 	paf::ui::Widget *m_cover;
+	paf::ui::Widget *m_coverShadow;
+	static const int32_t GenieSlices = 6;
+	paf::ui::Widget *m_genie[GenieSlices];
 	paf::intrusive_ptr<paf::graph::Surface> m_coverSurface;
 	paf::ui::Widget *m_title;
 	paf::ui::Widget *m_artist;
@@ -63,6 +67,8 @@ private:
 	bool m_minimized;
 	bool m_minimizePending;
 	int32_t m_minimizeFrames;
+	bool m_restorePending;
+	int32_t m_restoreFrames;
 };
 
 #endif
