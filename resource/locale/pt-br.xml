@@ -101,10 +101,10 @@
   <string src="Instalar este pacote?" id="msg_install_confirm" />
   <string src="Instalando..." id="msg_installing" />
   <string src="Instalação em segundo plano" id="msg_bg_install_title" />
-  <string src="Este VPK tem mais de 100 MB. Deseja instalá-lo em segundo plano? A instalação continuará mesmo se o Gerenciador de arquivos for fechado." id="msg_bg_install_question" />
+  <string src="Este VPK tem mais de 100 MB. Deseja prepará-lo em segundo plano e concluir a instalação pelo módulo do sistema?" id="msg_bg_install_question" />
   <string src="Segundo plano" id="msg_bg_install_button" />
   <string src="Instalar agora" id="msg_bg_install_now" />
-  <string src="Instalação iniciada em segundo plano. O progresso continuará pelo módulo do sistema." id="msg_bg_install_queued" />
+  <string src="Preparação iniciada em segundo plano. Você pode continuar navegando; mantenha o app aberto até a confirmação final." id="msg_bg_install_queued" />
   <string src="Instalação em segundo plano concluída. O aplicativo já está na tela inicial." id="msg_bg_install_done" />
   <string src="Instalado (%s). Já está na tela inicial." id="msg_install_done" />
   <string src="Temas" id="msg_set_themes" />

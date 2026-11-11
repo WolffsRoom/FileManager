@@ -99,10 +99,10 @@
   <string src="Voulez-vous vraiment installer ce paquet?" id="msg_install_confirm" />
   <string src="Installation en cours..." id="msg_installing" />
   <string src="Installation en arrière-plan" id="msg_bg_install_title" />
-  <string src="Ce VPK dépasse 100 Mo. L'installer en arrière-plan ? L'installation continuera même si File Manager est fermé." id="msg_bg_install_question" />
+  <string src="Ce VPK dépasse 100 Mo. Le préparer en arrière-plan puis terminer via le module système ?" id="msg_bg_install_question" />
   <string src="Arrière-plan" id="msg_bg_install_button" />
   <string src="Installer maintenant" id="msg_bg_install_now" />
-  <string src="L'installation en arrière-plan a démarré et continuera via le module système." id="msg_bg_install_queued" />
+  <string src="La préparation a démarré en arrière-plan. Vous pouvez naviguer ; gardez l'application ouverte jusqu'à la confirmation finale." id="msg_bg_install_queued" />
   <string src="L'installation en arrière-plan est terminée. L'application est sur l'écran d'accueil." id="msg_bg_install_done" />
   <string src="Installed (%s). It is now on the home screen." id="msg_install_done" />
   <string src="Themes" id="msg_set_themes" />
