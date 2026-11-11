@@ -1002,20 +1002,13 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 	if (!page || !button || index < 0 || index >= (int32_t)page->entries.size()) return;
 	fs::Entry *entry = page->entries.at(index);
 	const bool marked = entry->marked;
-	// Never place an overlay above the row: PAF can retain it in the touch hit
-	// test after page transitions. Tint the actual content instead.
+	// Never place an overlay above the row or reach into ImageButton's internal
+	// draw objects: recycled PAF rows may not have those objects constructed yet.
+	// Tint only public child widgets, which is safe for touch and page changes.
 	ui::Widget *name = button->FindChild(text_list_item_name);
 	ui::Widget *info = button->FindChild(text_list_item_info);
 	if (name) name->SetColor(marked ? 0.25f : 1.0f, marked ? 0.72f : 1.0f, 1.0f, 1.0f);
 	if (info) info->SetColor(marked ? 0.25f : 0.75f, marked ? 0.72f : 0.78f, marked ? 1.0f : 0.82f, 1.0f);
-	graph::DrawObj *image = button->GetDrawObj(ui::ImageButton::OBJ_IMAGE);
-	if (image)
-	{
-		math::v4 color;
-		float values[4] = { marked ? 0.25f : 1.0f, marked ? 0.72f : 1.0f, 1.0f, 1.0f };
-		memcpy(&color, values, sizeof(color));
-		image->SetColor(color);
-	}
 	button->SetFocusedState(index == page->focused);
 }
 

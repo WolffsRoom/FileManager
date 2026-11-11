@@ -16,7 +16,8 @@ if ($settings -notmatch 'button->SetSize\(920\.0f, 80\.0f, 0\.0f\)') { throw 'Se
 $highlightStart = $browser.IndexOf('void BrowserMenu::ApplyRowHighlight(')
 $highlightEnd = $browser.IndexOf('void BrowserMenu::FillFileItem(', $highlightStart)
 $highlight = $browser.Substring($highlightStart, $highlightEnd - $highlightStart)
-if ($highlight -notmatch 'text_list_item_name' -or $highlight -notmatch 'ImageButton::OBJ_IMAGE') { throw 'Marked rows do not tint their name and icon' }
+if ($highlight -notmatch 'text_list_item_name' -or $highlight -notmatch 'text_list_item_info') { throw 'Marked rows do not tint their visible text' }
+if ($highlight -match 'GetDrawObj\(ui::ImageButton::OBJ_IMAGE\)') { throw 'Selection accesses an unsafe recycled ImageButton draw object' }
 if ($highlight -match 'plane_list_item_mark') { throw 'Selection overlay can intercept touch input' }
 if ($highlight -match 'button->SetColor') { throw 'Focus animation can still overwrite the selected tint' }
 

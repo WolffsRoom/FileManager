@@ -6,7 +6,8 @@ $start = $cpp.IndexOf('void BrowserMenu::ApplyRowHighlight(')
 $end = $cpp.IndexOf('void BrowserMenu::FillFileItem(', $start)
 if ($start -lt 0 -or $end -le $start) { throw 'Cannot inspect persistent row highlight implementation' }
 $body = $cpp.Substring($start, $end - $start)
-if ($body -notmatch 'entry->marked' -or $body -notmatch 'text_list_item_name' -or $body -notmatch 'ImageButton::OBJ_IMAGE') { throw 'Marked rows do not tint their content persistently' }
+if ($body -notmatch 'entry->marked' -or $body -notmatch 'text_list_item_name' -or $body -notmatch 'text_list_item_info') { throw 'Marked rows do not tint their content persistently' }
+if ($body -match 'GetDrawObj\(ui::ImageButton::OBJ_IMAGE\)') { throw 'Selection accesses an unsafe recycled ImageButton draw object' }
 if ($body -match 'plane_list_item_mark') { throw 'Marked layer can intercept row touch events' }
 if ($body -match 'button->SetColor') { throw 'Persistent marking is still overwritten by button focus animation' }
 if ($body -notmatch 'SetFocusedState\(index == page->focused\)') { throw 'Cursor focus is not independent from persistent marking' }
