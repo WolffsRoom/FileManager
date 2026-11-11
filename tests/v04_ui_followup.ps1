@@ -8,8 +8,8 @@ $rco = Get-Content "$root/resource/file_manager_plugin.xml" -Raw
 if ($rco -match '<plane texture="tex_new_theme" id="plane_theme_preview">') {
     throw 'theme preview texture still leaks through the shared file-row template'
 }
-if ($settings -notmatch 'themePreview->SetTexture\(g_appPlugin->GetTexture\(tex_new_theme\)') {
-    throw 'theme texture is not scoped to the Themes screen'
+if ($settings -notmatch 'k_themeIcons' -or $settings -notmatch 'icon = k_themeIcons\[row\]') {
+    throw 'theme icons do not use aligned per-theme button textures'
 }
 if ($browser -notmatch 'Type_3D_SlideToBack1' -or
     $browser -notmatch 'Type_3D_SlideFromFront' -or

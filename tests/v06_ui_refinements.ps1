@@ -29,8 +29,8 @@ if ($textures -notcontains '_common_texture_progressbar_base' -or
     $textures -notcontains '_common_texture_progressbar_slider') {
     throw 'opacity slider does not use native ScePaf progressbar assets'
 }
-if ($settings -notmatch 'colored child plane is the theme icon[\s\S]{0,180}button->SetTexture\(tex\)') {
-    throw 'Themes still renders a neutral icon below the colored icon'
+if ($settings -notmatch 'k_themeIcons' -or $settings -match 'themePreview->SetTexture') {
+    throw 'Themes do not use one aligned texture per row'
 }
 
 'v0.6 UI refinement checks passed'

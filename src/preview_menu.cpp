@@ -857,7 +857,9 @@ bool PreviewMenu::StartVideo(const char *path)
 
 	m_player = sceAvPlayerInit(&init);
 	VideoLog("sceAvPlayerInit: 0x%08X", m_player);
-	if (m_player < 0)
+	// Handles are opaque and valid retail values can have the high bit set.
+	// NetStream checks only for zero; signed comparison rejected 0x81600020.
+	if (!m_player)
 	{
 		m_player = 0;
 		return false;
@@ -874,7 +876,7 @@ bool PreviewMenu::StartVideo(const char *path)
 		sce_paf_memset(&init.fileReplacement, 0, sizeof(init.fileReplacement));
 		m_player = sceAvPlayerInit(&init);
 		VideoLog("native sceAvPlayerInit: 0x%08X", m_player);
-		if (m_player < 0) { m_player = 0; return false; }
+		if (!m_player) { m_player = 0; return false; }
 		added = sceAvPlayerAddSource(m_player, path);
 		VideoLog("native sceAvPlayerAddSource: 0x%08X", added);
 		if (added < 0)

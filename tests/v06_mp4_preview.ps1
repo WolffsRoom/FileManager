@@ -13,6 +13,7 @@ if ($cpp -notmatch 'frame\.pData' -or $header -notmatch 'VideoSurfaceEntry') {
     throw 'MP4 preview does not retain zero-copy surfaces for AvPlayer frame buffers'
 }
 if ($cpp -notmatch 'sceAvPlayerEnableStream') { throw 'MP4 preview does not explicitly enable audio/video streams' }
+if ($cpp -match 'if \(m_player < 0\)' -or $cpp -notmatch 'if \(!m_player\)') { throw 'Opaque AvPlayer handles are still treated as signed errors' }
 
 $slider = $preview.SelectSingleNode(".//progressbar_touch[@id='progressbar_video_page_preview']")
 if (-not $slider) { throw 'MP4 preview lacks a native touch seek control' }

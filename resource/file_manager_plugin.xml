@@ -781,6 +781,14 @@
     <texture src="ui/settings_new.png" type="texture/png" id="tex_new_settings" />
     <texture src="ui/search.png" type="texture/png" id="tex_new_search" />
 	<texture src="ui/theme_color.png" type="texture/png" id="tex_new_theme" />
+	<texture src="ui/theme_graphite.png" type="texture/png" id="tex_theme_graphite" />
+	<texture src="ui/theme_midnight.png" type="texture/png" id="tex_theme_midnight" />
+	<texture src="ui/theme_ocean.png" type="texture/png" id="tex_theme_ocean" />
+	<texture src="ui/theme_purple.png" type="texture/png" id="tex_theme_purple" />
+	<texture src="ui/theme_emerald.png" type="texture/png" id="tex_theme_emerald" />
+	<texture src="ui/theme_wine.png" type="texture/png" id="tex_theme_wine" />
+	<texture src="ui/theme_pink.png" type="texture/png" id="tex_theme_pink" />
+	<texture src="ui/theme_sony.png" type="texture/png" id="tex_theme_sony" />
 	<texture src="ui/preview_arrow_left.png" type="texture/png" id="tex_preview_arrow_left" />
 	<texture src="ui/preview_arrow_right.png" type="texture/png" id="tex_preview_arrow_right" />
     <texture src="texture/new/arrow.png" type="texture/png" id="tex_new_arrow" />

@@ -1009,6 +1009,17 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 	ui::Widget *info = button->FindChild(text_list_item_info);
 	if (name) name->SetColor(marked ? 0.25f : 1.0f, marked ? 0.72f : 1.0f, 1.0f, 1.0f);
 	if (info) info->SetColor(marked ? 0.25f : 0.75f, marked ? 0.72f : 0.78f, marked ? 1.0f : 0.82f, 1.0f);
+	ui::Widget *check = RowCheckbox(button->GetParent());
+	if (check)
+	{
+		check->SetActivate(false);
+		if (marked)
+		{
+			check->SetTexture(g_appPlugin->GetTexture(tex_checkbox_on), 0, 0);
+			check->Show(common::transition::Type_Popup1);
+		}
+		else check->Hide(common::transition::Type_Reset);
+	}
 	button->SetFocusedState(index == page->focused);
 }
 
@@ -1027,10 +1038,6 @@ void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 	paf::wstring infoWide = ToWide(FileDetails(entry));
 	button->FindChild(text_list_item_info)->SetString(infoWide);
 
-	// Browser marks deliberately use the same native highlighted state as the
-	// cursor. The shared check plane remains available to Settings only.
-	ui::Widget *check = RowCheckbox(button->GetParent());
-	if (check) check->Hide(common::transition::Type_Reset);
 	ApplyRowHighlight(page, (int32_t)button->GetName().GetIDHash(), button);
 }
 
@@ -1592,8 +1599,6 @@ void BrowserMenu::ApplyMarkToggle(int32_t index)
 		// with r0 == NULL immediately after FindChild(image_button_list_item).
 		ui::Widget *button = item->FindChild(image_button_list_item);
 		if (!button) continue;
-		ui::Widget *check = RowCheckbox(item);
-		if (check) check->Hide(common::transition::Type_Reset);
 		ApplyRowHighlight(page, i, button);
 	}
 	if (anyMarked)
@@ -1633,8 +1638,6 @@ void BrowserMenu::ApplySelectAll()
 		if (!item) continue;
 		ui::Widget *button = item->FindChild(image_button_list_item);
 		if (!button) continue; // recycled placeholder
-		ui::Widget *check = RowCheckbox(item);
-		if (check) check->Hide(common::transition::Type_Reset);
 		ApplyRowHighlight(page, i, button);
 	}
 	m_selectionBar->Show(common::transition::Type_Reset);

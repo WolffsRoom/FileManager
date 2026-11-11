@@ -36,6 +36,9 @@ namespace {
 	const uint32_t k_fontSizes[] = { msg_font_small, msg_font_normal, msg_font_large };
 	const uint32_t k_enabled[] = { msg_disabled, msg_enabled };
 	const uint32_t k_navigation[] = { msg_navigation_simple, msg_navigation_native };
+	const uint32_t k_themeIcons[] = { tex_theme_graphite, tex_theme_midnight, tex_theme_graphite,
+		tex_theme_ocean, tex_theme_purple, tex_theme_emerald, tex_theme_wine, tex_theme_pink,
+		tex_ui_image, tex_theme_sony };
 
 	// Button, then what it does
 	const uint32_t k_commands[][3] = {
@@ -396,7 +399,7 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		break;
 	case Level_Themes:
 		label = Str(theme::At(row).nameHash);
-		icon = row == (int32_t)theme::CustomIndex() ? tex_ui_image : tex_new_theme;
+		icon = k_themeIcons[row];
 		break;
 	case Level_FontSize:
 		label = Str(k_fontSizes[row]);
@@ -456,18 +459,8 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	}
 	else if (check) check->Hide(common::transition::Type_Reset);
 
-	intrusive_ptr<graph::Surface> tex;
-	if (m_level == Level_Themes && row != (int32_t)theme::CustomIndex())
-	{
-		// The colored child plane is the theme icon; explicitly clear the
-		// ImageButton texture so recycled rows cannot show a second neutral icon.
-		button->SetTexture(tex);
-	}
-	else
-	{
-		tex = g_appPlugin->GetTexture(icon);
-		if (tex.get()) button->SetTexture(tex);
-	}
+	intrusive_ptr<graph::Surface> tex = g_appPlugin->GetTexture(icon);
+	if (tex.get()) button->SetTexture(tex);
 	// Settings list icons are uniformly 10% smaller than the shared file-row
 	// default. Power actions are separate widgets and keep their own size.
 	math::v3 iconSize;
@@ -477,16 +470,6 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	};
 	memcpy(&iconSize, iconValues, sizeof(iconSize));
 	static_cast<ui::ImageButton *>(button)->SetTextureSize(iconSize);
-	if (m_level == Level_Themes)
-	{
-		const theme::Info &preview = theme::At(row);
-		if (themePreview && row != (int32_t)theme::CustomIndex())
-		{
-			themePreview->SetTexture(g_appPlugin->GetTexture(tex_new_theme), 0, 0);
-			themePreview->SetColor(preview.bg[0], preview.bg[1], preview.bg[2], 0.88f);
-			themePreview->Show(common::transition::Type_Reset);
-		}
-	}
 
 	button->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)

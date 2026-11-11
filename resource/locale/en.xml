@@ -173,7 +173,7 @@
   <string src="Client connected: %s" id="msg_ftp_client" />
   <string src="Trash" id="msg_shortcut_trash" />
   <string src="About" id="msg_set_about" />
-  <string src="File Manager 0.6 Beta&#10;&#10;Made by Wolff, File Manager is a file explorer for the PS Vita that brings together what VitaShell and FileManager Vita (FMVita, a fork of VitaShell) can do, in the system's own interface: the same menus, sounds and transitions as Sony's apps.&#10;&#10;Built with: ScePaf, the system UI framework (reverse engineering by GrapheneCt); NetStream and BetterHomebrewBrowser as references; VitaShell by TheFloW; ftpvita by xerpi; libarchive, libpng, zlib and libmad. Icons: Icons8.&#10;&#10;Licensed under GPLv3." id="msg_about_text" />
+  <string src="File Manager 0.7&#10;&#10;Made by Wolff, File Manager is a file explorer for the PS Vita that brings together what VitaShell and FileManager Vita (FMVita, a fork of VitaShell) can do, in the system's own interface: the same menus, sounds and transitions as Sony's apps.&#10;&#10;Built with: ScePaf, the system UI framework (reverse engineering by GrapheneCt); NetStream and BetterHomebrewBrowser as references; VitaShell by TheFloW; ftpvita by xerpi; libarchive, libpng, zlib and libmad. Icons: Icons8.&#10;&#10;Licensed under GPLv3." id="msg_about_text" />
   <string src="Wi-Fi is off" id="msg_wifi_off_title" />
   <string src="The FTP server needs a Wi-Fi connection. Turn on Wi-Fi and connect to a network, then try again." id="msg_wifi_off" />
   <string src="Open settings" id="msg_network_settings" />

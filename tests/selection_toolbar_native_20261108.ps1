@@ -31,9 +31,7 @@ if (!$browser.Contains('void BrowserMenu::DoActionPublic(Action action)') -or !$
 $start=$browser.IndexOf('void BrowserMenu::FillFileItem(')
 $end=$browser.IndexOf('void BrowserMenu::FillRootItem(', $start)
 $fileCode=$browser.Substring($start,$end-$start)
-if (!$fileCode.Contains('RowCheckbox(button->GetParent())') -or
- !$fileCode.Contains('check->Hide(common::transition::Type_Reset)') -or
- !$fileCode.Contains('ApplyRowHighlight')) {throw 'File rows do not use persistent highlight with checkboxes hidden'}
+if (!$fileCode.Contains('ApplyRowHighlight')) {throw 'File rows do not restore persistent selection state'}
 if ($fileCode.Contains('0.75f, entry->marked')) {throw 'Purple tint still applied to marked files'}
 $start=$browser.IndexOf('void BrowserMenu::ApplyMarkToggle(')
 $end=$browser.IndexOf('void BrowserMenu::SelectAll()', $start)
