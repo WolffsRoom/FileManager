@@ -434,7 +434,8 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		break;
 	}
 
-	button->SetString(label);
+	button->SetString(L"");
+	button->FindChild(text_list_item_name)->SetString(label);
 	button->FindChild(text_list_item_info)->SetString(info);
 
 	ui::Widget *check = item->FindChild(plane_list_item_check);
@@ -447,10 +448,17 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	}
 	else if (check) check->Hide(common::transition::Type_Reset);
 
-	intrusive_ptr<graph::Surface> tex = g_appPlugin->GetTexture(icon);
-	if (tex.get())
+	intrusive_ptr<graph::Surface> tex;
+	if (m_level == Level_Themes && row != (int32_t)theme::CustomIndex())
 	{
+		// The colored child plane is the theme icon; explicitly clear the
+		// ImageButton texture so recycled rows cannot show a second neutral icon.
 		button->SetTexture(tex);
+	}
+	else
+	{
+		tex = g_appPlugin->GetTexture(icon);
+		if (tex.get()) button->SetTexture(tex);
 	}
 	// Settings list icons are uniformly 10% smaller than the shared file-row
 	// default. Power actions are separate widgets and keep their own size.

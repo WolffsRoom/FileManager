@@ -263,7 +263,7 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	m_paths(paths), m_index(index), m_loadId(0), m_jobId(0),
 	m_player(0), m_videoActive(false), m_imageActive(false), m_paused(false), m_frameShown(false), m_videoW(0), m_videoH(0),
 	m_touchActive(false), m_pinchActive(false), m_touchStartX(0), m_touchStartY(0), m_touchLastX(0), m_touchLastY(0),
-	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false), m_viewMode(0), m_deletePending(false)
+	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false), m_viewMode(0), m_deletePending(false), m_animateNextImage(false)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -282,9 +282,21 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	m_thumbLeft = m_root->FindChild(plane_thumb_left_page_preview);
 	m_thumbCurrent = m_root->FindChild(plane_thumb_current_page_preview);
 	m_thumbRight = m_root->FindChild(plane_thumb_right_page_preview);
+	m_thumbLeftButton = m_root->FindChild(button_thumb_left_page_preview);
+	m_thumbCurrentButton = m_root->FindChild(button_thumb_current_page_preview);
+	m_thumbRightButton = m_root->FindChild(button_thumb_right_page_preview);
 	m_thumbLeft->Hide(common::transition::Type_Reset);
 	m_thumbCurrent->Hide(common::transition::Type_Reset);
 	m_thumbRight->Hide(common::transition::Type_Reset);
+	m_thumbLeftButton->Hide(common::transition::Type_Reset);
+	m_thumbCurrentButton->Hide(common::transition::Type_Reset);
+	m_thumbRightButton->Hide(common::transition::Type_Reset);
+	AddKey(m_thumbLeftButton, 0,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata) { reinterpret_cast<PreviewMenu *>(userdata)->OnThumbnail(-1); }, this);
+	AddKey(m_thumbCurrentButton, 0,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata) { reinterpret_cast<PreviewMenu *>(userdata)->OnThumbnail(0); }, this);
+	AddKey(m_thumbRightButton, 0,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata) { reinterpret_cast<PreviewMenu *>(userdata)->OnThumbnail(1); }, this);
 	if (m_paths.size() < 2)
 	{
 		m_leftArrow->Hide(common::transition::Type_Reset);
@@ -464,6 +476,19 @@ void PreviewMenu::StepImage(int32_t delta)
 	Open((m_index + n + delta) % n);
 }
 
+void PreviewMenu::OnThumbnail(int32_t delta)
+{
+	if (!m_imageActive) return;
+	if (delta == 0)
+	{
+		SetViewMode(0);
+		return;
+	}
+	m_animateNextImage = true;
+	int32_t n = m_paths.size();
+	Open((m_index + n + delta) % n);
+}
+
 void PreviewMenu::SetArrowPressed(bool left, bool pressed)
 {
 	ui::Widget *arrow = left ? m_leftArrow : m_rightArrow;
@@ -484,17 +509,34 @@ void PreviewMenu::SetViewMode(int32_t mode)
 		m_thumbLeft->Show(common::transition::Type_FadeinFast);
 		m_thumbCurrent->Show(common::transition::Type_FadeinFast);
 		m_thumbRight->Show(common::transition::Type_FadeinFast);
+		m_thumbLeftButton->Show(common::transition::Type_Reset);
+		m_thumbCurrentButton->Show(common::transition::Type_Reset);
+		m_thumbRightButton->Show(common::transition::Type_Reset);
+		m_thumbLeft->SetScale(0.86f, 0.86f, 1.0f);
+		m_thumbCurrent->SetScale(0.86f, 0.86f, 1.0f);
+		m_thumbRight->SetScale(0.86f, 0.86f, 1.0f);
+		m_thumbLeft->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.24f, Timer::FUNC_SINE_OUT, Timer::REPEAT_NONE));
+		m_thumbCurrent->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.28f, Timer::FUNC_SINE_OUT, Timer::REPEAT_NONE));
+		m_thumbRight->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.24f, Timer::FUNC_SINE_OUT, Timer::REPEAT_NONE));
 		m_imageScale = m_imageInitialScale * 0.72f;
-		m_plane->SetPos(0.0f, 58.0f, 0.0f);
 	}
 	else
 	{
-		m_thumbLeft->Hide(common::transition::Type_Reset);
-		m_thumbCurrent->Hide(common::transition::Type_Reset);
-		m_thumbRight->Hide(common::transition::Type_Reset);
+		m_thumbLeft->Hide(common::transition::Type_FadeinFast);
+		m_thumbCurrent->Hide(common::transition::Type_FadeinFast);
+		m_thumbRight->Hide(common::transition::Type_FadeinFast);
+		m_thumbLeftButton->Hide(common::transition::Type_Reset);
+		m_thumbCurrentButton->Hide(common::transition::Type_Reset);
+		m_thumbRightButton->Hide(common::transition::Type_Reset);
 		m_imageScale = full ? m_imageInitialScale * 1.25f : m_imageInitialScale;
-		m_plane->SetPos(0.0f, 0.0f, 0.0f);
 	}
+	graph::PlaneObj *obj = static_cast<graph::PlaneObj *>(m_plane->GetDrawObj(ui::Plane::OBJ_PLANE));
+	obj->SetTexRegion(math::v4(m_flipX ? 1.0f : 0.0f, m_flipY ? 1.0f : 0.0f,
+		m_flipX ? -1.0f : 1.0f, m_flipY ? -1.0f : 1.0f));
+	m_plane->SetPos(0.0f, strip ? 58.0f : 0.0f, 0.0f,
+		new Timer(0.30f, Timer::FUNC_SINE_INOUT, Timer::REPEAT_NONE));
+	m_plane->SetScale(m_imageScale, m_imageScale, 1.0f,
+		new Timer(0.30f, Timer::FUNC_SINE_INOUT, Timer::REPEAT_NONE));
 	if (full)
 	{
 		m_title->Hide(common::transition::Type_FadeinFast);
@@ -506,7 +548,6 @@ void PreviewMenu::SetViewMode(int32_t mode)
 		m_title->Show(common::transition::Type_FadeinFast);
 		if (m_paths.size() > 1) { m_leftArrow->Show(common::transition::Type_FadeinFast); m_rightArrow->Show(common::transition::Type_FadeinFast); }
 	}
-	ApplyImageTransform();
 }
 
 void PreviewMenu::Close()
@@ -540,6 +581,9 @@ void PreviewMenu::Open(int32_t index)
 	m_thumbLeft->Hide(common::transition::Type_Reset);
 	m_thumbCurrent->Hide(common::transition::Type_Reset);
 	m_thumbRight->Hide(common::transition::Type_Reset);
+	m_thumbLeftButton->Hide(common::transition::Type_Reset);
+	m_thumbCurrentButton->Hide(common::transition::Type_Reset);
+	m_thumbRightButton->Hide(common::transition::Type_Reset);
 	m_plane->SetScale(1.0f, 1.0f, 1.0f);
 	m_plane->SetPos(0.0f, 0.0f, 0.0f);
 	m_index = index;
@@ -593,7 +637,7 @@ void PreviewMenu::LoadImageJob()
 			m_leftSurf = left;
 			m_rightSurf = right;
 			m_plane->SetTexture(tex, 0, 0);
-			m_plane->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+			m_plane->SetColor(1.0f, 1.0f, 1.0f, m_animateNextImage ? 0.12f : 1.0f);
 			float displayW = (float)tex->GetWidth();
 			float displayH = (float)tex->GetHeight();
 			if (displayW >= 960.0f || displayH >= 544.0f)
@@ -606,8 +650,15 @@ void PreviewMenu::LoadImageJob()
 			graph::PlaneObj *obj = static_cast<graph::PlaneObj *>(m_plane->GetDrawObj(ui::Plane::OBJ_PLANE));
 			obj->SetScaleMode(graph::PlaneObj::SCALE_ASPECT_SIZE, graph::PlaneObj::SCALE_ASPECT_SIZE);
 			m_imageInitialScale = 1.0f;
-			m_imageScale = m_imageInitialScale;
+			m_imageScale = m_animateNextImage ? 0.90f : m_imageInitialScale;
 			ApplyImageTransform();
+			if (m_animateNextImage)
+			{
+				m_plane->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.30f, Timer::FUNC_SINE_OUT, Timer::REPEAT_NONE));
+				m_plane->SetColor(1.0f, 1.0f, 1.0f, 1.0f, new Timer(0.24f, Timer::FUNC_SINE_OUT, Timer::REPEAT_NONE));
+				m_imageScale = 1.0f;
+				m_animateNextImage = false;
+			}
 			m_imageActive = true;
 		}
 		else

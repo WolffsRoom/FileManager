@@ -24,6 +24,7 @@ public:
 	/** Runs on the main thread, once per frame, while a video is open. */
 	void OnVideoFrame();
 	void OnVideoSeek();
+	void OnThumbnail(int32_t delta);
 	void OnImageTouch();
 	void OnOptions();
 	void OnOption(int32_t index);
@@ -69,6 +70,9 @@ private:
 	paf::ui::Widget *m_thumbLeft;
 	paf::ui::Widget *m_thumbCurrent;
 	paf::ui::Widget *m_thumbRight;
+	paf::ui::Widget *m_thumbLeftButton;
+	paf::ui::Widget *m_thumbCurrentButton;
+	paf::ui::Widget *m_thumbRightButton;
 
 	paf::vector<paf::string> m_paths;
 	int32_t m_index;
@@ -108,6 +112,7 @@ private:
 	bool m_flipY;
 	int32_t m_viewMode;
 	bool m_deletePending;
+	bool m_animateNextImage;
 };
 
 #endif

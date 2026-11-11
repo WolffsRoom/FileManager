@@ -342,6 +342,9 @@
 	  <plane texture="_common_texture_transparent" id="plane_thumb_left_page_preview"><layout_hint size="190, 104" pos="-220, -190" /></plane>
 	  <plane texture="_common_texture_transparent" id="plane_thumb_current_page_preview"><layout_hint size="210, 116" pos="0, -184" /></plane>
 	  <plane texture="_common_texture_transparent" id="plane_thumb_right_page_preview"><layout_hint size="190, 104" pos="220, -190" /></plane>
+	  <button style="_common_default_style_button_transparent" id="button_thumb_left_page_preview"><layout_hint size="210, 124" pos="-220, -190" /></button>
+	  <button style="_common_default_style_button_transparent" id="button_thumb_current_page_preview"><layout_hint size="230, 136" pos="0, -184" /></button>
+	  <button style="_common_default_style_button_transparent" id="button_thumb_right_page_preview"><layout_hint size="210, 124" pos="220, -190" /></button>
 	  <button style="_common_default_style_button_transparent" id="button_up_page_preview"><layout_hint size="1, 1" /><focus_hint enable="0" /></button>
 	  <button style="_common_default_style_button_transparent" id="button_down_page_preview"><layout_hint size="1, 1" /><focus_hint enable="0" /></button>
       <button style="_common_default_style_button_transparent" id="button_prev_page_preview">
@@ -502,14 +505,19 @@
     <style_plane color="1, 1, 1, 0.58" planeobj="plane_obj1" id="style_plane_index_icon">
       <planeobj id="plane_obj1" />
     </style_plane>
-    <style_progressbar_touch base_obj="plane_obj1" bar_fore_obj="plane_obj2" bar_back_obj="plane_obj3"
-      slider_obj="plane_obj4" slider_glow_obj="plane_obj5" glow_obj="plane_obj6" id="style_progressbar_touch_native">
-      <planeobj color="1, 1, 1, 0.18" id="plane_obj1" />
-      <planeobj color="0.32, 0.72, 1, 1" id="plane_obj2" />
-      <planeobj color="1, 1, 1, 0.10" id="plane_obj3" />
-      <planeobj color="0.72, 0.90, 1, 1" size="28, 28" id="plane_obj4" />
-      <planeobj color="0.45, 0.80, 1, 0.55" size="40, 40" blend="2" id="plane_obj5" />
-      <planeobj color="0.45, 0.80, 1, 0.25" blend="2" id="plane_obj6" />
+    <style_progressbar_touch base_obj="plane_obj1" slider_obj="plane_obj2" slider_glow_obj="plane_obj3"
+      glow_obj="plane_obj4" bar_shadow_obj="plane_obj5" shadow_margin="0, 0" bar_fore_obj="plane_obj6"
+      shadow_offset="0, -5" bar_back_obj="plane_obj7" signal_obj="plane_obj8" base_shadow_obj="plane_obj9"
+      id="style_progressbar_touch_native">
+      <planeobj scale_mode_y="1" texture0="_common_texture_progressbar_base" id="plane_obj1" />
+      <planeobj color="0.32, 0.72, 1, 1" scale_mode_y="1" texture0="_common_texture_progressbar_bar" id="plane_obj6" />
+      <planeobj scale_mode_y="1" texture0="_common_texture_progressbar_bar_back" id="plane_obj7" />
+      <planeobj scale_mode_y="1" texture0="_common_texture_progressbar_signal" id="plane_obj8" />
+      <planeobj texture0="_common_texture_progressbar_glow" color="0.45, 0.80, 1, 1" scale_mode_x="1" scale_mode_y="1" blend="2" scale_value="2.5" id="plane_obj4" />
+      <planeobj color="1, 1, 1, 0.7" scale_mode_y="1" texture0="_common_texture_progressbar_shadow" id="plane_obj9" />
+      <planeobj color="0.32, 0.72, 1, 0.7" scale_mode_y="1" texture0="_common_texture_progressbar_shadow" id="plane_obj5" />
+      <planeobj texture0="_common_texture_progressbar_slider_glow" color="0.45, 0.80, 1, 1" scale_mode_x="1" scale_mode_y="1" scale_value="0.5, 0.5" id="plane_obj3" />
+      <planeobj scale_mode_y="1" scale_mode_x="1" texture0="_common_texture_progressbar_slider" scale_value="0.5, 0.5" id="plane_obj2" />
     </style_progressbar_touch>
     <style_plane color="1, 1, 1, 0.20" planeobj="plane_obj1" id="style_plane_qr_frame">
       <planeobj id="plane_obj1" />
@@ -580,7 +588,10 @@
       <textobj font_size="20" align_y="1" align_x="0" ellipsis="1" font_color="0.75, 0.78, 0.82, 1" id="text_obj1" />
     </style_text>
     <style_text textobj="text_obj1" id="style_text_list_item_info">
-      <textobj font_size="20" align_y="1" align_x="2" font_color="0.75, 0.78, 0.82, 1" id="text_obj1" />
+      <textobj font_size="18" align_y="1" align_x="0" ellipsis="1" font_color="0.75, 0.78, 0.82, 1" id="text_obj1" />
+    </style_text>
+    <style_text textobj="text_obj1" id="style_text_list_item_name">
+      <textobj font_size="28" bold="1" align_y="1" align_x="0" ellipsis="1" font_color="1, 1, 1, 1" id="text_obj1" />
     </style_text>
 
     <style_button label_obj="label_obj1" bg_obj="plane_obj1" left_margin="12" right_margin="12" id="style_button_text_line">
@@ -663,11 +674,14 @@
         <plane style="style_plane_selection_mark" id="plane_list_item_mark">
           <layout_hint size="840, 76" />
         </plane>
-        <image_button sound="_common_sound_image_button" enable_long_press_text_auto_scroll="1" style="style_image_button_list_button" id="image_button_list_item">
+        <image_button sound="_common_sound_image_button" style="style_image_button_list_button" id="image_button_list_item">
           <focus_hint focus_shape="3" />
           <layout_hint size="840, 80" />
+          <text style="style_text_list_item_name" id="text_list_item_name">
+            <layout_hint anchor="1, 0" align="1, 0" size="600, 34" pos="118, 15" />
+          </text>
           <text style="style_text_list_item_info" id="text_list_item_info">
-            <layout_hint anchor="2, 0" align="2, 0" size="260, 40" pos="-24, 0" />
+            <layout_hint anchor="1, 0" align="1, 0" size="600, 26" pos="118, -19" />
           </text>
 		  <plane texture="_common_texture_transparent" id="plane_theme_preview">
 			<layout_hint size="91.8, 63" pos="-364.1, 0" />

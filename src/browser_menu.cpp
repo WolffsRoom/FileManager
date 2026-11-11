@@ -974,8 +974,10 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry *entry)
 {
 	paf::wstring label = ToWide(entry->name);
-	button->SetString(label);
-	graph::TextObj *labelObj = static_cast<graph::TextObj *>(button->GetDrawObj(ui::Button::OBJ_LABEL));
+	button->SetString(L"");
+	ui::Widget *nameWidget = button->FindChild(text_list_item_name);
+	nameWidget->SetString(label);
+	graph::TextObj *labelObj = static_cast<graph::TextObj *>(nameWidget->GetDrawObj(ui::Text::OBJ_TEXT));
 	if (labelObj && !label.empty())
 	{
 		labelObj->SetStyleAttribute(graph::TextStyleAttribute_Point, 0, label.size(), settings::FileFontSize());
@@ -1168,8 +1170,9 @@ ui::ListItem *BrowserMenu::CreateListItem(ui::listview::ItemFactory::CreateParam
 		reinterpret_cast<BrowserMenu *>(userdata)->OnItemFocus(static_cast<ui::Widget *>(self));
 	}, this);
 
-	// A long press selects.
-	button->AddEventCallback(ui::Button::CB_BTN_LONG_PRESS,
+	// Use the native touch gesture rather than the button's text-auto-scroll
+	// long press. The latter is not emitted consistently for recycled list rows.
+	button->AddEventCallback(ui::Handler::CB_GESTURE_LONG_PRESS,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
 		if (!userdata || !self) return;
