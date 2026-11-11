@@ -23,6 +23,7 @@ public:
 
 	/** Runs on the main thread, once per frame, while a video is open. */
 	void OnVideoFrame();
+	void OnVideoSeek();
 	void OnImageTouch();
 	void OnOptions();
 	void OnOption(int32_t index);
@@ -38,6 +39,12 @@ public:
 	void StepImage(int32_t delta);
 
 private:
+	struct VideoSurfaceEntry
+	{
+		VideoSurfaceEntry() : data(NULL) {}
+		void *data;
+		paf::intrusive_ptr<paf::graph::Surface> surface;
+	};
 
 	void Open(int32_t index);
 	void StopVideo();
@@ -74,16 +81,15 @@ private:
 	bool m_imageActive;
 	bool m_paused;
 	bool m_frameShown;
-	uint32_t *m_rgba;
 	int32_t m_videoW;
 	int32_t m_videoH;
-	paf::intrusive_ptr<paf::graph::Surface> m_videoSurf;
+	paf::vector<VideoSurfaceEntry> m_videoSurfaces;
 	paf::intrusive_ptr<paf::graph::Surface> m_currentSurf;
 	paf::intrusive_ptr<paf::graph::Surface> m_leftSurf;
 	paf::intrusive_ptr<paf::graph::Surface> m_rightSurf;
 	paf::ui::Widget *m_controls;
 	paf::ui::Widget *m_time;
-	paf::ui::Widget *m_barFill;
+	paf::ui::ProgressBarTouch *m_videoSlider;
 	uint64_t m_duration;
 	uint32_t m_frameCounter;
 	bool m_touchActive;

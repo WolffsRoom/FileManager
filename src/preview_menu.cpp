@@ -17,6 +17,7 @@
 // In the stub (NID 0x2CD86FD6) but not in the VitaSDK header.
 extern "C" int sceAvPlayerStreamCount(SceAvPlayerHandle handle);
 extern "C" int sceAvPlayerStart(SceAvPlayerHandle handle);
+extern "C" int sceAvPlayerEnableStream(SceAvPlayerHandle handle, uint32_t streamIndex);
 
 #include "common.h"
 #include "dialog.h"
@@ -127,38 +128,6 @@ namespace {
 	uint64_t VideoSizeFile(void *p)
 	{
 		return s_videoSize;
-	}
-
-	inline uint32_t Clamp8(int v)
-	{
-		return v < 0 ? 0 : (v > 255 ? 255 : (uint32_t)v);
-	}
-
-	// Planar YUV420 to RGBA at half resolution: a quarter of the pixels, cheap enough
-	// to run on the main thread at video frame rate.
-	void ConvertHalf(const uint8_t *yuv, uint32_t *rgba, int w, int h)
-	{
-		const uint8_t *yp = yuv;
-		const uint8_t *up = yuv + w * h;
-		const uint8_t *vp = up + (w / 2) * (h / 2);
-		const int cw = w / 2;
-		for (int j = 0; j < h / 2; j++)
-		{
-			const uint8_t *yr = yp + j * 2 * w;
-			const uint8_t *ur = up + j * cw;
-			const uint8_t *vr = vp + j * cw;
-			uint32_t *out = rgba + j * cw;
-			for (int i = 0; i < cw; i++)
-			{
-				int Y = yr[i * 2];
-				int U = ur[i] - 128;
-				int V = vr[i] - 128;
-				uint32_t R = Clamp8((Y * 298 + V * 409 + 128) >> 8);
-				uint32_t G = Clamp8((Y * 298 - U * 100 - V * 208 + 128) >> 8);
-				uint32_t B = Clamp8((Y * 298 + U * 516 + 128) >> 8);
-				out[i] = 0xFF000000u | (B << 16) | (G << 8) | R;
-			}
-		}
 	}
 
 	// What the player returned at each step: why a video does not open on the console.
@@ -292,7 +261,7 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	int32_t index, ChangeCallback onChanged, void *userdata) :
 	m_parentRoot(parentRoot), m_onChanged(onChanged), m_userdata(userdata), m_filesChanged(false),
 	m_paths(paths), m_index(index), m_loadId(0), m_jobId(0),
-	m_player(0), m_videoActive(false), m_imageActive(false), m_paused(false), m_frameShown(false), m_rgba(NULL), m_videoW(0), m_videoH(0),
+	m_player(0), m_videoActive(false), m_imageActive(false), m_paused(false), m_frameShown(false), m_videoW(0), m_videoH(0),
 	m_touchActive(false), m_pinchActive(false), m_touchStartX(0), m_touchStartY(0), m_touchLastX(0), m_touchLastY(0),
 	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false), m_viewMode(0), m_deletePending(false)
 {
@@ -393,7 +362,14 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 
 	m_controls = m_root->FindChild(plane_controls_page_preview);
 	m_time = m_controls->FindChild(text_time_page_preview);
-	m_barFill = m_controls->FindChild(plane_bar_fill_page_preview);
+	m_videoSlider = static_cast<ui::ProgressBarTouch *>(m_controls->FindChild(progressbar_video_page_preview));
+	m_videoSlider->SetMinValue(0.0f);
+	m_videoSlider->SetMaxValue(100.0f);
+	m_videoSlider->AddEventCallback(ui::ProgressBarTouch::CB_PROGRESSBAR_CHANGED,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		reinterpret_cast<PreviewMenu *>(userdata)->OnVideoSeek();
+	}, this);
 	m_controls->Hide(common::transition::Type_Reset);
 
 	AddKey(m_root->FindChild(button_rewind_page_preview), inputdevice::pad::Data::PAD_LEFT,
@@ -467,9 +443,18 @@ void PreviewMenu::SeekVideo(int32_t deltaMs)
 	}
 	if (m_duration && (uint64_t)target > m_duration)
 	{
-		target = m_duration - 1000;
+		target = m_duration > 1000 ? m_duration - 1000 : 0;
 	}
 	sceAvPlayerJumpToTime(m_player, (uint64_t)target);
+}
+
+void PreviewMenu::OnVideoSeek()
+{
+	if (!m_videoActive || !m_duration) return;
+	float percent = m_videoSlider->GetValue();
+	if (percent < 0.0f) percent = 0.0f;
+	if (percent > 100.0f) percent = 100.0f;
+	sceAvPlayerJumpToTime(m_player, (uint64_t)((double)m_duration * percent / 100.0));
 }
 
 void PreviewMenu::StepImage(int32_t delta)
@@ -856,9 +841,11 @@ bool PreviewMenu::StartVideo(const char *path)
 	{
 		SceAvPlayerStreamInfo info;
 		sce_paf_memset(&info, 0, sizeof(info));
-		if (sceAvPlayerGetStreamInfo(m_player, i, &info) >= 0 && info.duration > m_duration)
+		if (sceAvPlayerGetStreamInfo(m_player, i, &info) >= 0)
 		{
-			m_duration = info.duration;
+			if (info.type == SCE_AVPLAYER_VIDEO || info.type == SCE_AVPLAYER_AUDIO)
+				sceAvPlayerEnableStream(m_player, i);
+			if (info.duration > m_duration) m_duration = info.duration;
 		}
 	}
 
@@ -900,8 +887,7 @@ void PreviewMenu::StopVideo()
 	m_player = 0;
 	m_videoActive = false;
 	m_controls->Hide(common::transition::Type_Reset);
-	free(m_rgba);
-	m_rgba = NULL;
+	m_videoSurfaces.clear();
 	m_videoW = m_videoH = 0;
 }
 
@@ -930,24 +916,34 @@ void PreviewMenu::OnVideoFrame()
 
 	if (w != m_videoW || h != m_videoH)
 	{
-		free(m_rgba);
-		m_rgba = (uint32_t *)memalign(64, (w / 2) * (h / 2) * 4);
 		m_videoW = w;
 		m_videoH = h;
-		m_videoSurf.clear();
-		if (m_rgba)
+		m_videoSurfaces.clear();
+	}
+
+	intrusive_ptr<graph::Surface> surface;
+	for (uint32_t i = 0; i < m_videoSurfaces.size(); ++i)
+	{
+		if (m_videoSurfaces.at(i).data == frame.pData)
 		{
-			m_videoSurf = new graph::Surface(gutil::GetDefaultSurfacePool(), w / 2, h / 2,
-				ImageMode_RGBA8888, ImageOrder_Linear, 1, 1, 0);
+			surface = m_videoSurfaces.at(i).surface;
+			break;
 		}
 	}
-	if (!m_rgba || !m_videoSurf.get())
+	if (!surface.get())
+	{
+		VideoSurfaceEntry entry;
+		entry.data = frame.pData;
+		entry.surface = new graph::Surface(w, h, ImageMode_YUV420P3, ImageOrder_Linear,
+			1, frame.pData, w, 1, 0);
+		surface = entry.surface;
+		m_videoSurfaces.push_back(entry);
+	}
+	if (!surface.get())
 	{
 		return;
 	}
-
-	ConvertHalf((const uint8_t *)frame.pData, m_rgba, w, h);
-	m_videoSurf->Copy(0, m_rgba, ImageOrder_Linear, (w / 2) * 4, 0);
+	m_plane->SetTexture(surface, 0, 0);
 
 	if (m_frameCounter++ % 15 == 0)
 	{
@@ -961,8 +957,8 @@ void PreviewMenu::OnVideoFrame()
 		m_time->SetString(text);
 		if (m_duration)
 		{
-			float w = 600.0f * (float)((double)now / (double)m_duration);
-			m_barFill->SetSize(w > 600.0f ? 600.0f : w, 8.0f, 0.0f);
+			float percent = 100.0f * (float)((double)now / (double)m_duration);
+			m_videoSlider->SetValue(percent > 100.0f ? 100.0f : percent, false);
 		}
 	}
 
@@ -970,7 +966,6 @@ void PreviewMenu::OnVideoFrame()
 	{
 		m_frameShown = true;
 		m_busy->Stop();
-		m_plane->SetTexture(m_videoSurf, 0, 0);
 		m_plane->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 }

@@ -358,12 +358,9 @@
       </button>
       <plane style="style_plane_panel" id="plane_controls_page_preview">
         <layout_hint size="960, 70" anchor="0, 1" align="0, 1" pos="0, 0" />
-        <plane style="style_plane_bar_base" id="plane_bar_page_preview">
-          <layout_hint size="600, 8" pos="0, 12" />
-          <plane style="style_plane_bar_fill" id="plane_bar_fill_page_preview">
-            <layout_hint anchor="1, 0" align="1, 0" size="0, 8" />
-          </plane>
-        </plane>
+        <progressbar_touch style="style_progressbar_touch_native" label_mode="2" id="progressbar_video_page_preview">
+          <layout_hint size="600, 24" pos="0, 12" />
+        </progressbar_touch>
         <text style="style_text_ftp_info" id="text_time_page_preview">
           <layout_hint size="600, 30" pos="0, -14" />
         </text>
