@@ -31,6 +31,8 @@
 #include "core/pfs.h"
 #include "core/psarc.h"
 #include "core/download.h"
+#include "core/archive_ops.h"
+#include "core/media_export.h"
 #include <psp2/net/http.h>
 #include <psp2/libssl.h>
 #include <psp2/sysmodule.h>
@@ -171,6 +173,28 @@ namespace {
 		return entry->kind == fs::Kind_Video;
 	}
 
+	bool IsArchive(const fs::Entry *entry)
+	{
+		if (!entry || entry->isDir || entry->kind != fs::Kind_Package) return false;
+		const char *dot = strrchr(entry->name.c_str(), '.');
+		return dot && (strcasecmp(dot, ".zip") == 0 || strcasecmp(dot, ".rar") == 0 ||
+			strcasecmp(dot, ".7z") == 0 || strcasecmp(dot, ".tar") == 0 ||
+			strcasecmp(dot, ".gz") == 0);
+	}
+
+	bool IsExportableMedia(const fs::Entry *entry)
+	{
+		if (!entry || entry->isDir) return false;
+		const char *dot = strrchr(entry->name.c_str(), '.');
+		return dot && (strcasecmp(dot, ".mp3") == 0 || strcasecmp(dot, ".mp4") == 0);
+	}
+
+	bool HasAppSfo(const paf::string &path)
+	{
+		SceIoStat stat;
+		return sceIoGetstat((path + "/sce_sys/param.sfo").c_str(), &stat) >= 0;
+	}
+
 	bool ContainsNoCase(const char *text, const char *needle)
 	{
 		size_t n = strlen(needle);
@@ -228,7 +252,7 @@ namespace {
 	}
 }
 
-BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_inputAction(Action_Rename),
+BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_operationRunning(false), m_inputAction(Action_Rename),
 	m_iconCount(0), m_vpkIconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
 {
 	Plugin::PageOpenParam openParam;
@@ -1524,6 +1548,7 @@ void BrowserMenu::ApplyItemDecide(int32_t index)
 	}
 	else if (entry->kind == fs::Kind_Vpk)
 	{
+		if (m_operationRunning) return;
 		m_opSources.clear();
 		m_opSources.push_back(fs::Join(page->path, entry->name));
 		new InfoMenu(m_root, InfoMenu::Mode_Install, m_opSources.at(0), entry, OnInstallAnswerCb, this);
@@ -1680,6 +1705,15 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		}
 		if (target && !target->isShortcut && !fs::IsRootStyle(page->path))
 			m_optionActions.push_back(Action_AddShortcut);
+		if (target && !anyMarked && !fs::IsRootStyle(page->path))
+		{
+			const paf::string targetPath = fs::Join(page->path, target->name);
+			const bool appFolder = target->isDir && HasAppSfo(targetPath);
+			if (appFolder && strncasecmp(targetPath.c_str(), "ux0:app/", 8) == 0)
+				m_optionActions.push_back(Action_RefreshLiveArea);
+			m_optionActions.push_back(Action_CompressZip);
+			if (!appFolder) m_optionActions.push_back(Action_NewFolder);
+		}
 		m_optionActions.push_back(Action_Ftp);
 		m_optionActions.push_back(Action_Qr);
 		m_optionActions.push_back(Action_Sort);
@@ -1705,6 +1739,17 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 	}
 	else
 	{
+		const paf::string targetPath = target ? fs::Join(page->path, target->name) : paf::string();
+		const bool appFolder = target && target->isDir && !anyMarked && HasAppSfo(targetPath);
+		const bool targetSpecial = target && !anyMarked && (IsArchive(target) || IsExportableMedia(target) || appFolder);
+		if (target && !anyMarked && IsArchive(target))
+			m_optionActions.push_back(Action_Extract);
+		if (target && !anyMarked && IsExportableMedia(target))
+			m_optionActions.push_back(Action_ExportMedia);
+		if (appFolder)
+			m_optionActions.push_back(Action_InstallFolder);
+		if (anyMarked)
+			m_optionActions.push_back(Action_CompressZip);
 		if (target || anyMarked)
 		{
 			m_optionActions.push_back(Action_Copy);
@@ -1724,7 +1769,7 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		{
 			m_optionActions.push_back(Action_Decrypt);
 		}
-		m_optionActions.push_back(Action_NewFolder);
+		if (!targetSpecial) m_optionActions.push_back(Action_NewFolder);
 		if (target && !anyMarked)
 		{
 			m_optionActions.push_back(Action_Info);
@@ -1736,7 +1781,9 @@ void BrowserMenu::OpenOptionMenu(bool submenu)
 		msg_opt_select, msg_opt_clear_selection, msg_opt_copy, msg_opt_move, msg_opt_paste,
 		msg_opt_delete, msg_opt_rename, msg_opt_new_folder, msg_opt_info, msg_opt_settings,
 		msg_opt_more, msg_opt_add_shortcut, msg_opt_remove_shortcut, msg_ftp_server, msg_qr_code,
-		msg_sort, msg_sort_date, msg_sort_name, msg_sort_type, msg_decrypt, msg_undo
+		msg_sort, msg_sort_date, msg_sort_name, msg_sort_type, msg_decrypt, msg_undo,
+		msg_opt_extract, msg_opt_compress_zip, msg_opt_export_media, msg_opt_install_folder,
+		msg_opt_refresh_livearea
 	};
 
 	paf::vector<OptionMenu::Button> buttons;
@@ -1849,6 +1896,10 @@ namespace {
 void BrowserMenu::DoAction(Action action)
 {
 	BrowserPage *page = Top();
+	if (m_operationRunning && (action == Action_Paste || action == Action_Delete || action == Action_Rename ||
+		action == Action_NewFolder || action == Action_Extract || action == Action_CompressZip ||
+		action == Action_ExportMedia || action == Action_InstallFolder || action == Action_RefreshLiveArea))
+		return;
 
 	switch (action)
 	{
@@ -1945,6 +1996,55 @@ void BrowserMenu::DoAction(Action action)
 		new TextInput(m_root, g_appPlugin->GetString(msg_new_folder_title), paf::wstring(), OnInputDone, this);
 		break;
 
+	case Action_Extract:
+		if (page->focused >= 0)
+		{
+			fs::Entry *entry = page->entries.at(page->focused);
+			m_opSources.clear();
+			m_opSources.push_back(fs::Join(page->path, entry->name));
+			paf::string stem = entry->name;
+			const char *dot = strrchr(stem.c_str(), '.');
+			if (dot) stem = paf::string(stem.c_str(), dot - stem.c_str());
+			m_opTargetDir = fs::Join(page->path, fs::UniqueName(page->path, stem));
+			StartOperation(Op_Extract);
+		}
+		break;
+
+	case Action_CompressZip:
+		m_opSources.clear();
+		CollectSelection(&m_opSources);
+		if (!m_opSources.empty())
+		{
+			const char *path = m_opSources.at(0).c_str();
+			const char *slash = strrchr(path, '/');
+			paf::string suggested = slash ? slash + 1 : path;
+			const char *dot = strrchr(suggested.c_str(), '.');
+			if (dot) suggested = paf::string(suggested.c_str(), dot - suggested.c_str());
+			suggested += ".zip";
+			m_inputAction = Action_CompressZip;
+			new TextInput(m_root, g_appPlugin->GetString(msg_opt_compress_zip), ToWide(suggested), OnInputDone, this);
+		}
+		break;
+
+	case Action_ExportMedia:
+		if (page->focused >= 0)
+		{
+			m_opSources.clear();
+			m_opSources.push_back(fs::Join(page->path, page->entries.at(page->focused)->name));
+			StartOperation(Op_ExportMedia);
+		}
+		break;
+
+	case Action_InstallFolder:
+	case Action_RefreshLiveArea:
+		if (page->focused >= 0)
+		{
+			m_opSources.clear();
+			m_opSources.push_back(fs::Join(page->path, page->entries.at(page->focused)->name));
+			StartOperation(action == Action_InstallFolder ? Op_InstallFolder : Op_RefreshLiveArea);
+		}
+		break;
+
 	case Action_Settings:
 		new SettingsMenu(m_root, OnSettingsChanged, this);
 		break;
@@ -2035,6 +2135,20 @@ void BrowserMenu::OnNameEntered(const paf::wstring &text)
 
 	BrowserPage *page = Top();
 	int32_t ret;
+	if (m_inputAction == Action_CompressZip)
+	{
+		if (name.length() < 4 || strcasecmp(name.c_str() + name.length() - 4, ".zip") != 0)
+			name += ".zip";
+		m_opTargetDir = fs::Join(page->path, name);
+		SceIoStat existing;
+		if (sceIoGetstat(m_opTargetDir.c_str(), &existing) >= 0)
+		{
+			dialog::OpenError(g_appPlugin, SCE_ERROR_ERRNO_EEXIST);
+			return;
+		}
+		StartOperation(Op_CreateZip);
+		return;
+	}
 	if (m_inputAction == Action_Rename)
 	{
 		paf::string oldPath = fs::Join(page->path, m_inputTarget);
@@ -2112,10 +2226,20 @@ void BrowserMenu::RunInfo()
 
 void BrowserMenu::StartOperation(int32_t type)
 {
-	const uint32_t title = type == Op_Copy ? msg_copying : (type == Op_Move ? msg_moving : (type == Op_Install ? msg_installing : msg_deleting));
+	if (m_operationRunning) return;
+	uint32_t title = msg_deleting;
+	if (type == Op_Copy) title = msg_copying;
+	else if (type == Op_Move) title = msg_moving;
+	else if (type == Op_Install || type == Op_InstallFolder) title = msg_installing;
+	else if (type == Op_Extract) title = msg_extracting;
+	else if (type == Op_CreateZip) title = msg_compressing;
+	else if (type == Op_ExportMedia) title = msg_exporting_media;
+	else if (type == Op_RefreshLiveArea) title = msg_refreshing_livearea;
 
 	m_opType = type;
-	m_pending = Pending_Operation;
+	m_operationRunning = true;
+	const bool backgroundInstall = type == Op_InstallFolder;
+	m_pending = backgroundInstall ? Pending_None : Pending_Operation;
 	s_cancel = false;
 	s_lastPercent = 0;
 
@@ -2131,14 +2255,15 @@ void BrowserMenu::StartOperation(int32_t type)
 		m_undoTo.clear();
 		m_undoType = Undo_None;
 	}
-	else if (type == Op_Install && !m_opSources.empty())
+	else if ((type == Op_Install || type == Op_InstallFolder) && !m_opSources.empty())
 	{
 		const char *path = m_opSources.at(0).c_str();
 		const char *slash = strrchr(path, '/');
 		progressText += L"\n";
 		progressText += ToWide(slash ? slash + 1 : path);
 	}
-	dialog::OpenProgress(g_appPlugin, NULL, progressText.c_str());
+	if (!backgroundInstall)
+		dialog::OpenProgress(g_appPlugin, NULL, progressText.c_str());
 	if (type == Op_Install && !m_opSources.empty())
 	{
 		VpkInfo info;
@@ -2174,6 +2299,61 @@ void BrowserMenu::RunOperation()
 		param.cancelHandler = IsCancelled;
 		char titleid[12] = { 0 };
 		int32_t result = installVpk(m_opSources.at(0).c_str(), &param, titleid);
+		m_installedTitle = titleid;
+		FinishOperation(result);
+		return;
+	}
+	if (m_opType == Op_Extract)
+	{
+		uint64_t value = 0;
+		int64_t total = archiveTotalSize(m_opSources.at(0).c_str());
+		FileProcessParam param = { &value, total > 0 ? (uint64_t)total : 1, OnProgress, IsCancelled };
+		int32_t result = archiveExtract(m_opSources.at(0).c_str(), m_opTargetDir.c_str(), &param);
+		if (result <= 0) removePath(m_opTargetDir.c_str(), NULL);
+		FinishOperation(result);
+		return;
+	}
+	if (m_opType == Op_CreateZip)
+	{
+		uint64_t total = 0; uint32_t folders = 0, files = 0;
+		for (uint32_t i = 0; i < m_opSources.size(); ++i)
+			getPathInfo(m_opSources.at(i).c_str(), &total, &folders, &files, NULL);
+		uint64_t value = 0;
+		FileProcessParam param = { &value, total ? total : 1, OnProgress, IsCancelled };
+		const char **sources = (const char **)malloc(sizeof(char *) * m_opSources.size());
+		if (!sources) { FinishOperation((int32_t)0x8001000C); return; }
+		for (uint32_t i = 0; i < m_opSources.size(); ++i) sources[i] = m_opSources.at(i).c_str();
+		int32_t result = archiveCreateZip(m_opTargetDir.c_str(), sources, m_opSources.size(), &param);
+		free(sources);
+		FinishOperation(result);
+		return;
+	}
+	if (m_opType == Op_ExportMedia)
+	{
+		SceIoStat stat; memset(&stat, 0, sizeof(stat));
+		sceIoGetstat(m_opSources.at(0).c_str(), &stat);
+		uint64_t value = 0;
+		FileProcessParam param = { &value, stat.st_size ? stat.st_size : 1, OnProgress, IsCancelled };
+		const char *dot = strrchr(m_opSources.at(0).c_str(), '.');
+		FinishOperation(exportMediaFile(m_opSources.at(0).c_str(), dot && strcasecmp(dot, ".mp4") == 0, &param));
+		return;
+	}
+	if (m_opType == Op_InstallFolder)
+	{
+		uint64_t total = 0; uint32_t folders = 0, files = 0;
+		getPathInfo(m_opSources.at(0).c_str(), &total, &folders, &files, NULL);
+		uint64_t value = 0;
+		FileProcessParam param = { &value, total + (uint64_t)folders * DIRECTORY_SIZE, NULL, IsCancelled };
+		char titleid[12] = { 0 };
+		int32_t result = installAppFolder(m_opSources.at(0).c_str(), &param, titleid);
+		m_installedTitle = titleid;
+		FinishOperation(result);
+		return;
+	}
+	if (m_opType == Op_RefreshLiveArea)
+	{
+		char titleid[12] = { 0 };
+		int32_t result = refreshLiveAreaApp(m_opSources.at(0).c_str(), titleid);
 		m_installedTitle = titleid;
 		FinishOperation(result);
 		return;
@@ -2243,23 +2423,25 @@ void BrowserMenu::RunOperation()
 
 void BrowserMenu::FinishOperation(int32_t result)
 {
+	const int32_t completedType = m_opType;
 	m_pending = Pending_None;
-	dialog::Close();
+	const bool backgroundInstall = completedType == Op_InstallFolder;
+	if (!backgroundInstall) dialog::Close();
 
-	if (result >= 0 && m_opType == Op_Move)
+	if (result >= 0 && completedType == Op_Move)
 	{
 		m_clipboard.clear();
 	}
-	if (result > 0 && (m_opType == Op_Move || m_opType == Op_Copy) && !m_undoTo.empty())
-		m_undoType = m_opType == Op_Move ? Undo_Move : Undo_Copy;
+	if (result > 0 && (completedType == Op_Move || completedType == Op_Copy) && !m_undoTo.empty())
+		m_undoType = completedType == Op_Move ? Undo_Move : Undo_Copy;
 
 	thread::RMutex::MainThreadMutex()->Lock();
-	if (result > 0 && m_opType == Op_Delete)
+	if (result > 0 && completedType == Op_Delete)
 	{
 		for (uint32_t i = 0; i < m_opSources.size(); ++i)
 			shortcuts::RemovePath(m_opSources.at(i));
 	}
-	if (result > 0 && m_opType == Op_Move)
+	if (result > 0 && completedType == Op_Move)
 	{
 		for (uint32_t i = 0; i < m_undoFrom.size() && i < m_undoTo.size(); ++i)
 			shortcuts::RenamePath(m_undoFrom.at(i), m_undoTo.at(i));
@@ -2268,15 +2450,21 @@ void BrowserMenu::FinishOperation(int32_t result)
 	{
 		dialog::OpenError(g_appPlugin, result);
 	}
-	else if (result > 0 && m_opType == Op_Install)
+	else if (result > 0 && (completedType == Op_Install || completedType == Op_InstallFolder))
 	{
 		// Same panel as the prompt: the bubble, the app's name, OK / Run.
 		fs::Entry entry;
 		entry.kind = fs::Kind_Vpk;
-		entry.isDir = false;
+		entry.isDir = completedType == Op_InstallFolder;
 		entry.marked = false;
 		SceIoStat stat;
 		entry.size = sceIoGetstat(m_opSources.at(0).c_str(), &stat) >= 0 ? stat.st_size : 0;
+		if (entry.isDir)
+		{
+			uint32_t folders = 0, files = 0;
+			entry.size = 0;
+			getPathInfo(m_opSources.at(0).c_str(), &entry.size, &folders, &files, NULL);
+		}
 		entry.capacity = 0;
 		entry.labelHash = 0;
 		entry.iconHash = 0;
@@ -2294,8 +2482,17 @@ void BrowserMenu::FinishOperation(int32_t result)
 			}
 		}, this);
 	}
+	else if (result > 0 && completedType == Op_ExportMedia)
+	{
+		dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_opt_export_media), g_appPlugin->GetString(msg_export_media_done));
+	}
+	else if (result > 0 && completedType == Op_RefreshLiveArea)
+	{
+		dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_opt_refresh_livearea), g_appPlugin->GetString(msg_refresh_livearea_done));
+	}
 	Refresh();
 	if (m_pages.size() > 1) ReloadRoot();
+	m_operationRunning = false;
 	thread::RMutex::MainThreadMutex()->Unlock();
 }
 

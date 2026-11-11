@@ -71,14 +71,17 @@ The project carries forward the proven file-management logic of [FMVita](https:/
 - Native progress dialogs with cancellation support.
 - Search, shortcuts and file information.
 - Text preview and line-based editing for TXT, INI, XML, LOG, JSON, SFO and unknown text files.
-- Image preview and MP4 playback through SceAvPlayer, with sound, seek, pause and L/R navigation.
+- Image and animated GIF preview, plus MP4 playback through SceAvPlayer with sound, seek, pause and L/R navigation.
 - MP3 and OGG playback with metadata, embedded cover art, progress, seek and playlist navigation.
+- Native export of MP3 music and MP4 video to the Vita Music and Video libraries.
+- ZIP creation optimized for the Vita CPU, and extraction of ZIP, RAR, 7z, TAR and compressed streams through libarchive.
 - Optional automatic PFS mounting for protected application and savedata folders.
 
 ### VPK and Network Tools
 
 - VPK metadata, icon, name, version and Title ID preview.
 - VPK extraction and installation through `ScePromoterUtil`.
+- Background installation from an extracted app folder and re-registration of app folders in LiveArea.
 - FTP server powered by `ftpvita`, with connection and transfer progress.
 - Configurable Select-button action for FTP or the rear-camera QR scanner.
 
@@ -139,7 +142,7 @@ The provided script uses the standard `vitasdk/vitasdk` Docker image:
 sh scripts/build.sh
 ```
 
-The resulting package is written to `build/FileManager.vpk`.
+The resulting package is written to `build/FileManager.vpk` and archived with a timestamp under `scripts/build/vpk/v0.8/`.
 
 The build is hard-float and uses `-mword-relocations`. Both are required for correct ScePaf ABI and imported-variable handling. The build also needs Python 3 for the repository's RCO compiler.
 
@@ -172,7 +175,11 @@ The custom RCO compiler was validated by recompiling NetStream resources and com
 
 ## Version History
 
-### v0.4 Test - Current Development Branch
+### v0.8 - Current Development Branch
+
+v0.8 adds animated GIF previews, native music/video export, fast ZIP creation, ZIP/RAR/7z/TAR extraction, background installation from extracted application folders and per-app LiveArea refresh. Archive extraction rejects absolute paths and parent-directory traversal; RAR is extraction-only because libarchive has no RAR writer.
+
+### v0.4 Test
 
 v0.4 is developed and distributed from the `test` branch only; it does not have a GitHub Release while hardware validation is in progress. This line corrects the Themes and alphabetical-index crash paths, stabilizes the main-list animation and page positioning, and continues the Vita-style image, music and VPK installer interface work.
 

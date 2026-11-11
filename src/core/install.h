@@ -17,6 +17,15 @@ extern "C" {
  */
 int installVpk(const char *vpk, FileProcessParam *param, char *titleid);
 
+/** Copies an extracted application folder to the staging area and promotes it. */
+int installAppFolder(const char *folder, FileProcessParam *param, char *titleid);
+
+/** Re-registers an existing application folder in the LiveArea database. */
+int refreshLiveAreaApp(const char *folder, char *titleid);
+
+/** True when the folder contains a valid Vita application param.sfo. */
+int isAppFolder(const char *folder);
+
 typedef struct {
   char title[128];
   char version[16];
@@ -27,6 +36,9 @@ typedef struct {
 
 /** Reads sce_sys/param.sfo and sce_sys/icon0.png out of a VPK without extracting it. */
 int readVpkInfo(const char *vpk, VpkInfo *info);
+
+/** Reads metadata and icon directly from an extracted application folder. */
+int readAppFolderInfo(const char *folder, VpkInfo *info);
 
 /** Total uncompressed size of an archive, for the progress bar. Negative on error. */
 int64_t archiveTotalSize(const char *path);

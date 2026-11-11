@@ -37,7 +37,12 @@ public:
 		Action_SortName,
 		Action_SortType,
 		Action_Decrypt,
-		Action_Undo
+		Action_Undo,
+		Action_Extract,
+		Action_CompressZip,
+		Action_ExportMedia,
+		Action_InstallFolder,
+		Action_RefreshLiveArea
 	};
 
 	enum PendingDialog
@@ -190,7 +195,12 @@ private:
 		Op_Copy,
 		Op_Move,
 		Op_Delete,
-		Op_Install
+		Op_Install,
+		Op_Extract,
+		Op_CreateZip,
+		Op_ExportMedia,
+		Op_InstallFolder,
+		Op_RefreshLiveArea
 	};
 
 	enum UndoType
@@ -265,6 +275,7 @@ private:
 
 	PendingDialog m_pending;
 	int32_t m_opType;
+	bool m_operationRunning;
 	paf::vector<paf::string> m_opSources;
 	paf::string m_opTargetDir;
 	Action m_inputAction;

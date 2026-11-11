@@ -23,6 +23,7 @@ public:
 
 	/** Runs on the main thread, once per frame, while a video is open. */
 	void OnVideoFrame();
+	void OnGifFrame();
 	void OnVideoSeek();
 	void OnThumbnail(int32_t delta);
 	void OnImageTouch();
@@ -49,6 +50,7 @@ private:
 
 	void Open(int32_t index);
 	void StopVideo();
+	void StopGif();
 	bool StartVideo(const char *path);
 	void ShowError();
 	void ApplyImageTransform();
@@ -83,6 +85,11 @@ private:
 	int32_t m_player;
 	bool m_videoActive;
 	bool m_imageActive;
+	bool m_gifActive;
+	int32_t m_gifIndex;
+	uint64_t m_gifTick;
+	paf::vector<paf::intrusive_ptr<paf::graph::Surface> > m_gifFrames;
+	paf::vector<int32_t> m_gifDelays;
 	bool m_paused;
 	bool m_frameShown;
 	int32_t m_videoW;

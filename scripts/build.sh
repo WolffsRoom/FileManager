@@ -5,7 +5,7 @@
 # timestamp. Existing packages are never overwritten.
 set -e
 CONFIG="${1:-Release}"
-VERSION_LABEL="${2:-v0.4-test}"
+VERSION_LABEL="${2:-v0.8}"
 ROOT="$(cd "$(dirname "$0")/.."; pwd -W 2>/dev/null || pwd)"
 
 MSYS_NO_PATHCONV=1 docker run --rm -v "$ROOT:/project" -w /project \

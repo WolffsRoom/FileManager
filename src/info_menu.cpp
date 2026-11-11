@@ -65,7 +65,7 @@ InfoMenu::InfoMenu(ui::Widget *parentRoot, Mode mode, const paf::string &path, c
 	{
 		VpkInfo info;
 		memset(&info, 0, sizeof(info));
-		if (readVpkInfo(path.c_str(), &info) >= 0)
+		if ((entry->isDir ? readAppFolderInfo(path.c_str(), &info) : readVpkInfo(path.c_str(), &info)) >= 0)
 		{
 			if (info.title[0])
 			{

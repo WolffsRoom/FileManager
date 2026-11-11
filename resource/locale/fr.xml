@@ -19,6 +19,11 @@
   <string src="Renommer" id="msg_opt_rename" />
   <string src="Nouveau dossier" id="msg_opt_new_folder" />
   <string src="Propri&#xE9;t&#xE9;s" id="msg_opt_info" />
+  <string src="Extraire" id="msg_opt_extract" />
+  <string src="Compresser en ZIP" id="msg_opt_compress_zip" />
+  <string src="Exporter le média" id="msg_opt_export_media" />
+  <string src="Installer le dossier app" id="msg_opt_install_folder" />
+  <string src="Actualiser LiveArea" id="msg_opt_refresh_livearea" />
   <string src="Decrypt" id="msg_decrypt" />
   <string src="Undo" id="msg_undo" />
   <string src="Delete" id="msg_confirm_delete_title" />
@@ -31,6 +36,12 @@
   <string src="Copying file: %s" id="msg_copying_file" />
   <string src="Undoing..." id="msg_undoing" />
   <string src="Suppression en cours..." id="msg_deleting" />
+  <string src="Extraction..." id="msg_extracting" />
+  <string src="Compression ZIP..." id="msg_compressing" />
+  <string src="Exportation du média..." id="msg_exporting_media" />
+  <string src="Actualisation de LiveArea..." id="msg_refreshing_livearea" />
+  <string src="Média exporté avec succès." id="msg_export_media_done" />
+  <string src="Application enregistrée dans LiveArea." id="msg_refresh_livearea_done" />
   <string src="Renommer" id="msg_rename_title" />
   <string src="Nouveau dossier" id="msg_new_folder_title" />
   <string src="Propri&#xE9;t&#xE9;s" id="msg_info_title" />
@@ -171,7 +182,7 @@
   <string src="Client connected: %s" id="msg_ftp_client" />
   <string src="Trash" id="msg_shortcut_trash" />
   <string src="About" id="msg_set_about" />
-  <string src="File Manager 0.7&#10;&#10;Made by Wolff, File Manager is a file explorer for the PS Vita that brings together what VitaShell and FileManager Vita (FMVita, a fork of VitaShell) can do, in the system&#x27;s own interface: the same menus, sounds and transitions as Sony&#x27;s apps.&#10;&#10;Built with: ScePaf, the system UI framework (reverse engineering by GrapheneCt); NetStream and BetterHomebrewBrowser as references; VitaShell by TheFloW; ftpvita by xerpi; libarchive, libpng, zlib and libmad. Icons: Icons8.&#10;&#10;Licensed under GPLv3." id="msg_about_text" />
+  <string src="File Manager 0.8&#10;&#10;Made by Wolff, File Manager is a file explorer for the PS Vita that brings together what VitaShell and FileManager Vita (FMVita, a fork of VitaShell) can do, in the system&#x27;s own interface: the same menus, sounds and transitions as Sony&#x27;s apps.&#10;&#10;Built with: ScePaf, the system UI framework (reverse engineering by GrapheneCt); NetStream and BetterHomebrewBrowser as references; VitaShell by TheFloW; ftpvita by xerpi; libarchive, libpng, zlib and libmad. Icons: Icons8.&#10;&#10;Licensed under GPLv3." id="msg_about_text" />
   <string src="Wi-Fi is off" id="msg_wifi_off_title" />
   <string src="Vous devez activer le Wi-Fi pour utiliser cette fonction." id="msg_wifi_off" />
   <string src="Open settings" id="msg_network_settings" />

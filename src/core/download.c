@@ -4,7 +4,7 @@
 
 #include "download.h"
 
-#define FM_USER_AGENT "FileManager/0.7 libhttp/1.1"
+#define FM_USER_AGENT "FileManager/0.8 libhttp/1.1"
 
 int downloadUrl(const char *url, const char *destination, DownloadProgress progress)
 {

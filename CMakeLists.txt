@@ -14,7 +14,7 @@ include("$ENV{VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "File Manager")
 set(VITA_TITLEID  "FILEMGR01")
-set(VITA_VERSION  "00.70")
+set(VITA_VERSION  "00.80")
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
@@ -89,6 +89,9 @@ add_executable(FileManager
   third_party/quirc_src/lib/identify.c
   third_party/quirc_src/lib/version_db.c
   src/core/music.c
+  src/core/gif.c
+  src/core/archive_ops.c
+  src/core/media_export.c
   legacy/audio/player.c
   legacy/audio/mp3player.c
   legacy/audio/mp3xing.c
@@ -158,6 +161,7 @@ target_link_libraries(FileManager
   SceAvPlayer_stub
   SceFios2_stub
   SceMusicExport_stub
+  SceVideoExport_stub
   SceCamera_stub
   SceMtpIfDriver_stub
   SceUsbstorVStorDriver_stub

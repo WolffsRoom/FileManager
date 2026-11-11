@@ -27,6 +27,7 @@ extern "C" int sceAvPlayerDisableStream(SceAvPlayerHandle handle, uint32_t strea
 #include "option_menu.h"
 #include "text_input.h"
 #include "core/fs.h"
+#include "core/gif.h"
 
 using namespace paf;
 
@@ -214,10 +215,21 @@ namespace {
 		static_cast<PreviewMenu *>(userdata)->OnImageTouch();
 	}
 
+	void GifTask(void *userdata)
+	{
+		static_cast<PreviewMenu *>(userdata)->OnGifFrame();
+	}
+
 	bool IsVideo(const char *path)
 	{
 		const char *dot = strrchr(path, '.');
 		return dot && strcasecmp(dot, ".mp4") == 0;
+	}
+
+	bool IsGif(const char *path)
+	{
+		const char *dot = strrchr(path, '.');
+		return dot && strcasecmp(dot, ".gif") == 0;
 	}
 
 	intrusive_ptr<graph::Surface> LoadImageSurface(const char *path)
@@ -262,7 +274,7 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	int32_t index, ChangeCallback onChanged, void *userdata) :
 	m_parentRoot(parentRoot), m_onChanged(onChanged), m_userdata(userdata), m_filesChanged(false),
 	m_paths(paths), m_index(index), m_loadId(0), m_jobId(0),
-	m_player(0), m_videoActive(false), m_imageActive(false), m_paused(false), m_frameShown(false), m_videoW(0), m_videoH(0),
+	m_player(0), m_videoActive(false), m_imageActive(false), m_gifActive(false), m_gifIndex(0), m_gifTick(0), m_paused(false), m_frameShown(false), m_videoW(0), m_videoH(0),
 	m_touchActive(false), m_pinchActive(false), m_touchStartX(0), m_touchStartY(0), m_touchLastX(0), m_touchLastY(0),
 	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false), m_viewMode(0), m_deletePending(false), m_animateNextImage(false)
 {
@@ -432,6 +444,7 @@ PreviewMenu::~PreviewMenu()
 {
 	m_loadId++;
 	common::MainThreadCallList::Unregister(ImageTouchTask, this);
+	StopGif();
 	StopVideo();
 
 	Plugin::PageCloseParam closeParam;
@@ -554,6 +567,7 @@ void PreviewMenu::SetViewMode(int32_t mode)
 void PreviewMenu::Close()
 {
 	m_loadId++;
+	StopGif();
 	StopVideo();
 	m_root->SetActivate(false);
 	DeferDelete(this);
@@ -567,6 +581,7 @@ void PreviewMenu::ShowError()
 
 void PreviewMenu::Open(int32_t index)
 {
+	StopGif();
 	StopVideo();
 	m_imageActive = false;
 	m_touchActive = false;
@@ -622,7 +637,38 @@ void PreviewMenu::LoadImageJob()
 	const int32_t id = m_jobId;
 	paf::string path = m_jobPath;
 
-	intrusive_ptr<graph::Surface> tex = LoadImageSurface(path.c_str());
+	intrusive_ptr<graph::Surface> tex;
+	paf::vector<intrusive_ptr<graph::Surface> > gifFrames;
+	paf::vector<int32_t> gifDelays;
+	if (IsGif(path.c_str()))
+	{
+		GifAnimation gif;
+		if (gifLoad(path.c_str(), &gif) >= 0)
+		{
+			const uint64_t frameBytes = (uint64_t)gif.width * gif.height * 4;
+			for (int i = 0; i < gif.frameCount; ++i)
+			{
+				intrusive_ptr<graph::Surface> frame;
+				frame = new graph::Surface(gutil::GetDefaultSurfacePool(), gif.width, gif.height,
+					ImageMode_RGBA8888, ImageOrder_Linear, 1, 1, false);
+				if (!frame.get() || frame->Copy(0, gif.rgba + frameBytes * i,
+					ImageOrder_Linear, gif.width * 4, 0) < 0)
+				{
+					gifFrames.clear();
+					gifDelays.clear();
+					break;
+				}
+				gifFrames.push_back(frame);
+				gifDelays.push_back(gif.delaysMs[i]);
+			}
+			gifFree(&gif);
+		}
+		if (!gifFrames.empty()) tex = gifFrames.at(0);
+	}
+	else
+	{
+		tex = LoadImageSurface(path.c_str());
+	}
 	int32_t n = m_paths.size();
 	intrusive_ptr<graph::Surface> left = n > 1 ? LoadImageSurface(m_paths.at((m_index + n - 1) % n).c_str()) : tex;
 	intrusive_ptr<graph::Surface> right = n > 1 ? LoadImageSurface(m_paths.at((m_index + 1) % n).c_str()) : tex;
@@ -634,6 +680,12 @@ void PreviewMenu::LoadImageJob()
 		m_busy->Stop();
 		if (tex.get())
 		{
+			m_gifFrames = gifFrames;
+			m_gifDelays = gifDelays;
+			m_gifIndex = 0;
+			m_gifTick = sceKernelGetProcessTimeWide();
+			m_gifActive = m_gifFrames.size() > 1;
+			if (m_gifActive) common::MainThreadCallList::Register(GifTask, this);
 			m_currentSurf = tex;
 			m_leftSurf = left;
 			m_rightSurf = right;
@@ -668,6 +720,29 @@ void PreviewMenu::LoadImageJob()
 		}
 	}
 	thread::RMutex::MainThreadMutex()->Unlock();
+}
+
+void PreviewMenu::StopGif()
+{
+	if (m_gifActive)
+		common::MainThreadCallList::Unregister(GifTask, this);
+	m_gifActive = false;
+	m_gifFrames.clear();
+	m_gifDelays.clear();
+	m_gifIndex = 0;
+	m_gifTick = 0;
+}
+
+void PreviewMenu::OnGifFrame()
+{
+	if (!m_gifActive || m_gifFrames.size() < 2 || m_gifDelays.empty()) return;
+	uint64_t now = sceKernelGetProcessTimeWide();
+	uint64_t delay = (uint64_t)m_gifDelays.at(m_gifIndex) * 1000;
+	if (now - m_gifTick < delay) return;
+	m_gifTick = now;
+	m_gifIndex = (m_gifIndex + 1) % m_gifFrames.size();
+	m_currentSurf = m_gifFrames.at(m_gifIndex);
+	m_plane->SetTexture(m_currentSurf, 0, 0);
 }
 
 void PreviewMenu::ApplyImageTransform()

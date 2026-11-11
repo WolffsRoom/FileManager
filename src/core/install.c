@@ -167,6 +167,27 @@ static int promoteApp(const char *path) {
   return promote;
 }
 
+static int folderTitleId(const char *folder, char *titleid) {
+  char path[MAX_PATH_LENGTH];
+  snprintf(path, sizeof(path), "%s/sce_sys/param.sfo", folder);
+  void *sfo = NULL;
+  int res = readWhole(path, &sfo);
+  if (res < 0) return res;
+  char parsed[12];
+  memset(parsed, 0, sizeof(parsed));
+  res = sfoString(sfo, "TITLE_ID", parsed, sizeof(parsed));
+  free(sfo);
+  if (res < 0 || strlen(parsed) != 9) return VITASHELL_ERROR_INVALID_TITLEID;
+  for (int i = 0; i < 9; ++i)
+    if (islower((unsigned char)parsed[i])) return VITASHELL_ERROR_INVALID_TITLEID;
+  if (titleid) strcpy(titleid, parsed);
+  return 0;
+}
+
+int isAppFolder(const char *folder) {
+  return folderTitleId(folder, NULL) >= 0;
+}
+
 static void makeParents(char *path) {
   for (char *p = strchr(path, '/'); p; p = strchr(p + 1, '/')) {
     *p = 0;
@@ -213,6 +234,31 @@ int readVpkInfo(const char *vpk, VpkInfo *info) {
   }
   archive_read_free(a);
   return found ? 0 : VITASHELL_ERROR_NOT_FOUND;
+}
+
+int readAppFolderInfo(const char *folder, VpkInfo *info) {
+  if (!folder || !info) return VITASHELL_ERROR_NOT_FOUND;
+  memset(info, 0, sizeof(*info));
+  char path[MAX_PATH_LENGTH];
+  snprintf(path, sizeof(path), "%s/sce_sys/param.sfo", folder);
+  void *sfo = NULL;
+  int size = readWhole(path, &sfo);
+  if (size < 0) return size;
+  sfoString(sfo, "TITLE", info->title, sizeof(info->title));
+  sfoString(sfo, "APP_VER", info->version, sizeof(info->version));
+  sfoString(sfo, "TITLE_ID", info->titleid, sizeof(info->titleid));
+  free(sfo);
+
+  snprintf(path, sizeof(path), "%s/sce_sys/icon0.png", folder);
+  size = readWhole(path, &info->icon);
+  if (size > 0 && size <= 4 * 1024 * 1024)
+    info->iconSize = (uint32_t)size;
+  else {
+    free(info->icon);
+    info->icon = NULL;
+    info->iconSize = 0;
+  }
+  return 0;
 }
 
 int64_t archiveTotalSize(const char *path) {
@@ -314,5 +360,32 @@ int installVpk(const char *vpk, FileProcessParam *param, char *titleid) {
   res = promoteApp(FM_PACKAGE_DIR);
   // The promoter moves the files away; whatever is left is debris.
   removePath(FM_PACKAGE_DIR, NULL);
+  return res < 0 ? res : 1;
+}
+
+int installAppFolder(const char *folder, FileProcessParam *param, char *titleid) {
+  int res = folderTitleId(folder, titleid);
+  if (res < 0) return res;
+
+  removePath(FM_PACKAGE_DIR, NULL);
+  res = copyPath(folder, FM_PACKAGE_DIR, param);
+  if (res <= 0) {
+    removePath(FM_PACKAGE_DIR, NULL);
+    return res;
+  }
+  res = makeHeadBin(titleid);
+  if (res < 0) {
+    removePath(FM_PACKAGE_DIR, NULL);
+    return res;
+  }
+  res = promoteApp(FM_PACKAGE_DIR);
+  removePath(FM_PACKAGE_DIR, NULL);
+  return res < 0 ? res : 1;
+}
+
+int refreshLiveAreaApp(const char *folder, char *titleid) {
+  int res = folderTitleId(folder, titleid);
+  if (res < 0) return res;
+  res = promoteApp(folder);
   return res < 0 ? res : 1;
 }
