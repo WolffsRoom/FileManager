@@ -191,8 +191,9 @@
   <string src="Salvar as alterações deste arquivo antes de sair?" id="msg_text_unsaved" />
   <string src="Este arquivo tem mais de 2 MB e abre só para leitura." id="msg_text_too_big" />
   <string src="Instalação concluída com sucesso!" id="msg_install_done_title" />
-  <string src="Foi instalado o &quot;%s&quot;. Já está na tela inicial." id="msg_install_done_text" />
+  <string src="Foi instalado o &quot;%s&quot;.&#xA;Caso deseje iniciá-lo agora, clique em executar." id="msg_install_done_text" />
   <string src="Executar" id="msg_install_run" />
+  <string src="Sair" id="msg_exit" />
   <string src="Música" id="msg_music_title" />
   <string src="Anterior" id="msg_music_prev" />
   <string src="Próxima" id="msg_music_next" />

@@ -158,6 +158,7 @@ private:
 	void ApplyRowHighlight(BrowserPage *page, int32_t index, paf::ui::Widget *button);
 	paf::ui::Widget *RowCheckbox(paf::ui::Widget *rowRoot);
 	paf::intrusive_ptr<paf::graph::Surface> Icon(uint32_t hash);
+	paf::intrusive_ptr<paf::graph::Surface> VpkIcon(const paf::string &path);
 
 	void OnBack();
 	void OnForward();
@@ -248,6 +249,13 @@ private:
 	};
 	CachedIcon m_icons[16];
 	uint32_t m_iconCount;
+	struct CachedVpkIcon
+	{
+		paf::string path;
+		paf::intrusive_ptr<paf::graph::Surface> tex;
+	};
+	CachedVpkIcon m_vpkIcons[24];
+	uint32_t m_vpkIconCount;
 
 	paf::vector<BrowserPage *> m_pages;
 	paf::vector<Action> m_optionActions;

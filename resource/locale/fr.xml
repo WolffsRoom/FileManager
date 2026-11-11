@@ -189,8 +189,9 @@
   <string src="Save the changes to this file before leaving?" id="msg_text_unsaved" />
   <string src="This file is larger than 2 MB and opens read-only." id="msg_text_too_big" />
   <string src="Installation complete!" id="msg_install_done_title" />
-  <string src="&quot;%s&quot; was installed. It is now on the home screen." id="msg_install_done_text" />
+  <string src="&quot;%s&quot; a été installé.&#xA;Pour le démarrer maintenant, sélectionnez Exécuter." id="msg_install_done_text" />
   <string src="Run" id="msg_install_run" />
+  <string src="Quitter" id="msg_exit" />
   <string src="Titre" id="msg_music_title" />
   <string src="Back" id="msg_music_prev" />
   <string src="Next" id="msg_music_next" />

@@ -229,7 +229,7 @@ namespace {
 }
 
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_inputAction(Action_Rename),
-	m_iconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
+	m_iconCount(0), m_vpkIconCount(0), m_ftpShown(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_optionTarget(-1), m_undoType(Undo_None)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -967,6 +967,36 @@ intrusive_ptr<graph::Surface> BrowserMenu::Icon(uint32_t hash)
 	return tex;
 }
 
+intrusive_ptr<graph::Surface> BrowserMenu::VpkIcon(const paf::string &path)
+{
+	for (uint32_t i = 0; i < m_vpkIconCount; ++i)
+		if (m_vpkIcons[i].path == path) return m_vpkIcons[i].tex;
+
+	intrusive_ptr<graph::Surface> tex;
+	VpkInfo info;
+	memset(&info, 0, sizeof(info));
+	if (readVpkInfo(path.c_str(), &info) >= 0 && info.icon)
+	{
+		void *bubble = NULL;
+		uint32_t bubbleSize = 0;
+		if (makeBubblePng(info.icon, info.iconSize, &bubble, &bubbleSize) >= 0)
+		{
+			int32_t result = -1;
+			common::SharedPtr<MemFile> file = MemFile::Open(bubble, bubbleSize, &result);
+			if (result == SCE_PAF_OK)
+				tex = graph::Surface::Load(gutil::GetDefaultSurfacePool(), (common::SharedPtr<File> &)file);
+			free(bubble);
+		}
+		free(info.icon);
+	}
+	// Cache successes and failures for this browser session so scrolling never
+	// reopens the VPK archive. Oldest entries are replaced after 24 packages.
+	const uint32_t slot = m_vpkIconCount < 24 ? m_vpkIconCount++ : 0;
+	m_vpkIcons[slot].path = path;
+	m_vpkIcons[slot].tex = tex;
+	return tex;
+}
+
 void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget *button)
 {
 	if (!page || !button || index < 0 || index >= (int32_t)page->entries.size()) return;
@@ -975,7 +1005,11 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 	// Native focus owns the moving cursor. The sibling plane is independent
 	// from ImageButton's focus animation, so a mark stays blue after focus moves.
 	ui::Widget *mark = button->GetParent()->FindChild(plane_list_item_mark);
-	if (mark) mark->SetColor(0.20f, 0.58f, 1.0f, marked ? 0.42f : 0.0f);
+	if (mark)
+	{
+		mark->SetActivate(false);
+		mark->SetColor(0.12f, 0.55f, 1.0f, marked ? 0.72f : 0.0f);
+	}
 	button->SetFocusedState(index == page->focused);
 }
 
@@ -1153,24 +1187,7 @@ ui::ListItem *BrowserMenu::CreateListItem(ui::listview::ItemFactory::CreateParam
 	intrusive_ptr<graph::Surface> tex;
 	const bool vpk = !rootStyle && entry->kind == fs::Kind_Vpk;
 	if (vpk && settings::Get().showVpkIcons)
-	{
-		VpkInfo info;
-		memset(&info, 0, sizeof(info));
-		paf::string path = fs::Join(page->path, entry->name);
-		if (readVpkInfo(path.c_str(), &info) >= 0 && info.icon)
-		{
-			void *bubble = NULL;
-			uint32_t bubbleSize = 0;
-			if (makeBubblePng(info.icon, info.iconSize, &bubble, &bubbleSize) >= 0)
-			{
-				int32_t result = -1;
-				common::SharedPtr<MemFile> file = MemFile::Open(bubble, bubbleSize, &result);
-				if (result == SCE_PAF_OK) tex = graph::Surface::Load(gutil::GetDefaultSurfacePool(), (common::SharedPtr<File> &)file);
-				free(bubble);
-			}
-			free(info.icon);
-		}
-	}
+		tex = VpkIcon(fs::Join(page->path, entry->name));
 	if (!tex.get()) tex = Icon(page->opened == param.cell_index ? tex_ui_parent : IconFor(entry, page->path));
 	if (tex.get())
 	{

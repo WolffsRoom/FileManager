@@ -134,7 +134,9 @@ InfoMenu::InfoMenu(ui::Widget *parentRoot, Mode mode, const paf::string &path, c
 	{
 		question->Hide(common::transition::Type_Reset);
 		SetText(ok, Utf8(msg_install_run).c_str());
-		SetText(cancel, Utf8(msg_ok).c_str());
+		SetText(cancel, Utf8(msg_exit).c_str());
+		cancel->SetPos(-140.0f, -160.0f, 0.0f);
+		ok->SetPos(140.0f, -160.0f, 0.0f);
 		cancel->SetKeycode(inputdevice::pad::Data::PAD_ESCAPE);
 	}
 	else if (mode == Mode_Install)
@@ -189,6 +191,8 @@ void InfoMenu::ShowPicture(void *png, uint32_t size)
 	if (tex.get())
 	{
 		m_picture->SetTexture(tex, 0, 0);
+		m_picture->SetScale(0.18f, 0.18f, 1.0f);
+		m_picture->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.34f, Timer::FUNC_SINE_OUT));
 	}
 }
 

@@ -12,10 +12,10 @@ using namespace paf;
 
 namespace {
 
-	settings::Config s_config = { 2, settings::View_List, 0, 0, -1, 1, 1, 0, 1, 70, 1, 1 };
+	settings::Config s_config = { 0, settings::View_List, 0, 0, -1, 1, 1, 0, 1, 70, 1, 1 };
 
 	const theme::Info k_themes[] = {
-		{ msg_theme_default,  { 1.00f, 1.00f, 1.00f }, { 1.00f, 1.00f, 1.00f } },
+		{ msg_theme_default,  { 0.34f, 0.36f, 0.40f }, { 0.85f, 0.88f, 0.92f } },
 		{ msg_theme_midnight, { 0.10f, 0.10f, 0.13f }, { 0.55f, 0.75f, 1.00f } },
 		{ msg_theme_graphite, { 0.34f, 0.36f, 0.40f }, { 0.85f, 0.88f, 0.92f } },
 		{ msg_theme_ocean,    { 0.05f, 0.42f, 0.55f }, { 0.45f, 0.95f, 1.00f } },
@@ -255,7 +255,7 @@ void theme::ApplyBackground(ui::Widget *plane)
 	if (!tex.get())
 	{
 		// Without a usable image the custom theme falls back to the default look.
-		tex = g_appPlugin->GetTexture(index == 0 || index == CustomIndex() ? tex_common_bg : tex_bg_neutral);
+		tex = g_appPlugin->GetTexture(index == CustomIndex() ? tex_common_bg : tex_bg_neutral);
 	}
 
 	if (tex.get())

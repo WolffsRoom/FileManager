@@ -447,6 +447,8 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	button->FindChild(text_list_item_info)->SetString(info);
 
 	ui::Widget *check = item->FindChild(plane_list_item_check);
+	ui::Widget *selectionMark = item->FindChild(plane_list_item_mark);
+	if (selectionMark) selectionMark->SetActivate(false);
 	ui::Widget *themePreview = button->FindChild(plane_theme_preview);
 	if (themePreview) themePreview->Hide(common::transition::Type_Reset);
 	if (check && ShowsToggle())
