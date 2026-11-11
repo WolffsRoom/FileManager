@@ -1117,17 +1117,14 @@ void PreviewMenu::OnVideoFrame()
 	{
 		return;
 	}
+	if (!s_startIssued && ++s_startWaitFrames == 90 && s_startPlayer)
+	{
+		int32_t started = sceAvPlayerStart(s_startPlayer);
+		VideoLog("delayed sceAvPlayerStart: 0x%08X", started);
+		if (started >= 0) s_startIssued = true;
+	}
 	if (!sceAvPlayerIsActive(m_player))
 	{
-		// Some retail revisions never emit READY for a local source even though
-		// AddSource succeeded. NetStream's localfile scheme plus this delayed
-		// start covers both event orders without racing AddSource.
-		if (!s_startIssued && ++s_startWaitFrames == 90 && s_startPlayer)
-		{
-			int32_t started = sceAvPlayerStart(s_startPlayer);
-			VideoLog("delayed sceAvPlayerStart: 0x%08X", started);
-			if (started >= 0) s_startIssued = true;
-		}
 		return;
 	}
 
