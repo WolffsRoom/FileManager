@@ -18,6 +18,7 @@
 extern "C" int sceAvPlayerStreamCount(SceAvPlayerHandle handle);
 extern "C" int sceAvPlayerStart(SceAvPlayerHandle handle);
 extern "C" int sceAvPlayerEnableStream(SceAvPlayerHandle handle, uint32_t streamIndex);
+extern "C" int sceAvPlayerDisableStream(SceAvPlayerHandle handle, uint32_t streamIndex);
 
 #include "common.h"
 #include "dialog.h"
@@ -888,14 +889,19 @@ bool PreviewMenu::StartVideo(const char *path)
 	int32_t streams = sceAvPlayerStreamCount(m_player);
 	if (streams <= 0 || streams > 16) streams = 2;
 	VideoLog("streams: %d", streams);
+	bool haveVideo = false, haveAudio = false;
 	for (int32_t i = 0; i < streams; i++)
 	{
 		SceAvPlayerStreamInfo info;
 		sce_paf_memset(&info, 0, sizeof(info));
 		if (sceAvPlayerGetStreamInfo(m_player, i, &info) >= 0)
 		{
-			if (info.type == SCE_AVPLAYER_VIDEO || info.type == SCE_AVPLAYER_AUDIO)
-				sceAvPlayerEnableStream(m_player, i);
+			const bool firstVideo = info.type == SCE_AVPLAYER_VIDEO && !haveVideo;
+			const bool firstAudio = info.type == SCE_AVPLAYER_AUDIO && !haveAudio;
+			if (firstVideo || firstAudio) sceAvPlayerEnableStream(m_player, i);
+			else sceAvPlayerDisableStream(m_player, i);
+			if (firstVideo) haveVideo = true;
+			if (firstAudio) haveAudio = true;
 			if (info.duration > m_duration) m_duration = info.duration;
 		}
 	}

@@ -56,6 +56,7 @@
   <string src="Vinho" id="msg_theme_wine" />
   <string src="Rosa" id="msg_theme_pink" />
   <string src="Imagem Personalizada" id="msg_theme_custom" />
+  <string src="Azul Sony" id="msg_theme_sony_blue" />
   <string src="Não foi possível visualizar este arquivo" id="msg_preview_error" />
   <string src="Partições do Sistema" id="msg_system_partitions" />
   <string src="Aplicativos" id="msg_shortcut_apps" />
@@ -93,6 +94,7 @@
   <string src="Tamanho da fonte" id="msg_set_font_size" />
   <string src="Transparência dos previews" id="msg_set_preview_opacity" />
   <string src="Mostrar detalhes" id="msg_set_show_details" />
+  <string src="Ícones dos VPKs" id="msg_set_vpk_icons" />
   <string src="Opacidade: %d%%" id="msg_preview_opacity_hint" />
   <string src="Um pequeno texto para visualizar o tamanho da fonte." id="msg_font_preview" />
   <string src="Pequeno" id="msg_font_small" />

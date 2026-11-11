@@ -30,6 +30,7 @@ public:
 	void Close();
 	static bool HasMinimized();
 	static void RestoreMinimized();
+	static paf::intrusive_ptr<paf::graph::Surface> MinimizedCover();
 
 private:
 	static const int32_t OptionTag = 0x4d555349;
@@ -42,6 +43,7 @@ private:
 	paf::ui::Scene *m_root;
 	paf::ui::Widget *m_background;
 	paf::ui::Widget *m_cover;
+	paf::intrusive_ptr<paf::graph::Surface> m_coverSurface;
 	paf::ui::Widget *m_title;
 	paf::ui::Widget *m_artist;
 	paf::ui::Widget *m_album;

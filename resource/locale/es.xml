@@ -54,6 +54,7 @@
   <string src="Wine" id="msg_theme_wine" />
   <string src="Pink" id="msg_theme_pink" />
   <string src="Custom Image" id="msg_theme_custom" />
+  <string src="Azul Sony" id="msg_theme_sony_blue" />
   <string src="This file could not be previewed" id="msg_preview_error" />
   <string src="System Partitions" id="msg_system_partitions" />
   <string src="Applications" id="msg_shortcut_apps" />
@@ -91,6 +92,7 @@
   <string src="Tamaño de fuente" id="msg_set_font_size" />
   <string src="Transparencia de vista previa" id="msg_set_preview_opacity" />
   <string src="Mostrar detalles" id="msg_set_show_details" />
+  <string src="Iconos VPK" id="msg_set_vpk_icons" />
   <string src="Opacidad: %d%%" id="msg_preview_opacity_hint" />
   <string src="The quick brown fox jumps over the lazy dog." id="msg_font_preview" />
   <string src="Small" id="msg_font_small" />

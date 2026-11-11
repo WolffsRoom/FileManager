@@ -60,7 +60,9 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	m_background = m_root->FindChild(plane_base_bg_page_music);
 	theme::ApplyBackground(m_background);
 	const theme::Info &overlayTheme = theme::At(settings::Get().theme);
-	m_background->SetColor(overlayTheme.bg[0], overlayTheme.bg[1], overlayTheme.bg[2], settings::PreviewOpacity());
+	// Music keeps a solid, readable canvas; only a subtle amount of the browser
+	// background remains visible regardless of the image-preview preference.
+	m_background->SetColor(overlayTheme.bg[0], overlayTheme.bg[1], overlayTheme.bg[2], 0.92f);
 	SetText(m_root->FindChild(text_top), Utf8(msg_music_title).c_str());
 
 	m_cover = m_root->FindChild(plane_cover_page_music);
@@ -187,6 +189,7 @@ void MusicMenu::ShowCover(const char *path, int32_t type, int32_t offset, int32_
 		tex = g_appPlugin->GetTexture(tex_ui_music);
 	}
 	m_cover->SetTexture(tex, 0, 0);
+	m_coverSurface = tex;
 }
 
 void MusicMenu::Play(int32_t index)
@@ -287,6 +290,8 @@ void MusicMenu::ListenInBackground()
 	if (m_closing || m_minimized) return;
 	m_minimized = true;
 	s_minimizedPlayer = this;
+	m_cover->SetPos(-375.0f, 208.0f, 0.0f, new Timer(0.28f, Timer::FUNC_SINE_INOUT));
+	m_cover->SetScale(0.18f, 0.18f, 1.0f, new Timer(0.28f, Timer::FUNC_SINE_INOUT));
 	m_root->SetActivate(false);
 	m_root->Hide(common::transition::Type_FadeinFast);
 	m_parentRoot->SetActivate(true);
@@ -329,6 +334,11 @@ bool MusicMenu::HasMinimized()
 	return s_minimizedPlayer != NULL && musicIsPlaying();
 }
 
+intrusive_ptr<graph::Surface> MusicMenu::MinimizedCover()
+{
+	return s_minimizedPlayer ? s_minimizedPlayer->m_coverSurface : intrusive_ptr<graph::Surface>();
+}
+
 void MusicMenu::RestoreMinimized()
 {
 	if (!s_minimizedPlayer) return;
@@ -337,6 +347,10 @@ void MusicMenu::RestoreMinimized()
 	menu->m_minimized = false;
 	menu->m_parentRoot->SetActivate(false);
 	menu->m_root->Show(common::transition::Type_FadeinFast);
+	menu->m_cover->SetPos(-375.0f, 208.0f, 0.0f);
+	menu->m_cover->SetScale(0.18f, 0.18f, 1.0f);
+	menu->m_cover->SetPos(-260.0f, 6.0f, 0.0f, new Timer(0.32f, Timer::FUNC_SINE_INOUT));
+	menu->m_cover->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.32f, Timer::FUNC_SINE_INOUT));
 	menu->m_root->SetActivate(true);
 }
 

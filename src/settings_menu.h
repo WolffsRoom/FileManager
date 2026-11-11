@@ -22,6 +22,7 @@ public:
 		Level_FontSize,
 		Level_PreviewOpacity,
 		Level_ShowDetails,
+		Level_ShowVpkIcons,
 		Level_Language,
 		Level_Select,
 		Level_UsbDevice,

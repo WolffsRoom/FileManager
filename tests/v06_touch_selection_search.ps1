@@ -11,7 +11,7 @@ $theme = $button.plane | Where-Object id -eq 'plane_theme_preview'
 
 if ($check.texture -ne '_common_texture_transparent') { throw 'Recycled rows can flash the selection square' }
 if (-not $mark -or $mark.layout_hint.size -ne '840, 76') { throw 'Persistent selection does not have its own row layer' }
-if ($theme.layout_hint.size -ne '91.8, 63' -or $theme.layout_hint.pos -ne '-364.1, 0') { throw 'Theme color layer is not centered over the icon object' }
+if ($theme.layout_hint.size -ne '63, 63' -or $theme.layout_hint.pos -ne '-368, 0') { throw 'Theme color layer is not centered over the icon object' }
 if ($settings -notmatch 'button->SetSize\(920\.0f, 80\.0f, 0\.0f\)') { throw 'Settings switch is outside the touchable row area' }
 
 $highlightStart = $browser.IndexOf('void BrowserMenu::ApplyRowHighlight(')

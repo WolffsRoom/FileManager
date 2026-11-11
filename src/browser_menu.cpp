@@ -439,7 +439,15 @@ void BrowserMenu::UpdateBackground()
 	{
 		m_musicShown = playing;
 		m_musicIndicator->SetActivate(playing);
-		if (playing) m_musicIndicator->Show(common::transition::Type_Reset);
+		if (playing)
+		{
+			ui::Widget *picture = m_musicIndicator->FindChild(plane_music_indicator_page_browser);
+			intrusive_ptr<graph::Surface> cover = MusicMenu::MinimizedCover();
+			if (picture && cover.get()) picture->SetTexture(cover, 0, 0);
+			m_musicIndicator->SetScale(0.25f, 0.25f, 1.0f);
+			m_musicIndicator->Show(common::transition::Type_Reset);
+			m_musicIndicator->SetScale(1.0f, 1.0f, 1.0f, new Timer(0.28f, Timer::FUNC_SINE_OUT));
+		}
 		else m_musicIndicator->Hide(common::transition::Type_Reset);
 	}
 	if (ftpActive != m_ftpShown)
@@ -1142,10 +1150,38 @@ ui::ListItem *BrowserMenu::CreateListItem(ui::listview::ItemFactory::CreateParam
 		FillFileItem(page, button, entry);
 	}
 
-	intrusive_ptr<graph::Surface> tex = Icon(page->opened == param.cell_index ? tex_ui_parent : IconFor(entry, page->path));
+	intrusive_ptr<graph::Surface> tex;
+	const bool vpk = !rootStyle && entry->kind == fs::Kind_Vpk;
+	if (vpk && settings::Get().showVpkIcons)
+	{
+		VpkInfo info;
+		memset(&info, 0, sizeof(info));
+		paf::string path = fs::Join(page->path, entry->name);
+		if (readVpkInfo(path.c_str(), &info) >= 0 && info.icon)
+		{
+			void *bubble = NULL;
+			uint32_t bubbleSize = 0;
+			if (makeBubblePng(info.icon, info.iconSize, &bubble, &bubbleSize) >= 0)
+			{
+				int32_t result = -1;
+				common::SharedPtr<MemFile> file = MemFile::Open(bubble, bubbleSize, &result);
+				if (result == SCE_PAF_OK) tex = graph::Surface::Load(gutil::GetDefaultSurfacePool(), (common::SharedPtr<File> &)file);
+				free(bubble);
+			}
+			free(info.icon);
+		}
+	}
+	if (!tex.get()) tex = Icon(page->opened == param.cell_index ? tex_ui_parent : IconFor(entry, page->path));
 	if (tex.get())
 	{
 		button->SetTexture(tex);
+	}
+	if (vpk)
+	{
+		math::v3 iconSize;
+		float iconValues[4] = { 122.4f, 84.0f, 0.0f, 0.0f };
+		memcpy(&iconSize, iconValues, sizeof(iconSize));
+		static_cast<ui::ImageButton *>(button)->SetTextureSize(iconSize);
 	}
 
 	button->AddEventCallback(ui::Button::CB_BTN_DECIDE,

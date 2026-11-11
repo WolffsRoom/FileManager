@@ -144,8 +144,10 @@
       <plane style="style_plane_dim" id="plane_dim_page_ftp">
         <layout_hint size="960, 544" />
       </plane>
-      <plane style="style_plane_panel" id="plane_panel_page_ftp">
+      <plane style="_common_style_plane_transparent" id="plane_panel_page_ftp">
         <layout_hint size="700, 400" />
+        <plane texture="_common_texture_dialog_frame"><layout_hint adjust="1, 1" /></plane>
+        <plane style="_common_style_plane_dialog" texture="_common_texture_dialog_fill_white"><layout_hint adjust="1, 1" /></plane>
         <text style="style_text_ftp_title" id="text_title_page_ftp">
           <layout_hint size="640, 44" pos="0, 160" />
         </text>
@@ -200,8 +202,10 @@
       <plane style="style_plane_dim" id="plane_dim_page_info">
         <layout_hint size="960, 544" />
       </plane>
-      <plane style="style_plane_panel" id="plane_panel_page_info">
+      <plane style="_common_style_plane_transparent" id="plane_panel_page_info">
         <layout_hint size="780, 420" />
+        <plane texture="_common_texture_dialog_frame"><layout_hint adjust="1, 1" /></plane>
+        <plane style="_common_style_plane_dialog" texture="_common_texture_dialog_fill_white"><layout_hint adjust="1, 1" /></plane>
         <plane style="_common_default_style_plane" texture="_common_texture_transparent" id="plane_picture_page_info">
           <layout_hint size="120, 120" pos="-275, 75" />
         </plane>
@@ -226,8 +230,10 @@
       <plane style="style_plane_dim" id="plane_dim_page_notice">
         <layout_hint size="960, 544" />
       </plane>
-      <plane style="style_plane_panel" id="plane_panel_page_notice">
+      <plane style="_common_style_plane_transparent" id="plane_panel_page_notice">
         <layout_hint size="660, 300" />
+        <plane texture="_common_texture_dialog_frame"><layout_hint adjust="1, 1" /></plane>
+        <plane style="_common_style_plane_dialog" texture="_common_texture_dialog_fill_white"><layout_hint adjust="1, 1" /></plane>
         <text style="style_text_ftp_title" id="text_title_page_notice">
           <layout_hint size="600, 44" pos="0, 110" />
         </text>
@@ -412,7 +418,7 @@
   <styletable>
     <style_button sound="_common_sound_button_enter" bottom_margin="12" right_margin="20" top_margin="12" left_margin="20" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_option_single">
       <planeobj texture0="_common_texture_option_menu_button_single" id="plane_obj1" />
-      <textobj font_size="28" bold="1" ellipsis="1" align_y="1" align_x="3" id="label_obj1" />
+      <textobj font_size="28" bold="1" ellipsis="1" align_y="1" align_x="1" id="label_obj1" />
       <planeobj texture0="_common_texture_option_menu_button_single_glow" blend="2" id="plane_obj2" />
     </style_button>
     <style_button sound="_common_sound_button_enter" bottom_margin="8" right_margin="10" top_margin="8" left_margin="10" label_obj="label_obj1" bg_obj="plane_obj1" glow_obj="plane_obj2" id="style_button_music_action">
@@ -671,9 +677,6 @@
     <template fast_open="1" id="template_list_item_file">
       <list_item style="style_list_view_item_generic" id="list_item_file">
         <layout_hint size="960, 80" />
-        <plane style="style_plane_selection_mark" id="plane_list_item_mark">
-          <layout_hint size="840, 76" />
-        </plane>
         <image_button sound="_common_sound_image_button" style="style_image_button_list_button" id="image_button_list_item">
           <focus_hint focus_shape="3" />
           <layout_hint size="840, 80" />
@@ -684,9 +687,13 @@
             <layout_hint anchor="1, 0" align="1, 0" size="600, 26" pos="118, -19" />
           </text>
 		  <plane texture="_common_texture_transparent" id="plane_theme_preview">
-			<layout_hint size="91.8, 63" pos="-364.1, 0" />
+			<layout_hint size="63, 63" pos="-368, 0" />
 		  </plane>
         </image_button>
+        <!-- Draw after the row background so a selected item remains visibly blue. -->
+        <plane style="style_plane_selection_mark" id="plane_list_item_mark">
+          <layout_hint size="840, 76" />
+        </plane>
         <!-- Checkbox must be outside image_button label clipping. -->
         <plane style="_common_default_style_plane" texture="_common_texture_transparent" id="plane_list_item_check">
           <layout_hint size="72, 72" pos="401, 0" />

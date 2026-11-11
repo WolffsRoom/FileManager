@@ -17,7 +17,8 @@ if (-not $slider) { throw 'Settings does not use a native touch progress bar for
 if (-not ($page.text | Where-Object id -eq 'text_preview_opacity_page_settings')) { throw 'Opacity percentage label missing' }
 if ($settingsMenu -notmatch 'CB_PROGRESSBAR_CHANGED' -or $settingsMenu -notmatch 'msg_set_show_details') { throw 'Opacity/details Settings controls are not wired' }
 
-if ($preview -notmatch 'settings::PreviewOpacity\(\)' -or $music -notmatch 'settings::PreviewOpacity\(\)') { throw 'Image and music overlays do not share configured opacity' }
+if ($preview -notmatch 'settings::PreviewOpacity\(\)') { throw 'Image preview does not use configured opacity' }
+if ($music -notmatch '0\.92f') { throw 'Music player background is not consistently opaque' }
 
 if ($browser -notmatch 'FileDetails\(const fs::Entry \*entry\)' -or $browser -notmatch 'settings::Get\(\)\.showDetails') { throw 'Optional file detail formatter missing' }
 if ($browser -notmatch '%s - %02u/%02u/%04u - %02u:%02u') { throw 'File detail format is not TYPE - date - modification time' }

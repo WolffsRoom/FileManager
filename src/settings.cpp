@@ -12,7 +12,7 @@ using namespace paf;
 
 namespace {
 
-	settings::Config s_config = { 0, settings::View_List, 0, 0, -1, 1, 1, 0, 1, 70, 1 };
+	settings::Config s_config = { 2, settings::View_List, 0, 0, -1, 1, 1, 0, 1, 70, 1, 1 };
 
 	const theme::Info k_themes[] = {
 		{ msg_theme_default,  { 1.00f, 1.00f, 1.00f }, { 1.00f, 1.00f, 1.00f } },
@@ -24,6 +24,7 @@ namespace {
 		{ msg_theme_wine,     { 0.46f, 0.08f, 0.18f }, { 1.00f, 0.62f, 0.68f } },
 		{ msg_theme_pink,     { 0.68f, 0.22f, 0.48f }, { 1.00f, 0.75f, 0.88f } },
 		{ msg_theme_custom,   { 1.00f, 1.00f, 1.00f }, { 1.00f, 1.00f, 1.00f } },
+		{ msg_theme_sony_blue,{ 0.04f, 0.25f, 0.55f }, { 0.35f, 0.72f, 1.00f } },
 	};
 	const uint32_t k_themeCount = sizeof(k_themes) / sizeof(k_themes[0]);
 	paf::vector<paf::string> s_backgrounds;
@@ -165,6 +166,12 @@ void settings::Load()
 		int32_t v = atoi(p + 13);
 		if (v == 0 || v == 1) s_config.showDetails = v;
 	}
+	p = strstr(buf, "show_vpk_icons=");
+	if (p)
+	{
+		int32_t v = atoi(p + 15);
+		if (v == 0 || v == 1) s_config.showVpkIcons = v;
+	}
 }
 
 void settings::Save()
@@ -175,10 +182,10 @@ void settings::Save()
 		return;
 	}
 	char buf[256];
-	int32_t n = snprintf(buf, sizeof(buf), "theme=%d\nview=%d\nlanguage=%d\nselect=%d\nusb_device=%d\nfont=%d\nauto_decrypt=%d\nsort=%d\nnavigation_3d=%d\npreview_opacity=%d\nshow_details=%d\n",
+	int32_t n = snprintf(buf, sizeof(buf), "theme=%d\nview=%d\nlanguage=%d\nselect=%d\nusb_device=%d\nfont=%d\nauto_decrypt=%d\nsort=%d\nnavigation_3d=%d\npreview_opacity=%d\nshow_details=%d\nshow_vpk_icons=%d\n",
 		(int)s_config.theme, (int)s_config.view, (int)s_config.language, (int)s_config.selectFunction,
 		(int)s_config.usbDevice, (int)s_config.fontSize, (int)s_config.autoDecrypt, (int)s_config.sortMode, (int)s_config.navigation3D,
-		(int)s_config.previewOpacity, (int)s_config.showDetails);
+		(int)s_config.previewOpacity, (int)s_config.showDetails, (int)s_config.showVpkIcons);
 	sceIoWrite(fd, buf, n);
 	sceIoClose(fd);
 }
@@ -225,7 +232,8 @@ const theme::Info &theme::At(uint32_t index)
 
 uint32_t theme::CustomIndex()
 {
-	return k_themeCount - 1;
+	// Sony Blue was appended after Custom to preserve theme=8 in existing configs.
+	return k_themeCount - 2;
 }
 
 const float *theme::Accent()

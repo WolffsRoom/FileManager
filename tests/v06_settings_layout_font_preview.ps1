@@ -12,7 +12,7 @@ if ($cpp -notmatch 'settings::FileFontSize\(\) / 28\.0f') { throw 'Preview does 
 if ($header -notmatch 'm_fontPreview') { throw 'Settings does not retain the preview widget' }
 $template = $xml.resource.templatetable.template | Where-Object id -eq 'template_list_item_file'
 $theme = $template.list_item.image_button.plane | Where-Object id -eq 'plane_theme_preview'
-if ($theme.layout_hint.pos -ne '-364.1, 0' -or $theme.layout_hint.size -ne '91.8, 63') { throw 'Theme color layer is not centered on the icon slot' }
+if ($theme.layout_hint.pos -ne '-368, 0' -or $theme.layout_hint.size -ne '63, 63') { throw 'Theme color layer is not centered on the icon slot' }
 foreach ($locale in Get-ChildItem 'resource/locale' -Filter '*.xml') {
     if ((Get-Content $locale.FullName -Raw) -notmatch 'id="msg_font_preview"') { throw "Font preview copy missing from $($locale.Name)" }
 }

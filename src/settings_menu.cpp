@@ -25,10 +25,10 @@ namespace {
 	}
 
 	// Main level rows
-	enum MainRow { Main_Themes, Main_FontSize, Main_PreviewOpacity, Main_ShowDetails, Main_Language, Main_Select, Main_AutoDecrypt, Main_Navigation, Main_Shortcuts, Main_Commands, Main_About, Main_Count };
+	enum MainRow { Main_Themes, Main_FontSize, Main_PreviewOpacity, Main_ShowDetails, Main_ShowVpkIcons, Main_Language, Main_Select, Main_AutoDecrypt, Main_Navigation, Main_Shortcuts, Main_Commands, Main_About, Main_Count };
 
-	const uint32_t k_mainLabels[Main_Count] = { msg_set_themes, msg_set_font_size, msg_set_preview_opacity, msg_set_show_details, msg_set_language, msg_set_select, msg_set_auto_decrypt, msg_set_navigation, msg_set_shortcuts, msg_set_commands, msg_set_about };
-	const uint32_t k_mainIcons[Main_Count] = { tex_new_theme, tex_ui_text, tex_ui_image, tex_ui_text, tex_ui_text, tex_ui_ftp, tex_ui_encrypted, tex_ui_anim_options, tex_ui_bookmark, tex_new_gears, tex_about };
+	const uint32_t k_mainLabels[Main_Count] = { msg_set_themes, msg_set_font_size, msg_set_preview_opacity, msg_set_show_details, msg_set_vpk_icons, msg_set_language, msg_set_select, msg_set_auto_decrypt, msg_set_navigation, msg_set_shortcuts, msg_set_commands, msg_set_about };
+	const uint32_t k_mainIcons[Main_Count] = { tex_new_theme, tex_ui_text, tex_ui_image, tex_ui_text, tex_ui_vpk, tex_ui_text, tex_ui_ftp, tex_ui_encrypted, tex_ui_anim_options, tex_ui_bookmark, tex_new_gears, tex_about };
 
 	const uint32_t k_languages[] = { msg_lang_system, msg_lang_ptbr, msg_lang_en, msg_lang_es, msg_lang_fr, msg_lang_de };
 	const uint32_t k_selectFunctions[] = { msg_ftp_server, msg_qr_code, msg_usb };
@@ -219,6 +219,7 @@ int32_t SettingsMenu::RowCount(Level level)
 	case Level_FontSize: return 3;
 	case Level_PreviewOpacity: return 0;
 	case Level_ShowDetails: return 2;
+	case Level_ShowVpkIcons: return 2;
 	case Level_Language: return sizeof(k_languages) / sizeof(k_languages[0]);
 	case Level_Select: return 3;
 	case Level_UsbDevice: return 4;
@@ -294,7 +295,7 @@ void SettingsMenu::ShowLevel(Level level)
 		}
 	}
 
-	static const uint32_t k_titles[] = { msg_opt_settings, msg_set_themes, msg_set_font_size, msg_set_preview_opacity, msg_set_show_details, msg_set_language, msg_set_select, msg_usb_device, msg_set_auto_decrypt, msg_set_navigation, msg_set_shortcuts, msg_set_commands };
+	static const uint32_t k_titles[] = { msg_opt_settings, msg_set_themes, msg_set_font_size, msg_set_preview_opacity, msg_set_show_details, msg_set_vpk_icons, msg_set_language, msg_set_select, msg_usb_device, msg_set_auto_decrypt, msg_set_navigation, msg_set_shortcuts, msg_set_commands };
 	m_root->FindChild(text_top)->SetString(Str(k_titles[level]));
 
 	if (level == Level_Shortcuts && m_shortcuts.empty())
@@ -316,6 +317,7 @@ bool SettingsMenu::IsSelected(int32_t row)
 	case Level_Themes: return c.theme == row;
 	case Level_FontSize: return c.fontSize == row;
 	case Level_ShowDetails: return c.showDetails == row;
+	case Level_ShowVpkIcons: return c.showVpkIcons == row;
 	case Level_Language: return c.language == row;
 	case Level_Select: return c.selectFunction == row;
 	case Level_UsbDevice: return c.usbDevice == row;
@@ -366,6 +368,7 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		if (row == Main_FontSize) icon = tex_ui_font_size;
 		else if (row == Main_PreviewOpacity) icon = tex_ui_image;
 		else if (row == Main_ShowDetails) icon = tex_ui_text;
+		else if (row == Main_ShowVpkIcons) icon = tex_ui_vpk;
 		else if (row == Main_Language) icon = tex_ui_language;
 		else if (row == Main_Select) icon = c.selectFunction == 2 ? tex_ui_usb :
 			(c.selectFunction == 1 ? tex_ui_qr : tex_ui_ftp);
@@ -376,6 +379,7 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 		else if (row == Main_FontSize) info = Str(k_fontSizes[c.fontSize]);
 		else if (row == Main_PreviewOpacity) info = Wide(common::FormatString("%d%%", c.previewOpacity).c_str());
 		else if (row == Main_ShowDetails) info = Str(k_enabled[c.showDetails]);
+		else if (row == Main_ShowVpkIcons) info = Str(k_enabled[c.showVpkIcons]);
 		else if (row == Main_Language) info = Str(k_languages[c.language]);
 		else if (row == Main_Select)
 		{
@@ -401,6 +405,10 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	case Level_ShowDetails:
 		label = Str(k_enabled[row]);
 		icon = tex_ui_text;
+		break;
+	case Level_ShowVpkIcons:
+		label = Str(k_enabled[row]);
+		icon = tex_ui_vpk;
 		break;
 	case Level_Language:
 		label = Str(k_languages[row]);
@@ -600,6 +608,7 @@ void SettingsMenu::OnRow(int32_t row)
 		else if (row == Main_FontSize) QueueLevel(Level_FontSize);
 		else if (row == Main_PreviewOpacity) QueueLevel(Level_PreviewOpacity);
 		else if (row == Main_ShowDetails) QueueLevel(Level_ShowDetails);
+		else if (row == Main_ShowVpkIcons) QueueLevel(Level_ShowVpkIcons);
 		else if (row == Main_Language) QueueLevel(Level_Language);
 		else if (row == Main_Select) QueueLevel(Level_Select);
 		else if (row == Main_AutoDecrypt) QueueLevel(Level_AutoDecrypt);
@@ -618,6 +627,9 @@ void SettingsMenu::OnRow(int32_t row)
 		break;
 	case Level_ShowDetails:
 		c.showDetails = row;
+		break;
+	case Level_ShowVpkIcons:
+		c.showVpkIcons = row;
 		break;
 	case Level_Language:
 		c.language = row;
