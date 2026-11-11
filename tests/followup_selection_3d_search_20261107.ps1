@@ -35,13 +35,10 @@ $pop = $browser.Substring($start,$stop-$start)
 Assert ($pop.Contains('current->list->Hide(common::transition::Type_3D_SlideToBack1)')) 'Alpha parent reverse sequence missing'
 Assert ($pop.Contains('current->list->Show(common::transition::Type_Reset)')) 'Alpha parent reset missing'
 Assert (-not $browser.Contains('m_transitionFrames')) 'Frame-count transition override remains'
-$start = $browser.IndexOf('void BrowserMenu::ToggleSearch()')
-$stop = $browser.IndexOf('void BrowserMenu::SetRowIcon(', $start)
-$search = $browser.Substring($start,$stop-$start)
-Assert ($search.Contains('page->list->SetFocus(0, 0, ui::ListView::FOCUS_ALIGN_TYPE_HEAD')) 'Search does not scroll up before keyboard'
 $start = $browser.IndexOf('void BrowserMenu::OnSearch()')
 $stop = $browser.IndexOf('void BrowserMenu::OnForward()', $start)
 $filter = $browser.Substring($start,$stop-$start)
+Assert ($filter.Contains('page->list->SetFocus(0, 0, ui::ListView::FOCUS_ALIGN_TYPE_HEAD')) 'Search does not align the resized list to its first row'
 Assert ($filter.Contains('page->list->SetFocus(0, 0, ui::ListView::FOCUS_ALIGN_TYPE_HEAD')) 'Filtered results do not begin at top'
 Assert ($settings.Contains('m_list->SetSize(960.0f, 304.0f, 0.0f)')) 'Settings main list has no extra room'
 $settingsPage = @($rco.resource.pagetable.page | Where-Object id -eq 'page_settings')[0]

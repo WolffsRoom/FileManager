@@ -6,20 +6,18 @@
 #include <psp2/appmgr.h>
 #include <psp2/musicexport.h>
 #include <psp2/sysmodule.h>
-#include <psp2/touch.h>
 
 #include "common.h"
 #include "settings.h"
 #include "music_menu.h"
 #include "core/music.h"
 #include "dialog.h"
+#include "option_menu.h"
 
 using namespace paf;
 
 namespace {
 	MusicMenu *s_minimizedPlayer = NULL;
-
-	const float k_barWidth = 480.0f;
 
 	void UpdateTask(void *userdata)
 	{
@@ -51,7 +49,7 @@ namespace {
 }
 
 MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &paths, int32_t index) :
-	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false), m_barTouch(false), m_barTouchX(0), m_minimized(false)
+	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false), m_seekChanging(false), m_minimized(false)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -73,17 +71,32 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	m_album = m_root->FindChild(text_album_page_music);
 	m_elapsed = m_root->FindChild(text_elapsed_page_music);
 	m_total = m_root->FindChild(text_total_page_music);
-	m_barFill = m_root->FindChild(plane_bar_fill_page_music);
-	m_seekMarker = m_root->FindChild(plane_seek_marker_page_music);
-	m_seekMarker->Hide(common::transition::Type_Reset);
+	m_seekSlider = static_cast<ui::ProgressBarTouch *>(m_root->FindChild(progressbar_seek_page_music));
+	m_seekSlider->SetMinValue(0.0f);
+	m_seekSlider->SetMaxValue(100.0f);
+	m_seekSlider->AddEventCallback(ui::ProgressBarTouch::CB_PROGRESSBAR_CHANGED,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		reinterpret_cast<MusicMenu *>(userdata)->OnSeekChanged();
+	}, this);
 	m_playButton = m_root->FindChild(button_play_page_music);
 	m_playGlyph = m_root->FindChild(glyph_play_page_music);
 	m_pauseGlyph = m_root->FindChild(glyph_pause_page_music);
 
 	m_playGlyph->Hide(common::transition::Type_Reset);
-	SetText(m_root->FindChild(button_export_page_music), Utf8(msg_music_export).c_str());
-	SetText(m_root->FindChild(button_background_page_music), Utf8(msg_music_background).c_str());
-	SetText(m_root->FindChild(button_native_music_page_music), Utf8(msg_music_open_native).c_str());
+	ui::Widget *options = m_root->FindChild(button_options_page_music);
+	options->SetKeycode(inputdevice::pad::Data::PAD_MENU);
+	options->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		reinterpret_cast<MusicMenu *>(userdata)->OnOptions();
+	}, this);
+	m_root->AddEventCallback(OptionMenu::OptionMenuEvent,
+	[](int32_t, ui::Handler *, ui::Event *e, void *userdata)
+	{
+		if (e->GetValue(0) == OptionMenu::OptionMenuEvent_Button && e->GetValue(2) == MusicMenu::OptionTag)
+			reinterpret_cast<MusicMenu *>(userdata)->OnOption(e->GetValue(1));
+	}, this);
 
 	AddKey(m_root->FindChild(button_back_page_music), inputdevice::pad::Data::PAD_ESCAPE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
@@ -115,22 +128,6 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	{
 		reinterpret_cast<MusicMenu *>(userdata)->Seek(10);
 	}, this);
-	AddKey(m_root->FindChild(button_export_page_music), 0,
-	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
-	{
-		reinterpret_cast<MusicMenu *>(userdata)->ExportToMusic();
-	}, this);
-	AddKey(m_root->FindChild(button_background_page_music), 0,
-	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
-	{
-		reinterpret_cast<MusicMenu *>(userdata)->ListenInBackground();
-	}, this);
-	AddKey(m_root->FindChild(button_native_music_page_music), 0,
-	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
-	{
-		reinterpret_cast<MusicMenu *>(userdata)->OpenInMusic();
-	}, this);
-
 	Play(index);
 	common::MainThreadCallList::Register(UpdateTask, this);
 }
@@ -217,7 +214,7 @@ void MusicMenu::Play(int32_t index)
 	SetText(m_elapsed, "00:00");
 	m_seconds = info.seconds;
 	m_playing = true;
-	m_barFill->SetSize(0.0f, 8.0f, 0.0f);
+	m_seekSlider->SetValue(0.0f, false);
 	m_playGlyph->Hide(common::transition::Type_Reset);
 	m_pauseGlyph->Show(common::transition::Type_Reset);
 	ShowCover(path, info.coverType, info.coverOffset, info.coverLength);
@@ -295,6 +292,38 @@ void MusicMenu::ListenInBackground()
 	m_parentRoot->SetActivate(true);
 }
 
+void MusicMenu::OnOptions()
+{
+	paf::vector<OptionMenu::Button> buttons;
+	OptionMenu::Button exportSong, minimize, nativeMusic;
+	exportSong.label = g_appPlugin->GetString(msg_music_export);
+	minimize.label = g_appPlugin->GetString(msg_music_background);
+	nativeMusic.label = g_appPlugin->GetString(msg_music_open_native);
+	buttons.push_back(exportSong);
+	buttons.push_back(minimize);
+	buttons.push_back(nativeMusic);
+	OptionMenu::Create(g_appPlugin, m_root, &buttons, 0xd098335eu, OptionTag);
+}
+
+void MusicMenu::OnOption(int32_t index)
+{
+	if (index == 0) ExportToMusic();
+	else if (index == 1) ListenInBackground();
+	else if (index == 2) OpenInMusic();
+}
+
+void MusicMenu::OnSeekChanged()
+{
+	if (!m_playing || m_seconds <= 0) return;
+	m_seekChanging = true;
+	float percent = m_seekSlider->GetValue() / 100.0f;
+	if (percent < 0.0f) percent = 0.0f;
+	if (percent > 1.0f) percent = 1.0f;
+	UpdateSeekPreview(percent);
+	musicSeek(percent * m_seconds);
+	m_seekChanging = false;
+}
+
 bool MusicMenu::HasMinimized()
 {
 	return s_minimizedPlayer != NULL && musicIsPlaying();
@@ -313,34 +342,6 @@ void MusicMenu::RestoreMinimized()
 
 void MusicMenu::Update()
 {
-	SceTouchData touch;
-	memset(&touch, 0, sizeof(touch));
-	sceTouchPeek(SCE_TOUCH_PORT_FRONT, &touch, 1);
-	if (touch.reportNum)
-	{
-		float x = touch.report[0].x * (960.0f / 1920.0f);
-		float y = touch.report[0].y * (544.0f / 1088.0f);
-		bool overTrack = x >= 420.0f && x <= 920.0f && y >= 252.0f && y <= 330.0f;
-		if (overTrack || m_barTouch)
-		{
-			m_barTouch = true;
-			m_barTouchX = x;
-			float pct = (m_barTouchX - 440.0f) / k_barWidth;
-			if (pct < 0.0f) pct = 0.0f;
-			if (pct > 1.0f) pct = 1.0f;
-			UpdateSeekPreview(pct);
-		}
-	}
-	else if (m_barTouch)
-	{
-		// Use the last touch position retained by the touch service.
-		float pct = (m_barTouchX - 440.0f) / k_barWidth;
-		if (pct < 0.0f) pct = 0.0f;
-		if (pct > 1.0f) pct = 1.0f;
-		musicSeek(pct * m_seconds);
-		m_barTouch = false;
-		m_seekMarker->Hide(common::transition::Type_FadeinFast);
-	}
 	if (!m_playing || m_frame++ % 15 != 0)
 	{
 		return;
@@ -367,7 +368,7 @@ void MusicMenu::Update()
 	float pct = musicPercent();
 	if (pct < 0.0f) pct = 0.0f;
 	if (pct > 100.0f) pct = 100.0f;
-	m_barFill->SetSize(k_barWidth * pct / 100.0f, 8.0f, 0.0f);
+	if (!m_seekChanging) m_seekSlider->SetValue(pct, false);
 }
 
 void MusicMenu::UpdateSeekPreview(float percent)
@@ -377,7 +378,4 @@ void MusicMenu::UpdateSeekPreview(float percent)
 	char text[16];
 	snprintf(text, sizeof(text), "%02ld:%02ld", target / 60, target % 60);
 	SetText(m_elapsed, text);
-	m_barFill->SetSize(k_barWidth * percent, 8.0f, 0.0f);
-	m_seekMarker->SetPos(k_barWidth * percent - k_barWidth * 0.5f, 0.0f, 0.0f);
-	m_seekMarker->Show(common::transition::Type_FadeinFast);
 }

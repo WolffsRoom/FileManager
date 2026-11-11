@@ -261,10 +261,10 @@
       </plane>
       <template_ref id="template_ref_top_title_bar_page_music" template="template_top_title_bar" />
 	  <plane style="style_plane_cover_shadow" id="plane_cover_shadow_page_music">
-		<layout_hint size="342, 282" pos="-242, -10" />
+		<layout_hint size="386, 382" pos="-252, -4" />
 	  </plane>
       <plane style="_common_default_style_plane" texture="_common_texture_transparent" id="plane_cover_page_music">
-        <layout_hint size="330, 270" pos="-250, 0" />
+        <layout_hint size="374, 370" pos="-260, 6" />
       </plane>
       <text style="style_text_info_title" id="text_song_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="500, 44" pos="440, 118" />
@@ -275,15 +275,9 @@
       <text style="style_text_ftp_info" id="text_album_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="500, 30" pos="440, 34" />
       </text>
-      <plane style="style_plane_bar_base" id="plane_bar_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="480, 8" pos="440, -20" />
-        <plane style="style_plane_bar_fill" id="plane_bar_fill_page_music">
-          <layout_hint anchor="1, 0" align="1, 0" size="0, 8" />
-        </plane>
-        <plane style="style_plane_seek_marker" id="plane_seek_marker_page_music">
-          <layout_hint size="18, 18" pos="0, 0" />
-        </plane>
-      </plane>
+      <progressbar_touch style="style_progressbar_touch_native" label_mode="2" id="progressbar_seek_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="480, 24" pos="440, -20" />
+      </progressbar_touch>
       <text style="style_text_music_time" id="text_elapsed_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="200, 30" pos="440, -46" />
       </text>
@@ -310,15 +304,6 @@
         <layout_hint anchor="1, 0" align="1, 0" size="92, 46" pos="710, -112" />
         <plane texture="tex_preview_arrow_right" id="glyph_next_page_music"><layout_hint size="32, 32" /></plane>
       </button>
-      <button style="style_button_music_action" id="button_export_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="170, 48" pos="430, -180" />
-      </button>
-      <button style="style_button_music_action" id="button_background_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="170, 48" pos="610, -180" />
-      </button>
-      <button style="style_button_music_action" id="button_native_music_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="170, 48" pos="790, -180" />
-      </button>
       <button style="_common_default_style_button_transparent" id="button_rewind_page_music">
         <layout_hint size="1, 1" pos="-479, 271" />
         <focus_hint enable="0" />
@@ -328,6 +313,7 @@
         <focus_hint enable="0" />
       </button>
       <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_music" />
+      <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_options_page_music" />
     </page>
     <page id="page_preview">
       <plane style="style_plane_black" id="plane_black_page_preview">

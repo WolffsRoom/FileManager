@@ -9,6 +9,8 @@
 static int s_audioReady = 0;
 static int s_open = 0;
 static int s_paused = 0;
+static double s_duration = 0.0;
+static double s_fileSize = 0.0;
 
 static int typeFor(const char *path) {
   const char *dot = strrchr(path, '.');
@@ -56,6 +58,8 @@ int musicOpen(const char *path, MusicInfo *info) {
     strncpy(info->album, fi->album, sizeof(info->album) - 1);
     strncpy(info->length, fi->strLength, sizeof(info->length) - 1);
     info->seconds = fi->length;
+    s_duration = fi->length;
+    s_fileSize = fi->fileSize;
     info->coverType = fi->encapsulatedPictureType;
     info->coverOffset = fi->encapsulatedPictureOffset;
     info->coverLength = fi->encapsulatedPictureLength;
@@ -70,6 +74,8 @@ void musicClose(void) {
   unsetAudioFunctions();
   sceAppMgrReleaseBgmPort();
   s_open = 0;
+  s_duration = 0.0;
+  s_fileSize = 0.0;
 }
 
 void musicTogglePause(void) {
@@ -104,9 +110,11 @@ void musicTime(char *out) {
 }
 
 void musicSeek(double seconds) {
-  if (!s_open || !setFilePositionFunct)
+  if (!s_open || !setFilePositionFunct || s_duration <= 0.0 || s_fileSize <= 0.0)
     return;
   if (seconds < 0)
     seconds = 0;
-  setFilePositionFunct(seconds);
+  if (seconds > s_duration)
+    seconds = s_duration;
+  setFilePositionFunct(s_fileSize * seconds / s_duration);
 }

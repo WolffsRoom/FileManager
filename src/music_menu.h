@@ -24,11 +24,15 @@ public:
 	void ExportToMusic();
 	void ListenInBackground();
 	void OpenInMusic();
+	void OnOptions();
+	void OnOption(int32_t index);
+	void OnSeekChanged();
 	void Close();
 	static bool HasMinimized();
 	static void RestoreMinimized();
 
 private:
+	static const int32_t OptionTag = 0x4d555349;
 
 	void ShowCover(const char *path, int32_t type, int32_t offset, int32_t length);
 	void UpdateSeekPreview(float percent);
@@ -43,8 +47,7 @@ private:
 	paf::ui::Widget *m_album;
 	paf::ui::Widget *m_elapsed;
 	paf::ui::Widget *m_total;
-	paf::ui::Widget *m_barFill;
-	paf::ui::Widget *m_seekMarker;
+	paf::ui::ProgressBarTouch *m_seekSlider;
 	paf::ui::Widget *m_playButton;
 	paf::ui::Widget *m_playGlyph;
 	paf::ui::Widget *m_pauseGlyph;
@@ -54,8 +57,7 @@ private:
 	uint32_t m_frame;
 	bool m_playing;
 	bool m_closing;
-	bool m_barTouch;
-	float m_barTouchX;
+	bool m_seekChanging;
 	bool m_minimized;
 };
 
