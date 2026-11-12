@@ -73,9 +73,38 @@ void musicClose(void) {
   endFunct();
   unsetAudioFunctions();
   sceAppMgrReleaseBgmPort();
+  setVizPcmCapture(0);
   s_open = 0;
   s_duration = 0.0;
   s_fileSize = 0.0;
+}
+
+void musicSetWaveformEnabled(int enabled) {
+  setVizPcmCapture(enabled);
+}
+
+int musicWaveform(float *bars, int count) {
+  if (!bars || count <= 0) return 0;
+  short *pcm = NULL;
+  int samples = 0;
+  getVizPcmData(&pcm, &samples);
+  if (!pcm || samples <= 0) return 0;
+  for (int i = 0; i < count; ++i) {
+    int begin = i * samples / count;
+    int end = (i + 1) * samples / count;
+    if (end <= begin) end = begin + 1;
+    int peak = 0;
+    for (int j = begin; j < end && j < samples; ++j) {
+      int left = pcm[j * 2];
+      int right = pcm[j * 2 + 1];
+      if (left < 0) left = -left;
+      if (right < 0) right = -right;
+      if (left > peak) peak = left;
+      if (right > peak) peak = right;
+    }
+    bars[i] = (float)peak / 32768.0f;
+  }
+  return 1;
 }
 
 void musicTogglePause(void) {

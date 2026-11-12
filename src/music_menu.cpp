@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <psp2/appmgr.h>
 #include <psp2/musicexport.h>
 #include <psp2/sysmodule.h>
 
@@ -49,7 +48,7 @@ namespace {
 }
 
 MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &paths, int32_t index) :
-	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false), m_seekChanging(false), m_minimized(false), m_minimizePending(false), m_minimizeFrames(0), m_restorePending(false), m_restoreFrames(0)
+	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false), m_seekChanging(false), m_minimized(false), m_minimizePending(false), m_minimizeFrames(0), m_restorePending(false), m_restoreFrames(0), m_waveformVisible(false), m_screenOff(false), m_screenTapTick(0), m_screenTapCount(0)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -91,6 +90,34 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
 	{
 		reinterpret_cast<MusicMenu *>(userdata)->OnSeekChanged();
+	}, this);
+	m_waveform = m_root->FindChild(plane_waveform_page_music);
+	const uint32_t waveIds[WaveBars] = {
+		plane_wave_00_page_music, plane_wave_01_page_music, plane_wave_02_page_music, plane_wave_03_page_music,
+		plane_wave_04_page_music, plane_wave_05_page_music, plane_wave_06_page_music, plane_wave_07_page_music,
+		plane_wave_08_page_music, plane_wave_09_page_music, plane_wave_10_page_music, plane_wave_11_page_music,
+		plane_wave_12_page_music, plane_wave_13_page_music, plane_wave_14_page_music, plane_wave_15_page_music,
+		plane_wave_16_page_music, plane_wave_17_page_music, plane_wave_18_page_music, plane_wave_19_page_music,
+		plane_wave_20_page_music, plane_wave_21_page_music, plane_wave_22_page_music, plane_wave_23_page_music
+	};
+	for (int32_t i = 0; i < WaveBars; ++i)
+	{
+		m_waveBars[i] = m_root->FindChild(waveIds[i]);
+		m_waveLevels[i] = 0.0f;
+	}
+	m_waveform->Hide(common::transition::Type_Reset);
+	m_screenOffButton = m_root->FindChild(button_screen_off_page_music);
+	m_screenOffButton->Hide(common::transition::Type_Reset);
+	m_screenOffButton->SetActivate(false);
+	m_screenOffButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		reinterpret_cast<MusicMenu *>(userdata)->OnScreenTap();
+	}, this);
+	m_screenOffButton->AddEventCallback(ui::Handler::CB_GESTURE_MULTI_TAP,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		reinterpret_cast<MusicMenu *>(userdata)->DisableScreenOff();
 	}, this);
 	m_playButton = m_root->FindChild(button_play_page_music);
 	m_playGlyph = m_root->FindChild(glyph_play_page_music);
@@ -197,7 +224,7 @@ void MusicMenu::ShowCover(const char *path, int32_t type, int32_t offset, int32_
 	}
 	if (!tex.get())
 	{
-		tex = g_appPlugin->GetTexture(tex_ui_music);
+		tex = g_appPlugin->GetTexture(tex_ui_musical);
 	}
 	m_cover->SetTexture(tex, 0, 0);
 	m_coverSurface = tex;
@@ -273,6 +300,7 @@ void MusicMenu::Play(int32_t index)
 	m_playGlyph->Hide(common::transition::Type_Reset);
 	m_pauseGlyph->Show(common::transition::Type_Reset);
 	ShowCover(path, info.coverType, info.coverOffset, info.coverLength);
+	musicSetWaveformEnabled(m_waveformVisible ? 1 : 0);
 }
 
 void MusicMenu::Step(int32_t delta)
@@ -331,10 +359,41 @@ void MusicMenu::ExportToMusic()
 	ExportCurrent(true);
 }
 
-void MusicMenu::OpenInMusic()
+void MusicMenu::ToggleWaveform()
 {
-	if (ExportCurrent(false) >= 0)
-		sceAppMgrLaunchAppByName(0x60000, "NPXS10009", NULL);
+	m_waveformVisible = !m_waveformVisible;
+	musicSetWaveformEnabled(m_waveformVisible ? 1 : 0);
+	if (m_waveformVisible) m_waveform->Show(common::transition::Type_FadeinFast);
+	else m_waveform->Hide(common::transition::Type_FadeinFast);
+}
+
+void MusicMenu::EnableScreenOff()
+{
+	if (m_screenOff) return;
+	m_screenOff = true;
+	m_screenTapCount = 0;
+	m_screenTapTick = 0;
+	m_screenOffButton->SetActivate(true);
+	m_screenOffButton->SetColor(1.0f, 1.0f, 1.0f, 0.0f);
+	m_screenOffButton->Show(common::transition::Type_Reset);
+	m_screenOffButton->SetColor(1.0f, 1.0f, 1.0f, 1.0f, new Timer(0.35f, Timer::FUNC_SINE_OUT));
+}
+
+void MusicMenu::OnScreenTap()
+{
+	if (!m_screenOff) return;
+	const uint64_t now = sceKernelGetProcessTimeWide();
+	if (!m_screenTapTick || now - m_screenTapTick > 1200000ULL) m_screenTapCount = 0;
+	m_screenTapTick = now;
+	if (++m_screenTapCount >= 2) DisableScreenOff();
+}
+
+void MusicMenu::DisableScreenOff()
+{
+	if (!m_screenOff) return;
+	m_screenOff = false;
+	m_screenOffButton->Hide(common::transition::Type_FadeinFast);
+	m_screenOffButton->SetActivate(false);
 }
 
 void MusicMenu::ListenInBackground()
@@ -344,19 +403,20 @@ void MusicMenu::ListenInBackground()
 	m_minimizeFrames = 38;
 	StartGenie(false);
 	m_root->SetColor(1.0f, 1.0f, 1.0f, 0.82f, new Timer(0.48f, Timer::FUNC_SINE_IN));
-	m_root->SetActivate(false);
 }
 
 void MusicMenu::OnOptions()
 {
 	paf::vector<OptionMenu::Button> buttons;
-	OptionMenu::Button exportSong, minimize, nativeMusic;
+	OptionMenu::Button exportSong, minimize, waveform, screenOff;
 	exportSong.label = g_appPlugin->GetString(msg_music_export);
 	minimize.label = g_appPlugin->GetString(msg_music_background);
-	nativeMusic.label = g_appPlugin->GetString(msg_music_open_native);
+	waveform.label = g_appPlugin->GetString(msg_music_waveform);
+	screenOff.label = g_appPlugin->GetString(msg_music_screen_off);
 	buttons.push_back(exportSong);
 	buttons.push_back(minimize);
-	buttons.push_back(nativeMusic);
+	buttons.push_back(waveform);
+	buttons.push_back(screenOff);
 	OptionMenu::Create(g_appPlugin, m_root, &buttons, 0xd098335eu, OptionTag);
 }
 
@@ -364,7 +424,8 @@ void MusicMenu::OnOption(int32_t index)
 {
 	if (index == 0) ExportToMusic();
 	else if (index == 1) ListenInBackground();
-	else if (index == 2) OpenInMusic();
+	else if (index == 2) ToggleWaveform();
+	else if (index == 3) EnableScreenOff();
 }
 
 void MusicMenu::OnSeekChanged()
@@ -400,6 +461,7 @@ void MusicMenu::RestoreMinimized()
 	menu->m_parentRoot->SetActivate(false);
 	menu->m_root->SetColor(1.0f, 1.0f, 1.0f, 0.0f);
 	menu->m_root->Show(common::transition::Type_Reset);
+	menu->m_root->SetActivate(true);
 	menu->m_root->SetColor(1.0f, 1.0f, 1.0f, 1.0f, new Timer(0.36f, Timer::FUNC_SINE_OUT));
 	menu->StartGenie(true);
 }
@@ -422,10 +484,13 @@ void MusicMenu::Update()
 		m_minimizePending = false;
 		m_minimized = true;
 		s_minimizedPlayer = this;
+		m_root->SetActivate(false);
 		m_root->Hide(common::transition::Type_Reset);
 		m_parentRoot->SetActivate(true);
 	}
-	if (!m_playing || m_frame++ % 15 != 0)
+	++m_frame;
+	if (m_waveformVisible && m_frame % 3 == 0) UpdateWaveform();
+	if (!m_playing || m_frame % 15 != 0)
 	{
 		return;
 	}
@@ -452,6 +517,20 @@ void MusicMenu::Update()
 	if (pct < 0.0f) pct = 0.0f;
 	if (pct > 100.0f) pct = 100.0f;
 	if (!m_seekChanging) m_seekSlider->SetValue(pct, false);
+}
+
+void MusicMenu::UpdateWaveform()
+{
+	float current[WaveBars];
+	const bool hasPcm = musicIsPlaying() && musicWaveform(current, WaveBars);
+	for (int32_t i = 0; i < WaveBars; ++i)
+	{
+		float target = hasPcm ? current[i] : 0.04f;
+		if (target < 0.04f) target = 0.04f;
+		if (target > 1.0f) target = 1.0f;
+		m_waveLevels[i] = m_waveLevels[i] * 0.58f + target * 0.42f;
+		m_waveBars[i]->SetSize(5.0f, 5.0f + m_waveLevels[i] * 32.0f, 0.0f);
+	}
 }
 
 void MusicMenu::UpdateSeekPreview(float percent)

@@ -9,8 +9,8 @@
 // PCM visualizer capture buffer (aliased to player.c)
 #define PCM_BUF_SIZE 512
 static short pcm_viz_buf[PCM_BUF_SIZE * 2];
-static int pcm_viz_count = 0;
-static int pcm_viz_enabled = 0;
+static volatile int pcm_viz_count = 0;
+static volatile int pcm_viz_enabled = 0;
 
 void setVizPcmCapture(int enable) {
   pcm_viz_enabled = enable;
@@ -105,6 +105,14 @@ static int vitaAudioChannelThread(int args, void *argp)
 		if (callback)
 		{
 			callback(bufptr, VITA_NUM_AUDIO_SAMPLES, vitaAudioStatus[channel].data);
+			if (pcm_viz_enabled)
+			{
+				short *pcm = (short *)bufptr;
+				int capture = VITA_NUM_AUDIO_SAMPLES < PCM_BUF_SIZE ? VITA_NUM_AUDIO_SAMPLES : PCM_BUF_SIZE;
+				pcm_viz_count = 0;
+				memcpy(pcm_viz_buf, pcm, capture * 2 * sizeof(short));
+				pcm_viz_count = capture;
+			}
 		} else {
 			unsigned int *ptr=bufptr;
 			int i;

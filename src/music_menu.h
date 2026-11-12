@@ -23,7 +23,10 @@ public:
 	void TogglePause();
 	void ExportToMusic();
 	void ListenInBackground();
-	void OpenInMusic();
+	void ToggleWaveform();
+	void EnableScreenOff();
+	void DisableScreenOff();
+	void OnScreenTap();
 	void OnOptions();
 	void OnOption(int32_t index);
 	void OnSeekChanged();
@@ -37,6 +40,7 @@ private:
 
 	void ShowCover(const char *path, int32_t type, int32_t offset, int32_t length);
 	void StartGenie(bool expanding);
+	void UpdateWaveform();
 	void UpdateSeekPreview(float percent);
 	int32_t ExportCurrent(bool notify);
 
@@ -54,6 +58,11 @@ private:
 	paf::ui::Widget *m_elapsed;
 	paf::ui::Widget *m_total;
 	paf::ui::ProgressBarTouch *m_seekSlider;
+	static const int32_t WaveBars = 24;
+	paf::ui::Widget *m_waveform;
+	paf::ui::Widget *m_waveBars[WaveBars];
+	float m_waveLevels[WaveBars];
+	paf::ui::Widget *m_screenOffButton;
 	paf::ui::Widget *m_playButton;
 	paf::ui::Widget *m_playGlyph;
 	paf::ui::Widget *m_pauseGlyph;
@@ -69,6 +78,10 @@ private:
 	int32_t m_minimizeFrames;
 	bool m_restorePending;
 	int32_t m_restoreFrames;
+	bool m_waveformVisible;
+	bool m_screenOff;
+	uint64_t m_screenTapTick;
+	int32_t m_screenTapCount;
 };
 
 #endif

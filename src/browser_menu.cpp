@@ -1091,6 +1091,9 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 	if (!page || !button || index < 0 || index >= (int32_t)page->entries.size()) return;
 	fs::Entry *entry = page->entries.at(index);
 	const bool marked = entry->marked;
+	// Apply focus first: ScePaf rewrites the button colors when focus changes.
+	// Our persistent selection visuals must be applied afterwards.
+	button->SetFocusedState(index == page->focused);
 	// Never place an overlay above the row or reach into ImageButton's internal
 	// draw objects: recycled PAF rows may not have those objects constructed yet.
 	// Tint only public child widgets, which is safe for touch and page changes.
@@ -1098,26 +1101,20 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 	ui::Widget *info = button->FindChild(text_list_item_info);
 	if (name)
 	{
-		paf::wstring label;
-		if (marked) label = L"\u2713  ";
-		label += ToWide(entry->name);
-		name->SetString(label);
+		name->SetString(ToWide(entry->name));
 	}
 	if (name) name->SetColor(marked ? 0.25f : 1.0f, marked ? 0.72f : 1.0f, 1.0f, 1.0f);
 	if (info) info->SetColor(marked ? 0.25f : 0.75f, marked ? 0.72f : 0.78f, marked ? 1.0f : 0.82f, 1.0f);
 	// Tint the row icon through its existing ImageButton, never through a touch-blocking overlay.
 	button->SetColor(marked ? 0.38f : 1.0f, marked ? 0.76f : 1.0f, 1.0f, 1.0f);
-	ui::Widget *check = RowCheckbox(button->GetParent());
-	if (check)
+	ui::Widget *selection = button->GetParent() ? button->GetParent()->FindChild(plane_list_item_selection) : NULL;
+	if (selection)
 	{
-		check->SetActivate(false);
-		check->SetTexture(g_appPlugin->GetTexture(tex_checkbox_on), 0, 0);
-		check->SetSize(56.0f, 56.0f, 0.0f);
-		check->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-		if (marked) check->Show(common::transition::Type_Reset);
-		else check->Hide(common::transition::Type_Reset);
+		if (marked) selection->Show(common::transition::Type_Reset);
+		else selection->Hide(common::transition::Type_Reset);
 	}
-	button->SetFocusedState(index == page->focused);
+	ui::Widget *choiceCheck = button->GetParent() ? button->GetParent()->FindChild(plane_list_item_check) : NULL;
+	if (choiceCheck) choiceCheck->Hide(common::transition::Type_Reset);
 }
 
 void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry *entry)
@@ -1136,11 +1133,6 @@ void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry 
 	button->FindChild(text_list_item_info)->SetString(infoWide);
 
 	ApplyRowHighlight(page, (int32_t)button->GetName().GetIDHash(), button);
-}
-
-ui::Widget *BrowserMenu::RowCheckbox(ui::Widget *rowRoot)
-{
-	return rowRoot ? rowRoot->FindChild(plane_list_item_check) : NULL;
 }
 
 void BrowserMenu::FillRootItem(BrowserPage *page, ui::Widget *button, fs::Entry *entry)
@@ -1556,6 +1548,16 @@ void BrowserMenu::ApplyItemDecide(int32_t index)
 	BrowserPage *page = Top();
 	if (!page->loaded || index < 0 || index >= (int32_t)page->entries.size()) return;
 	page->focused = index;
+	bool selectionMode = false;
+	for (uint32_t i = 0; i < page->entries.size() && !selectionMode; ++i)
+		selectionMode = page->entries.at(i)->marked;
+	// Native multi-select behavior: once selection mode is active, a regular
+	// tap toggles the touched row instead of opening it.
+	if (selectionMode && !fs::IsRootStyle(page->path))
+	{
+		OnMarkToggle(index);
+		return;
+	}
 	fs::Entry *entry = page->entries.at(index);
 	if (entry->isShortcut && !entry->target.empty())
 	{
@@ -2065,9 +2067,7 @@ void BrowserMenu::DoAction(Action action)
 			{
 				ui::ListItem *item = page->list->GetListItem(0, i);
 				if (!item) continue;
-				ui::Widget *check = menu->RowCheckbox(item);
 				ui::Widget *button = item->FindChild(image_button_list_item);
-				if (check) check->Hide(common::transition::Type_Reset);
 				if (button) menu->ApplyRowHighlight(page, i, button);
 			}
 			menu->m_selectionBar->Hide(common::transition::Type_Reset);
@@ -2084,8 +2084,6 @@ void BrowserMenu::DoAction(Action action)
 			page->entries.at(i)->marked = false;
 			ui::ListItem *item = page->list->GetListItem(0, i);
 			if (!item) continue;
-			ui::Widget *check = RowCheckbox(item);
-			if (check) check->Hide(common::transition::Type_Reset);
 			ui::Widget *button = item->FindChild(image_button_list_item);
 			if (button) ApplyRowHighlight(page, i, button);
 		}

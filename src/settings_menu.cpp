@@ -86,7 +86,10 @@ SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *user
 
 	m_parentRoot->SetActivate(false);
 
-	theme::ApplyBackground(m_root->FindChild(plane_base_bg_page_settings));
+	ui::Widget *settingsBackground = m_root->FindChild(plane_base_bg_page_settings);
+	theme::ApplyBackground(settingsBackground);
+	const theme::Info &settingsTheme = theme::At(settings::Get().theme);
+	settingsBackground->SetColor(settingsTheme.bg[0], settingsTheme.bg[1], settingsTheme.bg[2], 0.90f);
 
 	ui::Widget *back = m_root->FindChild(button_back_page_settings);
 	back->SetKeycode(inputdevice::pad::Data::PAD_ESCAPE);

@@ -26,7 +26,7 @@
         <focus_hint enable="0" />
       </button>
       <plane texture="tex_ui_ftp" id="plane_ftp_indicator_page_browser">
-        <layout_hint size="32, 32" pos="-428, 158" />
+        <layout_hint size="32, 32" pos="424, 202" />
       </plane>
       <text_box auto_scroll="1" ime_type="0" edit_mode="1" paste_mode="1" edit_auto_transition_mode="0" style="style_text_box_input" id="text_box_search_page_browser">
         <layout_hint size="860, 44" pos="0, 174" />
@@ -289,6 +289,34 @@
       <text style="style_text_ftp_info" id="text_album_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="500, 30" pos="440, 34" />
       </text>
+      <plane style="_common_style_plane_transparent" id="plane_waveform_page_music">
+        <layout_hint anchor="1, 0" align="1, 0" size="480, 42" pos="440, 7" />
+        <plane style="style_plane_waveform_dim" id="plane_waveform_baseline_page_music"><layout_hint size="480, 2" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_00_page_music"><layout_hint size="5, 8" pos="-230, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_01_page_music"><layout_hint size="5, 8" pos="-210, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_02_page_music"><layout_hint size="5, 8" pos="-190, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_03_page_music"><layout_hint size="5, 8" pos="-170, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_04_page_music"><layout_hint size="5, 8" pos="-150, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_05_page_music"><layout_hint size="5, 8" pos="-130, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_06_page_music"><layout_hint size="5, 8" pos="-110, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_07_page_music"><layout_hint size="5, 8" pos="-90, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_08_page_music"><layout_hint size="5, 8" pos="-70, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_09_page_music"><layout_hint size="5, 8" pos="-50, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_10_page_music"><layout_hint size="5, 8" pos="-30, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_11_page_music"><layout_hint size="5, 8" pos="-10, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_12_page_music"><layout_hint size="5, 8" pos="10, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_13_page_music"><layout_hint size="5, 8" pos="30, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_14_page_music"><layout_hint size="5, 8" pos="50, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_15_page_music"><layout_hint size="5, 8" pos="70, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_16_page_music"><layout_hint size="5, 8" pos="90, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_17_page_music"><layout_hint size="5, 8" pos="110, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_18_page_music"><layout_hint size="5, 8" pos="130, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_19_page_music"><layout_hint size="5, 8" pos="150, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_20_page_music"><layout_hint size="5, 8" pos="170, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_21_page_music"><layout_hint size="5, 8" pos="190, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_22_page_music"><layout_hint size="5, 8" pos="210, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_23_page_music"><layout_hint size="5, 8" pos="230, 0" /></plane>
+      </plane>
       <progressbar_touch style="style_progressbar_touch_native" label_mode="2" id="progressbar_seek_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="480, 24" pos="440, -20" />
       </progressbar_touch>
@@ -328,6 +356,11 @@
       </button>
       <corner_button sound="_common_sound_button_back" style="_common_style_corner_bottom_left" id="button_back_page_music" />
       <corner_button sound="_common_sound_button_enter" style="_common_style_corner_bottom_right" id="button_options_page_music" />
+      <button style="_common_default_style_button_transparent" id="button_screen_off_page_music">
+        <layout_hint size="960, 544" />
+        <focus_hint enable="0" />
+        <plane style="style_plane_black" id="plane_screen_off_page_music"><layout_hint size="960, 544" /></plane>
+      </button>
     </page>
     <page id="page_preview">
       <plane style="style_plane_black" id="plane_black_page_preview">
@@ -504,10 +537,16 @@
     <style_plane color="0.08, 0.08, 0.10, 0.92" planeobj="plane_obj1" id="style_plane_selection_bar">
       <planeobj id="plane_obj1" />
     </style_plane>
-    <style_plane color="0.20, 0.58, 1, 0" planeobj="plane_obj1" id="style_plane_selection_mark">
-      <planeobj id="plane_obj1" />
+    <style_plane color="0.20, 0.58, 1, 0.78" planeobj="plane_obj1" id="style_plane_selection_mark">
+      <planeobj texture0="_common_texture_list_glow_70px" blend="2" id="plane_obj1" />
     </style_plane>
     <style_plane color="1, 1, 1, 0.94" planeobj="plane_obj1" id="style_plane_glyph">
+      <planeobj id="plane_obj1" />
+    </style_plane>
+    <style_plane color="0.48, 0.76, 1, 0.96" planeobj="plane_obj1" id="style_plane_waveform">
+      <planeobj id="plane_obj1" />
+    </style_plane>
+    <style_plane color="1, 1, 1, 0.30" planeobj="plane_obj1" id="style_plane_waveform_dim">
       <planeobj id="plane_obj1" />
     </style_plane>
     <style_plane color="0.62, 1, 0.1, 0.95" planeobj="plane_obj1" id="style_plane_seek_marker">
@@ -685,6 +724,10 @@
     <template fast_open="1" id="template_list_item_file">
       <list_item style="style_list_view_item_generic" id="list_item_file">
         <layout_hint size="960, 80" />
+        <!-- Drawn behind the ImageButton, so it cannot consume touch events. -->
+        <plane style="style_plane_selection_mark" id="plane_list_item_selection">
+          <layout_hint size="840, 74" />
+        </plane>
         <image_button sound="_common_sound_image_button" style="style_image_button_list_button" id="image_button_list_item">
           <focus_hint focus_shape="3" />
           <layout_hint size="840, 80" />
@@ -698,7 +741,7 @@
 			<layout_hint size="91.8, 63" pos="-364.1, 0" />
 		  </plane>
         </image_button>
-        <!-- Checkbox must be outside image_button label clipping. -->
+        <!-- Used by Settings choices; browser rows keep it hidden. -->
         <plane style="_common_default_style_plane" texture="_common_texture_transparent" id="plane_list_item_check">
           <layout_hint size="72, 72" pos="401, 0" />
         </plane>

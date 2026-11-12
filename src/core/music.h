@@ -29,6 +29,8 @@ int musicEnded(void);
 float musicPercent(void);
 void musicTime(char *out);            /* elapsed "mm:ss" */
 void musicSeek(double seconds);
+void musicSetWaveformEnabled(int enabled);
+int musicWaveform(float *bars, int count);
 
 /* Whether the engine supports this file. */
 int musicSupported(const char *path);

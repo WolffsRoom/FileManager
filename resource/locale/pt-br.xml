@@ -224,6 +224,8 @@
   <string src="Inverter" id="msg_preview_invert" />
   <string src="Minimizar" id="msg_music_background" />
   <string src="Exportar" id="msg_music_export" />
+  <string src="Exibir onda sonora" id="msg_music_waveform" />
+  <string src="Tela apagada" id="msg_music_screen_off" />
   <string src="Música exportada com sucesso." id="msg_music_export_done" />
   <string src="Abrir no Música" id="msg_music_open_native" />
   <string src="Artista desconhecido" id="msg_music_unknown_artist" />
