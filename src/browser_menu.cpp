@@ -1118,12 +1118,6 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 		else check->Hide(common::transition::Type_Reset);
 	}
 	button->SetFocusedState(index == page->focused);
-	graph::PlaneObj *background = static_cast<graph::PlaneObj *>(button->GetDrawObj(ui::Button::OBJ_BG));
-	if (background)
-	{
-		background->SetColor(math::v4(marked ? 0.12f : 1.0f, marked ? 0.48f : 1.0f,
-			marked ? 0.95f : 1.0f, marked ? 0.96f : 1.0f));
-	}
 }
 
 void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry *entry)
