@@ -255,7 +255,7 @@ namespace {
 }
 
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_operationRunning(false), m_inputAction(Action_Rename),
-	m_iconCount(0), m_vpkIconCount(0), m_ftpShown(false), m_ftpBusy(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_bgInstallPoll(0), m_optionTarget(-1), m_undoType(Undo_None)
+	m_iconCount(0), m_vpkIconCount(0), m_ftpShown(false), m_ftpBusy(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_markButton(NULL), m_focusedButton(NULL), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_bgInstallPoll(0), m_optionTarget(-1), m_undoType(Undo_None)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -742,6 +742,7 @@ void BrowserMenu::UpdateFtpIndicator()
 
 void BrowserMenu::PushPage(const paf::string &path, bool forceDecrypt, bool ownsPsarc)
 {
+	m_focusedButton = NULL;
 	// Normalize the current page before ScePaf captures it for the native
 	// back-plane transition. The shared search box must never resize a list
 	// after Type_3D_SlideToBack1 has started.
@@ -875,6 +876,7 @@ void BrowserMenu::FreePage(BrowserPage *page)
 bool BrowserMenu::PopPage()
 {
 	if (m_pages.empty()) return false;
+	m_focusedButton = NULL;
 	CloseSearchForNavigation();
 	BrowserPage *outgoing = m_pages.back();
 	if (!outgoing->loaded) return false;
@@ -981,6 +983,7 @@ void BrowserMenu::LoadPage(BrowserPage *page, bool refresh)
 void BrowserMenu::CommitLoad(BrowserPage *page, fs::EntryList *fresh, int32_t ret)
 {
 	// Runs on PAF MainThreadCallList, after the previous button callback.
+	if (!m_pages.empty() && page == Top()) m_focusedButton = NULL;
 	paf::string previous;
 	if (page->focused >= 0 && page->focused < (int32_t)page->entries.size())
 		previous = page->entries.at(page->focused)->name;
@@ -1096,17 +1099,17 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 	button->SetFocusedState(index == page->focused);
 	// Never place an overlay above the row or reach into ImageButton's internal
 	// draw objects: recycled PAF rows may not have those objects constructed yet.
-	// Tint only public child widgets, which is safe for touch and page changes.
+	// The selected state belongs only to the native row background. Keep the
+	// filename, details and icon in their normal colors for readability.
 	ui::Widget *name = button->FindChild(text_list_item_name);
 	ui::Widget *info = button->FindChild(text_list_item_info);
 	if (name)
 	{
 		name->SetString(ToWide(entry->name));
 	}
-	if (name) name->SetColor(marked ? 0.25f : 1.0f, marked ? 0.72f : 1.0f, 1.0f, 1.0f);
-	if (info) info->SetColor(marked ? 0.25f : 0.75f, marked ? 0.72f : 0.78f, marked ? 1.0f : 0.82f, 1.0f);
-	// Tint the row icon through its existing ImageButton, never through a touch-blocking overlay.
-	button->SetColor(marked ? 0.38f : 1.0f, marked ? 0.76f : 1.0f, 1.0f, 1.0f);
+	if (name) name->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+	if (info) info->SetColor(0.75f, 0.78f, 0.82f, 1.0f);
+	button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 	ui::Widget *selection = button->GetParent() ? button->GetParent()->FindChild(plane_list_item_selection) : NULL;
 	if (selection)
 	{
@@ -1325,7 +1328,7 @@ ui::ListItem *BrowserMenu::CreateListItem(ui::listview::ItemFactory::CreateParam
 	{
 		if (!userdata || !self) return;
 		ui::Widget *wdg = static_cast<ui::Widget *>(self);
-		reinterpret_cast<BrowserMenu *>(userdata)->OnMarkToggle(wdg->GetName().GetIDHash());
+		reinterpret_cast<BrowserMenu *>(userdata)->OnMarkToggle(wdg->GetName().GetIDHash(), wdg);
 	}, this);
 
 	return static_cast<ui::ListItem *>(item);
@@ -1461,6 +1464,7 @@ void BrowserMenu::FilterSearch(bool finishEditing)
 	m_lastSearchQuery = query;
 	if (finishEditing)
 		m_search->EndEdit();
+	m_focusedButton = NULL;
 
 	if (page->cellCount > 0)
 	{
@@ -1510,7 +1514,11 @@ void BrowserMenu::OnItemFocus(ui::Widget *wdg)
 	while (owner && owner != Top()->list) owner = owner->GetParent();
 	if (owner != Top()->list) return;
 	int32_t idx = wdg->GetName().GetIDHash();
-	if (idx >= 0 && idx < (int32_t)Top()->entries.size()) Top()->focused = idx;
+	if (idx >= 0 && idx < (int32_t)Top()->entries.size())
+	{
+		Top()->focused = idx;
+		m_focusedButton = wdg;
+	}
 }
 
 void BrowserMenu::OnItemDecide(ui::Widget *wdg)
@@ -1521,6 +1529,14 @@ void BrowserMenu::OnItemDecide(ui::Widget *wdg)
 	while (owner && owner != page->list) owner = owner->GetParent();
 	if (owner != page->list) return;
 	int32_t index = wdg->GetName().GetIDHash();
+	bool selectionMode = false;
+	for (uint32_t i = 0; i < page->entries.size() && !selectionMode; ++i)
+		selectionMode = page->entries.at(i)->marked;
+	if (selectionMode && !fs::IsRootStyle(page->path))
+	{
+		OnMarkToggle(index, wdg);
+		return;
+	}
 	RequestItemDecide(index);
 }
 
@@ -1641,25 +1657,33 @@ void BrowserMenu::ApplyItemDecide(int32_t index)
 	}
 }
 
-void BrowserMenu::OnMarkToggle(int32_t index)
+void BrowserMenu::OnMarkToggle(int32_t index, ui::Widget *button)
 {
 	if (m_markPending || m_pages.empty() || !Top()->loaded) return;
+	if (!button && m_focusedButton)
+	{
+		const int32_t focusedIndex = m_focusedButton->GetName().GetIDHash();
+		if (index < 0 || focusedIndex == index) button = m_focusedButton;
+	}
 	m_markPending = true;
 	m_markPage = Top();
 	m_markIndex = index;
+	m_markButton = button;
 	DeferCall([](void *userdata)
 	{
 		BrowserMenu *menu = static_cast<BrowserMenu *>(userdata);
 		BrowserPage *original = menu->m_markPage;
 		const int32_t requested = menu->m_markIndex;
+		ui::Widget *button = menu->m_markButton;
 		menu->m_markPending = false;
 		menu->m_markPage = NULL;
+		menu->m_markButton = NULL;
 		if (!menu->m_pages.empty() && menu->Top() == original && original->loaded)
-			menu->ApplyMarkToggle(requested);
+			menu->ApplyMarkToggle(requested, button);
 	}, this);
 }
 
-void BrowserMenu::ApplyMarkToggle(int32_t index)
+void BrowserMenu::ApplyMarkToggle(int32_t index, ui::Widget *button)
 {
 	if (m_pages.empty() || !Top()->loaded) return;
 	BrowserPage *page = Top();
@@ -1679,6 +1703,17 @@ void BrowserMenu::ApplyMarkToggle(int32_t index)
 	}
 	entry->marked = !entry->marked;
 	page->focused = index;
+
+	// GetListItem() may return a recycled placeholder until the list scrolls.
+	// The callback's button is the real displayed cell, so repaint it directly.
+	if (button)
+	{
+		ui::Widget *owner = button;
+		while (owner && owner != page->list) owner = owner->GetParent();
+		if (owner != page->list || button->GetName().GetIDHash() != index)
+			button = NULL;
+	}
+	if (button) ApplyRowHighlight(page, index, button);
 
 	// Refresh the boxes of the rows that exist: entering or leaving selection mode
 	// changes all of them.

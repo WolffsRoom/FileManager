@@ -176,8 +176,8 @@ private:
 	void RequestItemDecide(int32_t index);
 	void ApplyItemDecide(int32_t index);
 	void OnItemFocus(paf::ui::Widget *wdg);
-	void OnMarkToggle(int32_t index);
-	void ApplyMarkToggle(int32_t index);
+	void OnMarkToggle(int32_t index, paf::ui::Widget *button = NULL);
+	void ApplyMarkToggle(int32_t index, paf::ui::Widget *button);
 	void ApplySelectAll();
 	void OnOption(int32_t index);
 	void OnDialog(int32_t buttonCode);
@@ -232,6 +232,8 @@ private:
 	bool m_markPending;
 	BrowserPage *m_markPage;
 	int32_t m_markIndex;
+	paf::ui::Widget *m_markButton;
+	paf::ui::Widget *m_focusedButton;
 	bool m_selectAllPending;
 	BrowserPage *m_selectAllPage;
 	bool m_itemPending;
