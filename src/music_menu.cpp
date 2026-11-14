@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include <psp2/musicexport.h>
 #include <psp2/sysmodule.h>
 
@@ -48,7 +49,7 @@ namespace {
 }
 
 MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &paths, int32_t index) :
-	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false), m_seekChanging(false), m_minimized(false), m_minimizePending(false), m_minimizeFrames(0), m_restorePending(false), m_restoreFrames(0), m_waveformVisible(false), m_screenOff(false), m_screenTapTick(0), m_screenTapCount(0)
+	m_parentRoot(parentRoot), m_paths(paths), m_index(index), m_seconds(0), m_frame(0), m_playing(false), m_closing(false), m_seekChanging(false), m_minimized(false), m_minimizePending(false), m_minimizeFrames(0), m_restorePending(false), m_restoreFrames(0), m_waveformVisible(false), m_hasCover(false), m_screenOff(false), m_screenTapTick(0), m_screenTapCount(0)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -66,6 +67,9 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 
 	m_cover = m_root->FindChild(plane_cover_page_music);
 	m_coverShadow = m_root->FindChild(plane_cover_shadow_page_music);
+	// The old common glow texture produced a white frame around album covers.
+	// Keep the artwork clean, like the native Music application.
+	m_coverShadow->Hide(common::transition::Type_Reset);
 	const uint32_t sliceIds[GenieSlices] = {
 		plane_cover_slice_0_page_music, plane_cover_slice_1_page_music,
 		plane_cover_slice_2_page_music, plane_cover_slice_3_page_music,
@@ -98,7 +102,11 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 		plane_wave_08_page_music, plane_wave_09_page_music, plane_wave_10_page_music, plane_wave_11_page_music,
 		plane_wave_12_page_music, plane_wave_13_page_music, plane_wave_14_page_music, plane_wave_15_page_music,
 		plane_wave_16_page_music, plane_wave_17_page_music, plane_wave_18_page_music, plane_wave_19_page_music,
-		plane_wave_20_page_music, plane_wave_21_page_music, plane_wave_22_page_music, plane_wave_23_page_music
+		plane_wave_20_page_music, plane_wave_21_page_music, plane_wave_22_page_music, plane_wave_23_page_music,
+		plane_wave_24_page_music, plane_wave_25_page_music, plane_wave_26_page_music, plane_wave_27_page_music,
+		plane_wave_28_page_music, plane_wave_29_page_music, plane_wave_30_page_music, plane_wave_31_page_music,
+		plane_wave_32_page_music, plane_wave_33_page_music, plane_wave_34_page_music, plane_wave_35_page_music,
+		plane_wave_36_page_music, plane_wave_37_page_music, plane_wave_38_page_music, plane_wave_39_page_music
 	};
 	for (int32_t i = 0; i < WaveBars; ++i)
 	{
@@ -109,15 +117,10 @@ MusicMenu::MusicMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &pat
 	m_screenOffButton = m_root->FindChild(button_screen_off_page_music);
 	m_screenOffButton->Hide(common::transition::Type_Reset);
 	m_screenOffButton->SetActivate(false);
-	m_screenOffButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	m_screenOffButton->AddEventCallback(ui::Button::CB_BTN_PRESS,
 	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
 	{
 		reinterpret_cast<MusicMenu *>(userdata)->OnScreenTap();
-	}, this);
-	m_screenOffButton->AddEventCallback(ui::Handler::CB_GESTURE_MULTI_TAP,
-	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
-	{
-		reinterpret_cast<MusicMenu *>(userdata)->DisableScreenOff();
 	}, this);
 	m_playButton = m_root->FindChild(button_play_page_music);
 	m_playGlyph = m_root->FindChild(glyph_play_page_music);
@@ -222,10 +225,13 @@ void MusicMenu::ShowCover(const char *path, int32_t type, int32_t offset, int32_
 			sceIoClose(fd);
 		}
 	}
-	if (!tex.get())
+	m_hasCover = tex.get() != NULL;
+	if (!m_hasCover)
 	{
-		tex = g_appPlugin->GetTexture(tex_ui_musical);
+		// Use the real file-type artwork, not the monochrome corner glyph.
+		tex = g_appPlugin->GetTexture(tex_file_icon_music);
 	}
+	m_cover->SetSize(m_hasCover ? 374.0f : 176.0f, m_hasCover ? 370.0f : 176.0f, 0.0f);
 	m_cover->SetTexture(tex, 0, 0);
 	m_coverSurface = tex;
 	for (int32_t i = 0; i < GenieSlices; ++i)
@@ -373,9 +379,12 @@ void MusicMenu::EnableScreenOff()
 	m_screenOff = true;
 	m_screenTapCount = 0;
 	m_screenTapTick = 0;
-	m_screenOffButton->SetActivate(true);
+	// Fully reset the button's previous hidden/pressed state. PAF otherwise
+	// leaves the fullscreen hit target stale after the first wake-up.
+	m_screenOffButton->Hide(common::transition::Type_Reset);
 	m_screenOffButton->SetColor(1.0f, 1.0f, 1.0f, 0.0f);
 	m_screenOffButton->Show(common::transition::Type_Reset);
+	m_screenOffButton->SetActivate(true);
 	m_screenOffButton->SetColor(1.0f, 1.0f, 1.0f, 1.0f, new Timer(0.35f, Timer::FUNC_SINE_OUT));
 }
 
@@ -392,8 +401,11 @@ void MusicMenu::DisableScreenOff()
 {
 	if (!m_screenOff) return;
 	m_screenOff = false;
-	m_screenOffButton->Hide(common::transition::Type_FadeinFast);
 	m_screenOffButton->SetActivate(false);
+	m_screenOffButton->Hide(common::transition::Type_Reset);
+	m_screenOffButton->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+	m_screenTapCount = 0;
+	m_screenTapTick = 0;
 }
 
 void MusicMenu::ListenInBackground()
@@ -450,6 +462,11 @@ intrusive_ptr<graph::Surface> MusicMenu::MinimizedCover()
 	return s_minimizedPlayer ? s_minimizedPlayer->m_coverSurface : intrusive_ptr<graph::Surface>();
 }
 
+bool MusicMenu::MinimizedHasCover()
+{
+	return s_minimizedPlayer && s_minimizedPlayer->m_hasCover;
+}
+
 void MusicMenu::RestoreMinimized()
 {
 	if (!s_minimizedPlayer) return;
@@ -476,7 +493,7 @@ void MusicMenu::Update()
 		m_cover->SetScale(1.0f, 1.0f, 1.0f);
 		m_cover->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 		m_cover->Show(common::transition::Type_Reset);
-		m_coverShadow->Show(common::transition::Type_Reset);
+		m_coverShadow->Hide(common::transition::Type_Reset);
 		m_root->SetActivate(true);
 	}
 	if (m_minimizePending && --m_minimizeFrames <= 0)
@@ -489,7 +506,7 @@ void MusicMenu::Update()
 		m_parentRoot->SetActivate(true);
 	}
 	++m_frame;
-	if (m_waveformVisible && m_frame % 3 == 0) UpdateWaveform();
+	if (m_waveformVisible && m_frame % 2 == 0) UpdateWaveform();
 	if (!m_playing || m_frame % 15 != 0)
 	{
 		return;
@@ -525,11 +542,20 @@ void MusicMenu::UpdateWaveform()
 	const bool hasPcm = musicIsPlaying() && musicWaveform(current, WaveBars);
 	for (int32_t i = 0; i < WaveBars; ++i)
 	{
-		float target = hasPcm ? current[i] : 0.04f;
-		if (target < 0.04f) target = 0.04f;
+		// Blend neighbouring PCM windows and apply a square-root response. This
+		// produces the dense, fluid waveform used by Vita's Music UI instead of
+		// a row of sparse, twitching volume meters.
+		float sample = hasPcm ? current[i] : 0.0f;
+		if (hasPcm && i > 0) sample += current[i - 1] * 0.45f;
+		if (hasPcm && i + 1 < WaveBars) sample += current[i + 1] * 0.45f;
+		if (hasPcm) sample /= (i > 0 && i + 1 < WaveBars) ? 1.90f : 1.45f;
+		float target = sqrtf(sample) * 0.92f;
+		if (target < 0.025f) target = 0.025f;
 		if (target > 1.0f) target = 1.0f;
-		m_waveLevels[i] = m_waveLevels[i] * 0.58f + target * 0.42f;
-		m_waveBars[i]->SetSize(5.0f, 5.0f + m_waveLevels[i] * 32.0f, 0.0f);
+		const float response = target > m_waveLevels[i] ? 0.52f : 0.16f;
+		m_waveLevels[i] += (target - m_waveLevels[i]) * response;
+		m_waveBars[i]->SetSize(3.0f, 3.0f + m_waveLevels[i] * 34.0f, 0.0f);
+		m_waveBars[i]->SetColor(1.0f, 1.0f, 1.0f, 0.55f + m_waveLevels[i] * 0.45f);
 	}
 }
 

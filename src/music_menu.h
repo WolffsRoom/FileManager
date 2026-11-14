@@ -34,6 +34,7 @@ public:
 	static bool HasMinimized();
 	static void RestoreMinimized();
 	static paf::intrusive_ptr<paf::graph::Surface> MinimizedCover();
+	static bool MinimizedHasCover();
 
 private:
 	static const int32_t OptionTag = 0x4d555349;
@@ -58,7 +59,7 @@ private:
 	paf::ui::Widget *m_elapsed;
 	paf::ui::Widget *m_total;
 	paf::ui::ProgressBarTouch *m_seekSlider;
-	static const int32_t WaveBars = 24;
+	static const int32_t WaveBars = 40;
 	paf::ui::Widget *m_waveform;
 	paf::ui::Widget *m_waveBars[WaveBars];
 	float m_waveLevels[WaveBars];
@@ -79,6 +80,7 @@ private:
 	bool m_restorePending;
 	int32_t m_restoreFrames;
 	bool m_waveformVisible;
+	bool m_hasCover;
 	bool m_screenOff;
 	uint64_t m_screenTapTick;
 	int32_t m_screenTapCount;

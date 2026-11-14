@@ -469,7 +469,13 @@ void BrowserMenu::UpdateBackground()
 		{
 			ui::Widget *picture = m_musicIndicator->FindChild(plane_music_indicator_page_browser);
 			intrusive_ptr<graph::Surface> cover = MusicMenu::MinimizedCover();
-			if (picture && cover.get()) picture->SetTexture(cover, 0, 0);
+			if (picture)
+			{
+				const bool hasCover = MusicMenu::MinimizedHasCover();
+				if (hasCover && cover.get()) picture->SetTexture(cover, 0, 0);
+				else picture->SetTexture(g_appPlugin->GetTexture(tex_file_icon_music), 0, 0);
+				picture->SetSize(hasCover ? 48.0f : 40.0f, hasCover ? 48.0f : 40.0f, 0.0f);
+			}
 			m_musicIndicator->SetScale(0.10f, 0.10f, 1.0f);
 			m_musicIndicator->SetColor(1.0f, 1.0f, 1.0f, 0.35f);
 			m_musicIndicator->Show(common::transition::Type_Reset);

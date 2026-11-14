@@ -17,8 +17,6 @@
 // In the stub (NID 0x2CD86FD6) but not in the VitaSDK header.
 extern "C" int sceAvPlayerStreamCount(SceAvPlayerHandle handle);
 extern "C" int sceAvPlayerStart(SceAvPlayerHandle handle);
-extern "C" int sceAvPlayerEnableStream(SceAvPlayerHandle handle, uint32_t streamIndex);
-extern "C" int sceAvPlayerDisableStream(SceAvPlayerHandle handle, uint32_t streamIndex);
 extern "C" int sceAvPlayerPostInit(SceAvPlayerHandle handle, void *postInit);
 
 // WebMAF's extended frame descriptor.  NetStream's RGBA AvPlayer returns a
@@ -75,16 +73,13 @@ namespace {
 
 	// Video memory and file callbacks follow FMVita's videoplayer.c. SceAvPlayer's C
 	// API carries no state we need, and only one preview is ever open.
-	enum { MAX_FRAME_ALLOCS = 16 };
-	struct FrameAlloc { void *ptr; SceUID uid; };
-	FrameAlloc s_frames[MAX_FRAME_ALLOCS];
-	int s_frameCount = 0;
 	SceUID s_videoFd = -1;
 	SceOff s_videoSize = 0;
 	SceUID s_rgbaPlayerModule = -1;
 	volatile SceAvPlayerHandle s_startPlayer = 0;
 	volatile bool s_startIssued = false;
 	volatile uint32_t s_startWaitFrames = 0;
+	volatile int32_t s_playerState = 0;
 
 	void *VideoAlloc(void *arg, uint32_t alignment, uint32_t size)
 	{
@@ -98,42 +93,25 @@ namespace {
 
 	void *VideoAllocFrame(void *arg, uint32_t alignment, uint32_t size)
 	{
-		SceUID block = sceKernelAllocMemBlock("fm_avp_frame", SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, size, NULL);
-		if (block < 0)
-		{
-			return memalign(alignment, size);
-		}
-		void *base = NULL;
-		if (sceKernelGetMemBlockBase(block, &base) < 0 || !base)
-		{
-			sceKernelFreeMemBlock(block);
-			return memalign(alignment, size);
-		}
-		if (s_frameCount < MAX_FRAME_ALLOCS)
-		{
-			s_frames[s_frameCount].ptr = base;
-			s_frames[s_frameCount].uid = block;
-			s_frameCount++;
-		}
-		return base;
+		// WebMAF hands these buffers straight to PAF/GXM. Allocate them through
+		// GraphMem with the same 256 KiB alignment used by NetStream, so decoded
+		// RGBA frames are actually GPU-readable on retail hardware.
+		if (alignment < SCE_KERNEL_256KiB) alignment = SCE_KERNEL_256KiB;
+		const uint32_t rounded = (size + alignment - 1) & ~(alignment - 1);
+		SceKernelAllocMemBlockOpt blockOpt;
+		sce_paf_memset(&blockOpt, 0, sizeof(blockOpt));
+		blockOpt.size = sizeof(blockOpt);
+		blockOpt.attr = SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT;
+		blockOpt.alignment = alignment;
+		GraphMem::Option option;
+		option.memblock_option = &blockOpt;
+		return GraphMem::AllocOSMemory(GraphMem::DeviceType_VideoMemory,
+			rounded, "FM::AvPlayerFrame", &option);
 	}
 
 	void VideoFreeFrame(void *arg, void *ptr)
 	{
-		if (!ptr)
-		{
-			return;
-		}
-		for (int i = 0; i < s_frameCount; i++)
-		{
-			if (s_frames[i].ptr == ptr)
-			{
-				sceKernelFreeMemBlock(s_frames[i].uid);
-				s_frames[i] = s_frames[--s_frameCount];
-				return;
-			}
-		}
-		free(ptr);
+		if (ptr) GraphMem::FreeOSMemory(GraphMem::DeviceType_VideoMemory, ptr);
 	}
 
 	int VideoOpenFile(void *p, const char *filename)
@@ -194,28 +172,9 @@ namespace {
 		(void)sourceId;
 		(void)eventData;
 		VideoLog("event: 0x%08X", eventId);
-		// WebMAF is initialized with autoStart disabled. Starting only after its
-		// READY event avoids the AddSource/start race seen on retail firmware.
-		if (eventId == 1 && s_startPlayer)
-		{
-			int32_t count = sceAvPlayerStreamCount(s_startPlayer);
-			bool video = false, audio = false;
-			for (int32_t i = 0; i < count && i < 16; ++i)
-			{
-				SceAvPlayerStreamInfo info;
-				sce_paf_memset(&info, 0, sizeof(info));
-				if (sceAvPlayerGetStreamInfo(s_startPlayer, i, &info) < 0) continue;
-				const bool enable = (info.type == SCE_AVPLAYER_VIDEO && !video) ||
-					(info.type == SCE_AVPLAYER_AUDIO && !audio);
-				if (enable) sceAvPlayerEnableStream(s_startPlayer, i);
-				else sceAvPlayerDisableStream(s_startPlayer, i);
-				if (info.type == SCE_AVPLAYER_VIDEO && enable) video = true;
-				if (info.type == SCE_AVPLAYER_AUDIO && enable) audio = true;
-			}
-			int32_t started = sceAvPlayerStart(s_startPlayer);
-			VideoLog("sceAvPlayerStart: 0x%08X", started);
-			if (started >= 0) s_startIssued = true;
-		}
+		// Do not call back into AvPlayer from its own event thread. NetStream only
+		// records READY here, then starts playback from its worker/main context.
+		s_playerState = eventId;
 	}
 
 	// Audio: SceAvPlayer decodes it, this thread feeds the speaker.
@@ -986,8 +945,6 @@ bool PreviewMenu::StartVideo(const char *path)
 		return false;
 	}
 
-	s_frameCount = 0;
-
 	SceAvPlayerInitData init;
 	sce_paf_memset(&init, 0, sizeof(init));
 	init.memoryReplacement.allocate = VideoAlloc;
@@ -1000,8 +957,7 @@ bool PreviewMenu::StartVideo(const char *path)
 	init.fileReplacement.size = VideoSizeFile;
 	init.eventReplacement.objectPointer = this;
 	init.eventReplacement.eventCallback = VideoEvent;
-	init.basePriority = 0x10000100;
-	init.numOutputVideoFrameBuffers = 3;
+	init.debugLevel = 2;
 	init.autoStart = SCE_FALSE;
 
 	m_player = sceAvPlayerInit(&init);
@@ -1015,7 +971,9 @@ bool PreviewMenu::StartVideo(const char *path)
 	}
 	// The RGBA WebMAF module expects its post-init stage even for local files.
 	// All optional HTTP fields remain zero.
-	uint8_t postInit[136];
+	// SceAvPlayerPostInitDataNew is 0x80 bytes on Vita. Local playback does not
+	// need HTTP callbacks, but WebMAF still requires the correctly sized block.
+	uint8_t postInit[128];
 	sce_paf_memset(postInit, 0, sizeof(postInit));
 	int32_t post = sceAvPlayerPostInit(m_player, postInit);
 	VideoLog("sceAvPlayerPostInit: 0x%08X", post);
@@ -1028,6 +986,7 @@ bool PreviewMenu::StartVideo(const char *path)
 	s_startPlayer = m_player;
 	s_startIssued = false;
 	s_startWaitFrames = 0;
+	s_playerState = 0;
 	paf::string sourcePath("localfile:");
 	sourcePath += path;
 	int32_t added = sceAvPlayerAddSource(m_player, sourcePath.c_str());
@@ -1067,12 +1026,8 @@ bool PreviewMenu::StartVideo(const char *path)
 	m_duration = 0;
 
 	s_audioPlayer = m_player;
-	s_audioRun = true;
-	s_audioThread = sceKernelCreateThread("FM::VideoAudio", AudioThread, 0x10000100, 0x4000, 0, 0, NULL);
-	if (s_audioThread >= 0)
-	{
-		sceKernelStartThread(s_audioThread, 0, NULL);
-	}
+	s_audioRun = false;
+	s_audioThread = -1;
 
 	sceAvPlayerSetLooping(m_player, SCE_TRUE);
 	m_controls->Show(common::transition::Type_Reset);
@@ -1101,13 +1056,15 @@ void PreviewMenu::StopVideo()
 	s_startPlayer = 0;
 	s_startIssued = false;
 	s_startWaitFrames = 0;
+	s_playerState = 0;
+	m_plane->Hide(common::transition::Type_Reset);
+	m_videoSurfaces.clear();
 	sceAvPlayerStop(m_player);
 	sceAvPlayerClose(m_player);
 	VideoCloseFile(NULL);
 	m_player = 0;
 	m_videoActive = false;
 	m_controls->Hide(common::transition::Type_Reset);
-	m_videoSurfaces.clear();
 	m_videoW = m_videoH = 0;
 }
 
@@ -1117,11 +1074,24 @@ void PreviewMenu::OnVideoFrame()
 	{
 		return;
 	}
-	if (!s_startIssued && ++s_startWaitFrames == 90 && s_startPlayer)
+	if (!s_startIssued && s_startPlayer)
 	{
-		int32_t started = sceAvPlayerStart(s_startPlayer);
-		VideoLog("delayed sceAvPlayerStart: 0x%08X", started);
-		if (started >= 0) s_startIssued = true;
+		++s_startWaitFrames;
+		// READY is state 1 in SceAvPlayer. The bounded fallback covers firmware
+		// builds that omit the callback but already expose an active source.
+		if (s_playerState == 1 || s_startWaitFrames >= 180)
+		{
+			int32_t started = sceAvPlayerStart(s_startPlayer);
+			VideoLog("main sceAvPlayerStart: 0x%08X", started);
+			if (started >= 0)
+			{
+				s_startIssued = true;
+				s_audioRun = true;
+				s_audioThread = sceKernelCreateThread("FM::VideoAudio", AudioThread,
+					0x10000100, 0x4000, 0, 0, NULL);
+				if (s_audioThread >= 0) sceKernelStartThread(s_audioThread, 0, NULL);
+			}
+		}
 	}
 	if (!sceAvPlayerIsActive(m_player))
 	{
@@ -1205,6 +1175,7 @@ void PreviewMenu::OnVideoFrame()
 		}
 		m_frameShown = true;
 		m_busy->Stop();
+		m_plane->Show(common::transition::Type_Reset);
 		m_plane->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 }

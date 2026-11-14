@@ -290,32 +290,48 @@
         <layout_hint anchor="1, 0" align="1, 0" size="500, 30" pos="440, 34" />
       </text>
       <plane style="_common_style_plane_transparent" id="plane_waveform_page_music">
-        <layout_hint anchor="1, 0" align="1, 0" size="480, 42" pos="440, 7" />
-        <plane style="style_plane_waveform_dim" id="plane_waveform_baseline_page_music"><layout_hint size="480, 2" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_00_page_music"><layout_hint size="5, 8" pos="-230, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_01_page_music"><layout_hint size="5, 8" pos="-210, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_02_page_music"><layout_hint size="5, 8" pos="-190, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_03_page_music"><layout_hint size="5, 8" pos="-170, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_04_page_music"><layout_hint size="5, 8" pos="-150, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_05_page_music"><layout_hint size="5, 8" pos="-130, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_06_page_music"><layout_hint size="5, 8" pos="-110, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_07_page_music"><layout_hint size="5, 8" pos="-90, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_08_page_music"><layout_hint size="5, 8" pos="-70, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_09_page_music"><layout_hint size="5, 8" pos="-50, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_10_page_music"><layout_hint size="5, 8" pos="-30, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_11_page_music"><layout_hint size="5, 8" pos="-10, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_12_page_music"><layout_hint size="5, 8" pos="10, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_13_page_music"><layout_hint size="5, 8" pos="30, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_14_page_music"><layout_hint size="5, 8" pos="50, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_15_page_music"><layout_hint size="5, 8" pos="70, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_16_page_music"><layout_hint size="5, 8" pos="90, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_17_page_music"><layout_hint size="5, 8" pos="110, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_18_page_music"><layout_hint size="5, 8" pos="130, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_19_page_music"><layout_hint size="5, 8" pos="150, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_20_page_music"><layout_hint size="5, 8" pos="170, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_21_page_music"><layout_hint size="5, 8" pos="190, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_22_page_music"><layout_hint size="5, 8" pos="210, 0" /></plane>
-        <plane style="style_plane_waveform" id="plane_wave_23_page_music"><layout_hint size="5, 8" pos="230, 0" /></plane>
+        <layout_hint anchor="1, 0" align="1, 0" size="480, 44" pos="440, 7" />
+        <plane style="style_plane_waveform_dim" id="plane_waveform_baseline_page_music"><layout_hint size="468, 1" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_00_page_music"><layout_hint size="3, 5" pos="-234, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_01_page_music"><layout_hint size="3, 5" pos="-222, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_02_page_music"><layout_hint size="3, 5" pos="-210, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_03_page_music"><layout_hint size="3, 5" pos="-198, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_04_page_music"><layout_hint size="3, 5" pos="-186, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_05_page_music"><layout_hint size="3, 5" pos="-174, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_06_page_music"><layout_hint size="3, 5" pos="-162, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_07_page_music"><layout_hint size="3, 5" pos="-150, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_08_page_music"><layout_hint size="3, 5" pos="-138, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_09_page_music"><layout_hint size="3, 5" pos="-126, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_10_page_music"><layout_hint size="3, 5" pos="-114, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_11_page_music"><layout_hint size="3, 5" pos="-102, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_12_page_music"><layout_hint size="3, 5" pos="-90, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_13_page_music"><layout_hint size="3, 5" pos="-78, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_14_page_music"><layout_hint size="3, 5" pos="-66, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_15_page_music"><layout_hint size="3, 5" pos="-54, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_16_page_music"><layout_hint size="3, 5" pos="-42, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_17_page_music"><layout_hint size="3, 5" pos="-30, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_18_page_music"><layout_hint size="3, 5" pos="-18, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_19_page_music"><layout_hint size="3, 5" pos="-6, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_20_page_music"><layout_hint size="3, 5" pos="6, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_21_page_music"><layout_hint size="3, 5" pos="18, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_22_page_music"><layout_hint size="3, 5" pos="30, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_23_page_music"><layout_hint size="3, 5" pos="42, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_24_page_music"><layout_hint size="3, 5" pos="54, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_25_page_music"><layout_hint size="3, 5" pos="66, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_26_page_music"><layout_hint size="3, 5" pos="78, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_27_page_music"><layout_hint size="3, 5" pos="90, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_28_page_music"><layout_hint size="3, 5" pos="102, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_29_page_music"><layout_hint size="3, 5" pos="114, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_30_page_music"><layout_hint size="3, 5" pos="126, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_31_page_music"><layout_hint size="3, 5" pos="138, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_32_page_music"><layout_hint size="3, 5" pos="150, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_33_page_music"><layout_hint size="3, 5" pos="162, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_34_page_music"><layout_hint size="3, 5" pos="174, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_35_page_music"><layout_hint size="3, 5" pos="186, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_36_page_music"><layout_hint size="3, 5" pos="198, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_37_page_music"><layout_hint size="3, 5" pos="210, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_38_page_music"><layout_hint size="3, 5" pos="222, 0" /></plane>
+        <plane style="style_plane_waveform" id="plane_wave_39_page_music"><layout_hint size="3, 5" pos="234, 0" /></plane>
       </plane>
       <progressbar_touch style="style_progressbar_touch_native" label_mode="2" id="progressbar_seek_page_music">
         <layout_hint anchor="1, 0" align="1, 0" size="480, 24" pos="440, -20" />
@@ -543,10 +559,10 @@
     <style_plane color="1, 1, 1, 0.94" planeobj="plane_obj1" id="style_plane_glyph">
       <planeobj id="plane_obj1" />
     </style_plane>
-    <style_plane color="0.48, 0.76, 1, 0.96" planeobj="plane_obj1" id="style_plane_waveform">
+    <style_plane color="0.55, 0.82, 1, 0.92" planeobj="plane_obj1" id="style_plane_waveform">
       <planeobj id="plane_obj1" />
     </style_plane>
-    <style_plane color="1, 1, 1, 0.30" planeobj="plane_obj1" id="style_plane_waveform_dim">
+    <style_plane color="0.70, 0.82, 0.96, 0.22" planeobj="plane_obj1" id="style_plane_waveform_dim">
       <planeobj id="plane_obj1" />
     </style_plane>
     <style_plane color="0.62, 1, 0.1, 0.95" planeobj="plane_obj1" id="style_plane_seek_marker">
