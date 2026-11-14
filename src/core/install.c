@@ -20,6 +20,8 @@
 #include "core/install.h"
 
 #define HEAD_BIN FM_PACKAGE_DIR "/sce_sys/package/head.bin"
+#define FM_TITLEID "FILEMGR01"
+#define LIVEAREA_STAGE "ux0:temp/app"
 #ifndef HEAD_BIN_TEMPLATE
 #define HEAD_BIN_TEMPLATE "app0:resource/head.bin"
 #endif
@@ -162,12 +164,32 @@ static int promoteApp(const char *path) {
   if (res < 0)
     return res;
   res = scePromoterUtilityInit();
-  if (res < 0)
+  if (res < 0) {
+    sceSysmoduleUnloadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
     return res;
+  }
   int promote = scePromoterUtilityPromotePkgWithRif(path, 1);
   scePromoterUtilityExit();
   sceSysmoduleUnloadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
   return promote;
+}
+
+static int appRegistered(const char *titleid) {
+  int res = sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
+  if (res < 0)
+    return res;
+  res = scePromoterUtilityInit();
+  if (res < 0) {
+    sceSysmoduleUnloadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
+    return res;
+  }
+  int detail = 0;
+  int exists = scePromoterUtilityCheckExist(titleid, &detail);
+  scePromoterUtilityExit();
+  sceSysmoduleUnloadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
+  if (detail < 0)
+    return detail;
+  return exists >= 0 ? 1 : 0;
 }
 
 static int folderTitleId(const char *folder, char *titleid) {
@@ -394,10 +416,32 @@ int installAppFolder(const char *folder, FileProcessParam *param, char *titleid)
 }
 
 int refreshLiveAreaApp(const char *folder, char *titleid) {
-  int res = folderTitleId(folder, titleid);
+  char parsed[12] = { 0 };
+  int res = folderTitleId(folder, parsed);
   if (res < 0) return res;
-  res = promoteApp(folder);
-  return res < 0 ? res : 1;
+  if (titleid) strcpy(titleid, parsed);
+
+  // Never promote the running application, and never feed an already-installed
+  // ux0:app directory directly to PromoterUtil. PromotePkg moves its input and
+  // doing that in place corrupted the browser process after a LiveArea sync.
+  if (strcmp(parsed, FM_TITLEID) == 0) return 0;
+  res = appRegistered(parsed);
+  if (res != 0) return res < 0 ? res : 0;
+
+  // VitaShell stages unregistered applications at this exact path before
+  // promotion. Restore the original folder if promotion fails.
+  SceIoStat stat;
+  memset(&stat, 0, sizeof(stat));
+  if (sceIoGetstat(LIVEAREA_STAGE, &stat) >= 0)
+    return SCE_ERROR_ERRNO_EEXIST;
+  res = sceIoRename(folder, LIVEAREA_STAGE);
+  if (res < 0) return res;
+  res = promoteApp(LIVEAREA_STAGE);
+  if (res < 0) {
+    sceIoRename(LIVEAREA_STAGE, folder);
+    return res;
+  }
+  return 1;
 }
 
 int refreshLiveAreaAll(const char *appsRoot, uint32_t *refreshed) {
@@ -416,8 +460,11 @@ int refreshLiveAreaAll(const char *appsRoot, uint32_t *refreshed) {
     snprintf(folder, sizeof(folder), "%s/%s", appsRoot, entry.d_name);
     if (!isAppFolder(folder)) continue;
     int current = refreshLiveAreaApp(folder, NULL);
-    if (current < 0) result = current;
-    else ++count;
+    if (current < 0) {
+      result = current;
+      break;
+    }
+    if (current > 0) ++count;
   }
   sceIoDclose(dfd);
   if (refreshed) *refreshed = count;

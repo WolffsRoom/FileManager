@@ -186,6 +186,7 @@ private:
 	void SetClipboard(bool isMove);
 	void CollectSelection(paf::vector<paf::string> *out);
 	void StartOperation(int32_t type);
+	void QueueFinishOperation(int32_t result);
 	void StartBackgroundInstall();
 	void FinishOperation(int32_t result);
 	void FinishUndo(int32_t result);
@@ -282,6 +283,8 @@ private:
 	PendingDialog m_pending;
 	int32_t m_opType;
 	bool m_operationRunning;
+	bool m_finishPending;
+	int32_t m_operationResult;
 	paf::vector<paf::string> m_opSources;
 	paf::string m_opTargetDir;
 	Action m_inputAction;

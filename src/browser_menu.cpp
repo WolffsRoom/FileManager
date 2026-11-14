@@ -254,7 +254,7 @@ namespace {
 	}
 }
 
-BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_operationRunning(false), m_inputAction(Action_Rename),
+BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_operationRunning(false), m_finishPending(false), m_operationResult(0), m_inputAction(Action_Rename),
 	m_iconCount(0), m_vpkIconCount(0), m_ftpShown(false), m_ftpBusy(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_markButton(NULL), m_focusedButton(NULL), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_bgInstallPoll(0), m_optionTarget(-1), m_undoType(Undo_None)
 {
 	Plugin::PageOpenParam openParam;
@@ -2489,7 +2489,7 @@ void BrowserMenu::RunOperation()
 				sceIoClose(command);
 			}
 		}
-		FinishOperation(result);
+		QueueFinishOperation(result);
 		return;
 	}
 	if (m_opType == Op_Install)
@@ -2504,7 +2504,7 @@ void BrowserMenu::RunOperation()
 		char titleid[12] = { 0 };
 		int32_t result = installVpk(m_opSources.at(0).c_str(), &param, titleid);
 		m_installedTitle = titleid;
-		FinishOperation(result);
+		QueueFinishOperation(result);
 		return;
 	}
 	if (m_opType == Op_Extract)
@@ -2514,7 +2514,7 @@ void BrowserMenu::RunOperation()
 		FileProcessParam param = { &value, total > 0 ? (uint64_t)total : 1, OnProgress, IsCancelled };
 		int32_t result = archiveExtract(m_opSources.at(0).c_str(), m_opTargetDir.c_str(), &param);
 		if (result <= 0) removePath(m_opTargetDir.c_str(), NULL);
-		FinishOperation(result);
+		QueueFinishOperation(result);
 		return;
 	}
 	if (m_opType == Op_CreateZip)
@@ -2525,11 +2525,11 @@ void BrowserMenu::RunOperation()
 		uint64_t value = 0;
 		FileProcessParam param = { &value, total ? total : 1, OnProgress, IsCancelled };
 		const char **sources = (const char **)malloc(sizeof(char *) * m_opSources.size());
-		if (!sources) { FinishOperation((int32_t)0x8001000C); return; }
+		if (!sources) { QueueFinishOperation((int32_t)0x8001000C); return; }
 		for (uint32_t i = 0; i < m_opSources.size(); ++i) sources[i] = m_opSources.at(i).c_str();
 		int32_t result = archiveCreateZip(m_opTargetDir.c_str(), sources, m_opSources.size(), &param);
 		free(sources);
-		FinishOperation(result);
+		QueueFinishOperation(result);
 		return;
 	}
 	if (m_opType == Op_ExportMedia)
@@ -2539,7 +2539,7 @@ void BrowserMenu::RunOperation()
 		uint64_t value = 0;
 		FileProcessParam param = { &value, stat.st_size ? stat.st_size : 1, OnProgress, IsCancelled };
 		const char *dot = strrchr(m_opSources.at(0).c_str(), '.');
-		FinishOperation(exportMediaFile(m_opSources.at(0).c_str(), dot && strcasecmp(dot, ".mp4") == 0, &param));
+		QueueFinishOperation(exportMediaFile(m_opSources.at(0).c_str(), dot && strcasecmp(dot, ".mp4") == 0, &param));
 		return;
 	}
 	if (m_opType == Op_InstallFolder)
@@ -2551,7 +2551,7 @@ void BrowserMenu::RunOperation()
 		char titleid[12] = { 0 };
 		int32_t result = installAppFolder(m_opSources.at(0).c_str(), &param, titleid);
 		m_installedTitle = titleid;
-		FinishOperation(result);
+		QueueFinishOperation(result);
 		return;
 	}
 	if (m_opType == Op_RefreshLiveArea)
@@ -2562,7 +2562,7 @@ void BrowserMenu::RunOperation()
 			refreshLiveAreaAll(m_opSources.at(0).c_str(), &refreshed) :
 			refreshLiveAreaApp(m_opSources.at(0).c_str(), titleid);
 		m_installedTitle = titleid;
-		FinishOperation(result);
+		QueueFinishOperation(result);
 		return;
 	}
 
@@ -2625,7 +2625,23 @@ void BrowserMenu::RunOperation()
 		}
 	}
 
-	FinishOperation(result);
+	QueueFinishOperation(result);
+}
+
+void BrowserMenu::QueueFinishOperation(int32_t result)
+{
+	// RunOperation executes on the job queue. PAF dialogs, ListView refreshes and
+	// page transitions must be completed on the UI thread; doing them on the
+	// worker left the browser invalid after LiveArea synchronization.
+	m_operationResult = result;
+	if (m_finishPending) return;
+	m_finishPending = true;
+	DeferCall([](void *userdata)
+	{
+		BrowserMenu *menu = reinterpret_cast<BrowserMenu *>(userdata);
+		menu->m_finishPending = false;
+		menu->FinishOperation(menu->m_operationResult);
+	}, this);
 }
 
 void BrowserMenu::FinishOperation(int32_t result)
@@ -2642,7 +2658,6 @@ void BrowserMenu::FinishOperation(int32_t result)
 	if (result > 0 && (completedType == Op_Move || completedType == Op_Copy) && !m_undoTo.empty())
 		m_undoType = completedType == Op_Move ? Undo_Move : Undo_Copy;
 
-	thread::RMutex::MainThreadMutex()->Lock();
 	if (result > 0 && completedType == Op_Delete)
 	{
 		for (uint32_t i = 0; i < m_opSources.size(); ++i)
@@ -2700,7 +2715,6 @@ void BrowserMenu::FinishOperation(int32_t result)
 	Refresh();
 	if (m_pages.size() > 1) ReloadRoot();
 	m_operationRunning = false;
-	thread::RMutex::MainThreadMutex()->Unlock();
 }
 
 void BrowserMenu::RunUndo()

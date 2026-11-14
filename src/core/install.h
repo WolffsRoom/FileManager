@@ -23,10 +23,10 @@ int prepareVpk(const char *vpk, FileProcessParam *param, char *titleid);
 /** Copies an extracted application folder to the staging area and promotes it. */
 int installAppFolder(const char *folder, FileProcessParam *param, char *titleid);
 
-/** Re-registers an existing application folder in the LiveArea database. */
+/** Registers an unregistered application folder without touching installed apps. */
 int refreshLiveAreaApp(const char *folder, char *titleid);
 
-/** Re-registers every valid application below ux0:app. */
+/** Registers valid folders missing from the LiveArea database below ux0:app. */
 int refreshLiveAreaAll(const char *appsRoot, uint32_t *refreshed);
 
 /** True when the folder contains a valid Vita application param.sfo. */
