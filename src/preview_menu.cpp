@@ -656,8 +656,9 @@ void PreviewMenu::OnOption(int32_t index)
 		const char *slash = strrchr(path.c_str(), '/');
 		paf::wstring name;
 		common::Utf8ToUtf16(slash ? slash + 1 : path.c_str(), &name);
-		dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_confirm_delete_title), name.c_str());
-		dialog::SetProgressIcon(g_appPlugin->GetTexture(tex_new_trash));
+		dialog::OpenTwoButtonIcon(g_appPlugin, g_appPlugin->GetString(msg_confirm_delete_title),
+			name.c_str(), msg_opt_delete, msg_cancel,
+			g_appPlugin->GetTexture(tex_new_trash));
 		return;
 	}
 	ApplyImageTransform();
@@ -689,7 +690,8 @@ void PreviewMenu::OnDeleteAnswer(int32_t buttonCode)
 {
 	if (!m_deletePending) return;
 	m_deletePending = false;
-	if (buttonCode != dialog::ButtonCode_Yes || m_index < 0 || m_index >= (int32_t)m_paths.size()) return;
+	if ((buttonCode != dialog::ButtonCode_Yes && buttonCode != dialog::ButtonCode_Ok) ||
+		m_index < 0 || m_index >= (int32_t)m_paths.size()) return;
 	paf::string removed = m_paths.at(m_index);
 	int32_t ret = sceIoRemove(removed.c_str());
 	if (ret < 0) { dialog::OpenError(g_appPlugin, ret); return; }

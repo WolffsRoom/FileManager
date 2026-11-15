@@ -1140,6 +1140,20 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 void BrowserMenu::RepaintVisibleRows(BrowserPage *page, ui::Widget *root)
 {
 	if (!page || !root) return;
+	// The first non-recycled cells are kept by ListView outside its ordinary
+	// widget subtree on this PAF build. GetListItem reaches those cells, while
+	// the recursive pass below reaches the recycling pool used after scrolling.
+	if (root == page->list)
+	{
+		for (uint32_t i = 0; i < page->entries.size(); ++i)
+		{
+			ui::ListItem *item = page->list->GetListItem(0, i);
+			if (!item) continue;
+			ui::Widget *button = item->FindChild(image_button_list_item);
+			if (!button || (int32_t)button->GetName().GetIDHash() != (int32_t)i) continue;
+			ApplyRowHighlight(page, i, button);
+		}
+	}
 	const int32_t index = (int32_t)root->GetName().GetIDHash();
 	if (index >= 0 && index < (int32_t)page->entries.size() &&
 		root->FindChild(text_list_item_name) && root->FindChild(text_list_item_info))
@@ -2195,8 +2209,9 @@ void BrowserMenu::DoAction(Action action)
 			paf::string pattern;
 			common::Utf16ToUtf8(paf::wstring(g_appPlugin->GetString(msg_confirm_delete_item)), &pattern);
 			paf::wstring question = ToWide(common::FormatString(pattern.c_str(), m_scratch.c_str()));
-			dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_confirm_delete_title), question.c_str());
-			dialog::SetProgressIcon(g_appPlugin->GetTexture(tex_new_trash));
+			dialog::OpenTwoButtonIcon(g_appPlugin, g_appPlugin->GetString(msg_confirm_delete_title),
+				question.c_str(), msg_opt_delete, msg_cancel,
+				g_appPlugin->GetTexture(tex_new_trash));
 		}
 		break;
 
@@ -2961,7 +2976,7 @@ void BrowserMenu::OnDialog(int32_t buttonCode)
 
 	case Pending_ConfirmDelete:
 		m_pending = Pending_None;
-		if (buttonCode == dialog::ButtonCode_Yes)
+		if (buttonCode == dialog::ButtonCode_Yes || buttonCode == dialog::ButtonCode_Ok)
 		{
 			StartOperation(Op_Delete);
 		}

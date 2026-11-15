@@ -42,6 +42,14 @@ namespace dialog
 		uint32_t button1TextHashref,
 		uint32_t button2TextHashref);
 
+	void OpenTwoButtonIcon(
+		Plugin *workPlugin,
+		const wchar_t *titleText,
+		const wchar_t *messageText,
+		uint32_t button1TextHashref,
+		uint32_t button2TextHashref,
+		paf::intrusive_ptr<paf::graph::Surface> texture);
+
 	void OpenThreeButton(
 		Plugin *workPlugin,
 		const wchar_t *titleText,

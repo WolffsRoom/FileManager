@@ -196,6 +196,31 @@ void dialog::OpenTwoButton(
 		thread::RMutex::MainThreadMutex()->Unlock();
 }
 
+void dialog::OpenTwoButtonIcon(
+	Plugin *workPlugin,
+	const wchar_t *titleText,
+	const wchar_t *messageText,
+	uint32_t button1TextHashref,
+	uint32_t button2TextHashref,
+	intrusive_ptr<graph::Surface> texture)
+{
+	if (s_currentDialog != CURRENT_DIALOG_NONE) return;
+	const bool isMainThread = thread::ThreadIDCache::Check();
+	CommonGuiDialog::Param dparam = CommonGuiDialog::Param::s_dialogOkCancelIcon;
+	sce_paf_memcpy(s_twoButtonContTable, dparam.contents_list, sizeof(s_twoButtonContTable));
+	s_twoButtonContTable[1] = button2TextHashref;
+	s_twoButtonContTable[5] = button1TextHashref;
+	dparam.contents_list = (CommonGuiDialog::ContentsHashTable *)s_twoButtonContTable;
+	paf::wstring title = titleText ? titleText : L"";
+	paf::wstring message = messageText ? messageText : L"";
+	if (!isMainThread) thread::RMutex::MainThreadMutex()->Lock();
+	s_currentDialog = CommonGuiDialog::Dialog::Show(workPlugin, &title, &message,
+		&dparam, CommonGuiEventHandler, NULL);
+	s_currentPlugin = workPlugin;
+	SetProgressIcon(texture);
+	if (!isMainThread) thread::RMutex::MainThreadMutex()->Unlock();
+}
+
 ui::ListView *dialog::OpenListView(
 	Plugin *workPlugin,
 	const wchar_t *titleText)

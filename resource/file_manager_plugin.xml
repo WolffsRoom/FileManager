@@ -166,6 +166,10 @@
         <text style="style_text_ftp_info" id="text_connection_page_ftp">
           <layout_hint size="640, 30" pos="0, 52" />
         </text>
+        <button style="_common_default_style_button_transparent" id="button_client_page_ftp">
+          <layout_hint size="640, 44" pos="0, 52" />
+          <focus_hint enable="0" />
+        </button>
         <text style="style_text_ftp_activity" id="text_activity_page_ftp">
           <layout_hint size="640, 34" pos="0, 4" />
         </text>

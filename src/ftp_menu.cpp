@@ -55,7 +55,7 @@ FtpMenu::FtpMenu(ui::Widget *parentRoot, CloseCallback cb, void *userdata) :
 	SetText(m_root->FindChild(text_title_page_ftp), g_appPlugin->GetString(msg_ftp_server));
 	m_address = m_root->FindChild(text_address_page_ftp);
 	m_connection = m_root->FindChild(text_connection_page_ftp);
-	m_connection->AddEventCallback(ui::Handler::CB_TOUCH_OUT,
+	m_root->FindChild(button_client_page_ftp)->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
 	{
 		static_cast<FtpMenu *>(userdata)->ToggleClientAddress();
