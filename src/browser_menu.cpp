@@ -257,6 +257,8 @@ namespace {
 BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), m_opType(Op_Copy), m_operationRunning(false), m_finishPending(false), m_operationResult(0), m_inputAction(Action_Rename),
 	m_iconCount(0), m_vpkIconCount(0), m_ftpShown(false), m_ftpBusy(false), m_musicShown(false), m_backPending(false), m_backPage(NULL), m_markPending(false), m_markPage(NULL), m_markIndex(-1), m_markButton(NULL), m_focusedButton(NULL), m_selectAllPending(false), m_selectAllPage(NULL), m_itemPending(false), m_itemPage(NULL), m_itemIndex(-1), m_optionsPending(false), m_selectButtonPending(false), m_selectionActionPending(false), m_selectionAction(Action_Select), m_searchVisible(false), m_alphaTouch(false), m_alphaVisible(false), m_qrDownload(false), m_alphaCurrent(-1), m_bgInstallPoll(0), m_optionTarget(-1), m_undoType(Undo_None)
 {
+	sce_paf_memset(&m_qrInfo, 0, sizeof(m_qrInfo));
+	m_qrInspectResult = 0;
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
 	m_root = g_appPlugin->PageOpen(page_browser, openParam);
@@ -2797,13 +2799,10 @@ void BrowserMenu::OnQrResult(const paf::string &payload)
 	m_scratch = payload;
 	if (!strncasecmp(payload.c_str(), "http://", 7) || !strncasecmp(payload.c_str(), "https://", 8))
 	{
-		const char *end = strchr(payload.c_str(), '?');
-		const char *slash = strrchr(payload.c_str(), '/');
-		const char *dot = slash ? strrchr(slash, '.') : NULL;
-		m_qrDownload = dot && (!end || dot < end) && strncasecmp(dot, ".html", 5) && strncasecmp(dot, ".htm", 4);
-		m_pending = Pending_QrOpen;
-		paf::wstring text = ToWide(payload);
-		dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_qr_open_title), text.c_str());
+		m_qrDownload = false;
+		m_pending = Pending_None;
+		dialog::OpenPleaseWait(g_appPlugin, NULL, g_appPlugin->GetString(msg_qr_checking));
+		Enqueue(new CallJob(this, &BrowserMenu::RunQrInspect));
 	}
 	else
 	{
@@ -2812,46 +2811,91 @@ void BrowserMenu::OnQrResult(const paf::string &payload)
 	}
 }
 
+void BrowserMenu::RunQrInspect()
+{
+	m_qrInspectResult = ftp::EnsureNetwork();
+	if (m_qrInspectResult >= 0)
+	{
+		sceSysmoduleLoadModule(SCE_SYSMODULE_HTTPS);
+		int ssl = sceSslInit(300 * 1024);
+		int http = ssl < 0 ? ssl : sceHttpInit(40 * 1024);
+		m_qrInspectResult = http < 0 ? http : inspectDownloadUrl(m_scratch.c_str(), &m_qrInfo);
+		if (http >= 0) sceHttpTerm();
+		if (ssl >= 0) sceSslTerm();
+	}
+	DeferCall([](void *userdata)
+	{
+		reinterpret_cast<BrowserMenu *>(userdata)->FinishQrInspect();
+	}, this);
+}
+
+void BrowserMenu::FinishQrInspect()
+{
+	dialog::Close();
+	if (m_qrInspectResult < 0)
+	{
+		dialog::OpenError(g_appPlugin, m_qrInspectResult);
+		return;
+	}
+	m_qrDownload = m_qrInfo.isFile != 0;
+	m_pending = Pending_QrOpen;
+	if (m_qrDownload)
+	{
+		paf::string text = m_qrInfo.filename;
+		if (m_qrInfo.contentLength)
+		{
+			text += "\n";
+			text += format::Size(m_qrInfo.contentLength);
+		}
+		dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_qr_download_title), ToWide(text).c_str());
+	}
+	else
+	{
+		dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_qr_open_title), ToWide(m_scratch).c_str());
+	}
+}
+
 void BrowserMenu::RunQrDownload()
 {
 	const char *url = m_scratch.c_str();
-	const char *slash = strrchr(url, '/');
-	const char *sourceName = slash && slash[1] ? slash + 1 : "download.bin";
-	char nameBuf[256];
-	size_t nameLen = strcspn(sourceName, "?#");
-	if (nameLen == 0) { sourceName = "download.bin"; nameLen = strlen(sourceName); }
-	if (nameLen >= sizeof(nameBuf)) nameLen = sizeof(nameBuf) - 1;
-	memcpy(nameBuf, sourceName, nameLen);
-	nameBuf[nameLen] = 0;
-	for (size_t i = 0; i < nameLen; i++)
-		if (nameBuf[i] == ':' || nameBuf[i] == '*' || nameBuf[i] == '"' || nameBuf[i] == '<' || nameBuf[i] == '>' || nameBuf[i] == '|') nameBuf[i] = '_';
-	paf::string name(nameBuf);
-	sceIoMkdir("ux0:download", 0777);
-	paf::string destination = paf::string("ux0:download/") + name;
+	paf::string name = m_qrInfo.filename[0] ? m_qrInfo.filename : "download.bin";
+	sceIoMkdir("ux0:Downloads", 0777);
+	paf::string destination = paf::string("ux0:Downloads/") + name;
 	SceIoStat stat;
 	for (int n = 1; sceIoGetstat(destination.c_str(), &stat) >= 0; n++)
 	{
 		const char *dot = strrchr(name.c_str(), '.');
 		paf::string stem = dot ? paf::string(name.c_str(), dot - name.c_str()) : name;
-		destination = common::FormatString("ux0:download/%s (%d)%s", stem.c_str(), n, dot ? dot : "");
+		destination = common::FormatString("ux0:Downloads/%s (%d)%s", stem.c_str(), n, dot ? dot : "");
 	}
-	int network = ftp::EnsureNetwork();
-	if (network < 0)
+	paf::string part = destination + ".part";
+	sceIoRemove(part.c_str());
+	int result = ftp::EnsureNetwork();
+	int ssl = -1, http = -1;
+	if (result >= 0)
 	{
-		dialog::Close();
-		dialog::OpenError(g_appPlugin, network);
-		return;
+		sceSysmoduleLoadModule(SCE_SYSMODULE_HTTPS);
+		ssl = sceSslInit(300 * 1024);
+		http = ssl < 0 ? ssl : sceHttpInit(40 * 1024);
+		s_cancel = false;
+		s_lastPercent = 0;
+		result = http < 0 ? http : downloadUrlEx(url, part.c_str(), OnProgress, IsCancelled);
+		if (result == 0) result = sceIoRename(part.c_str(), destination.c_str());
+		if (http >= 0) sceHttpTerm();
+		if (ssl >= 0) sceSslTerm();
 	}
-	sceSysmoduleLoadModule(SCE_SYSMODULE_HTTPS);
-	sceSslInit(300 * 1024);
-	sceHttpInit(40 * 1024);
-	sceHttpsDisableOption(SCE_HTTPS_FLAG_SERVER_VERIFY);
-	int result = downloadUrl(url, destination.c_str(), OnProgress);
-	sceHttpTerm();
-	sceSslTerm();
-	dialog::Close();
-	if (result < 0) dialog::OpenError(g_appPlugin, result);
-	else dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_qr_result), ToWide(destination).c_str());
+	if (result != 0) sceIoRemove(part.c_str());
+	m_qrInspectResult = result;
+	m_inputTarget = destination;
+	DeferCall([](void *userdata)
+	{
+		BrowserMenu *menu = reinterpret_cast<BrowserMenu *>(userdata);
+		dialog::Close();
+		if (menu->m_qrInspectResult < 0)
+			dialog::OpenError(g_appPlugin, menu->m_qrInspectResult);
+		else if (!s_cancel)
+			dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_qr_result), ToWide(menu->m_inputTarget).c_str());
+	}, this);
 }
 
 void BrowserMenu::ReloadRoot()
@@ -2891,7 +2935,8 @@ void BrowserMenu::OnDialog(int32_t buttonCode)
 		{
 			if (m_qrDownload)
 			{
-				dialog::OpenProgress(g_appPlugin, NULL, ToWide(paf::string("Baixando arquivo..." )).c_str());
+				m_pending = Pending_Operation;
+				dialog::OpenProgress(g_appPlugin, NULL, g_appPlugin->GetString(msg_qr_downloading));
 				Enqueue(new CallJob(this, &BrowserMenu::RunQrDownload));
 			}
 			else sceAppMgrLaunchAppByUri(0xFFFFF, m_scratch.c_str());

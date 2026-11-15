@@ -5,6 +5,7 @@
 #include <paf.h>
 
 #include "core/fs.h"
+#include "core/download.h"
 
 /**
  * The main screen: devices first, then folders, each level on its own list view
@@ -119,7 +120,9 @@ public:
 
 	/** Worker-thread side of the information dialog. */
 	void RunInfo();
+	void RunQrInspect();
 	void RunQrDownload();
+	void FinishQrInspect();
 
 	void OnNameEntered(const paf::wstring &text);
 
@@ -255,6 +258,8 @@ private:
 	bool m_alphaTouch;
 	bool m_alphaVisible;
 	bool m_qrDownload;
+	DownloadInfo m_qrInfo;
+	int32_t m_qrInspectResult;
 	int32_t m_alphaCurrent;
 	uint32_t m_bgInstallPoll;
 

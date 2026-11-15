@@ -157,6 +157,9 @@
   <string src="The rear camera could not be opened." id="msg_qr_camera_error" />
   <string src="QR Code Result" id="msg_qr_result" />
   <string src="Open this QR link?" id="msg_qr_open_title" />
+  <string src="Checking link..." id="msg_qr_checking" />
+  <string src="Download this file?" id="msg_qr_download_title" />
+  <string src="Downloading file..." id="msg_qr_downloading" />
   <string src="Cross" id="msg_btn_cross" />
   <string src="Circle" id="msg_btn_circle" />
   <string src="Triangle" id="msg_btn_triangle" />
