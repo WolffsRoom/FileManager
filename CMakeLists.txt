@@ -135,6 +135,7 @@ target_include_directories(FileManager PRIVATE
   src
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/third_party/quirc_src/lib
+  ${CMAKE_SOURCE_DIR}/third_party/netstream/include
   "${CMAKE_BINARY_DIR}/generated"
   paf
   paf/sdk_wrapper
@@ -162,6 +163,7 @@ target_link_libraries(FileManager
   SceAudio_stub
   SceRtc_stub
   SceAvPlayer_stub
+  ${CMAKE_SOURCE_DIR}/third_party/netstream/lib/libSceAvPlayerWebMAF_stub.a
   SceFios2_stub
   SceMusicExport_stub
   SceVideoExport_stub
@@ -205,6 +207,7 @@ vita_create_vpk(FileManager.vpk ${VITA_TITLEID} eboot.bin
 	${CMAKE_BINARY_DIR}/modules/usbdevice/usbdevice.skprx module/usbdevice.skprx
 	${CMAKE_BINARY_DIR}/modules/bginstaller/bginstaller.suprx module/bginstaller.suprx
 	resources/umass.skprx module/umass.skprx
+	module/libSceAvPlayerPSVitaRGBA8888.suprx module/libSceAvPlayerPSVitaRGBA8888.suprx
     legacy/resources/head.bin resource/head.bin
     resource/sce_sys/icon0.png sce_sys/icon0.png
     resource/sce_sys/pic0.png sce_sys/pic0.png

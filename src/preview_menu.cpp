@@ -740,6 +740,8 @@ void PreviewMenu::StopVideo()
 	}
 	common::MainThreadCallList::Unregister(VideoTask, this);
 	m_plane->Hide(common::transition::Type_Reset);
+	// Release decoder-backed textures before AvPlayer frees its video pool.
+	m_plane->SetTexture(paf::intrusive_ptr<paf::graph::Surface>());
 	m_videoPlayer.Close();
 	m_videoActive = false;
 	m_controls->Hide(common::transition::Type_Reset);

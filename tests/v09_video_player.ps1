@@ -21,15 +21,9 @@ if ($source -notmatch 'basePriority\s*=\s*0xA0' -or
     $source -notmatch 'numOutputVideoFrameBuffers\s*=.+5') {
     throw 'proven AvPlayer priority/five-buffer configuration is missing'
 }
-if ($source -notmatch 'native-GXM' -or $source -notmatch 'callback-GXM' -or
-    $source -notmatch 'callback-CPU') {
-    throw 'three decoder fallback modes are missing'
-}
-if ($source -notmatch '5000000' -or $source -notmatch 'No video frame') {
-    throw 'five-second no-frame fallback is missing'
-}
-if ($source -notmatch 'ImageMode_YUV420P2' -or $source -notmatch 'Nv12ToRgba') {
-    throw 'native NV12 and CPU RGBA paths are both required'
+if ($source -notmatch 'sceAvPlayerGetVideoDataEx' -or
+    $source -notmatch 'ImageMode_RGBA8888') {
+    throw 'RGBA WebMAF frame path is missing'
 }
 if ($source -notmatch 'sceAvPlayerGetAudioData' -or
     $source -notmatch 'video_diagnostic\.txt') {
@@ -38,9 +32,6 @@ if ($source -notmatch 'sceAvPlayerGetAudioData' -or
 if ($preview -notmatch 'm_videoPlayer\.Open' -or $preview -notmatch 'm_videoPlayer\.Update') {
     throw 'PreviewMenu is not using VideoPlayer'
 }
-if ($preview -match 'sceAvPlayerPostInit|GetVideoDataEx|libSceAvPlayerPSVitaRGBA8888') {
-    throw 'PreviewMenu still depends on the RGBA WebMAF path'
-}
 if ($cmake -notmatch 'src/video_player\.cpp') { throw 'VideoPlayer is not compiled' }
 
-Write-Output 'v0.9 native MP4 fallback player passed'
+Write-Output 'v0.9 native RGBA MP4 player passed'
