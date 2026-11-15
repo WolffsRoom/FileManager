@@ -201,8 +201,11 @@ static void makePalette(png_color palette[256])
 static int writeIndexed(const char *path, const DecodedPng *decoded)
 {
 	char temporary[MAX_PATH_LENGTH];
+	char backup[MAX_PATH_LENGTH];
 	snprintf(temporary, sizeof(temporary), "%s.fm9tmp", path);
+	snprintf(backup, sizeof(backup), "%s.fm9bak", path);
 	sceIoRemove(temporary);
+	sceIoRemove(backup);
 	SceUID fd = sceIoOpen(temporary, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
 	if (fd < 0) return fd;
 	png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -238,9 +241,31 @@ done:
 	if (png) png_destroy_write_struct(&png, info ? &info : NULL);
 	sceIoClose(fd);
 	if (result < 0) { sceIoRemove(temporary); return result; }
-	sceIoRemove(path);
+	result = sceIoRename(path, backup);
+	if (result < 0) { sceIoRemove(temporary); return result; }
 	result = sceIoRename(temporary, path);
-	if (result < 0) sceIoRemove(temporary);
+	if (result < 0)
+	{
+		sceIoRemove(path);
+		sceIoRename(backup, path);
+		sceIoRemove(temporary);
+		return result;
+	}
+	sceIoRemove(backup);
+	return result;
+}
+
+static int verifyIndexedAsset(const char *path, const char *relative)
+{
+	void *data = NULL;
+	size_t size = 0;
+	if (readFile(path, &data, &size) < 0) return -1;
+	DecodedPng decoded;
+	int result = decodePng(data, size, &decoded);
+	free(data);
+	if (result < 0) return -1;
+	result = decoded.palette8 && dimensionsValid(relative, decoded.width, decoded.height) ? 0 : -1;
+	free(decoded.pixels);
 	return result;
 }
 
@@ -261,7 +286,8 @@ static int normalizeOne(const char *root, const char *relative, VpkAssetReport *
 	}
 	free(data);
 	if (decoded.palette8) ++report->compatible;
-	else if (writeIndexed(path, &decoded) < 0) reportInvalid(report, relative);
+	else if (writeIndexed(path, &decoded) < 0 || verifyIndexedAsset(path, relative) < 0)
+		reportInvalid(report, relative);
 	else ++report->fixable;
 	free(decoded.pixels);
 	return report->invalid ? -1 : 0;

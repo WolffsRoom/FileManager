@@ -26,6 +26,12 @@ if ($source -notmatch 'sce_sys/icon0\.png' -or $source -notmatch 'sce_sys/livear
 if ($source -notmatch '\.fm9tmp' -or $source -notmatch 'sceIoRename') {
     throw 'Corrected PNG assets are not written atomically'
 }
+if ($source -notmatch '\.fm9bak' -or $source -notmatch 'sceIoRename\(backup, path\)') {
+    throw 'Corrected assets cannot restore the original after a rename failure'
+}
+if ($source -notmatch 'verifyIndexedAsset' -or $source -notmatch 'decoded\.palette8') {
+    throw 'Corrected assets are not decoded and verified before promotion'
+}
 if ($install -notmatch 'normalizeExtractedVpkAssets\(FM_PACKAGE_DIR') {
     throw 'VPK installation promotes assets before normalization'
 }
