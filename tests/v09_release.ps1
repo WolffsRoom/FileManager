@@ -7,7 +7,7 @@ $download = Get-Content -LiteralPath (Join-Path $root 'src/core/download.c') -Ra
 if ($cmake -notmatch 'set\(VITA_VERSION\s+"00\.90"\)') {
     throw 'VPK metadata is not version 00.90'
 }
-if ($download -notmatch 'FileManager/0\.9 libhttp/1\.1') {
+if ($download -notmatch 'FileManager/0\.9 \(PS Vita\)') {
     throw 'Download user agent is not version 0.9'
 }
 
@@ -23,6 +23,12 @@ $checks = @(
     'v09_vpk_assets.ps1',
     'v09_archive_modal.ps1',
     'v09_video_player.ps1',
+    'v09_video_rgba.ps1',
+    'v09_video_audio_options.ps1',
+    'v09_qr_crash_github.ps1',
+    'v09_search_selection_controls.ps1',
+    'v09_ftp_hostname.ps1',
+    'v09_settings_font_opacity.ps1',
     'icon_resource_coverage.ps1',
     'navigation_stability.ps1',
     'selection_toolbar_native_20261108.ps1',
