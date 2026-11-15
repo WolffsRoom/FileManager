@@ -925,6 +925,7 @@
     <texture src="ui/restart.png" type="texture/png" id="tex_ui_restart" />
     <texture src="ui/standbye.png" type="texture/png" id="tex_ui_standbye" />
     <texture src="ui/archive_icon.png" type="texture/png" id="tex_ui_archive" />
+    <texture src="ui/vpk_icon.png" type="texture/png" id="tex_ui_vpk_package" />
     <texture src="ui/audio_icon.png" type="texture/png" id="tex_ui_audio" />
     <texture src="ui/file_icon.png" type="texture/png" id="tex_ui_file" />
     <texture src="ui/image_icon.png" type="texture/png" id="tex_ui_image" />

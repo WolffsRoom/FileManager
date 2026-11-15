@@ -20,6 +20,8 @@
   <string src="Neuer Ordner" id="msg_opt_new_folder" />
   <string src="Eigenschaften" id="msg_opt_info" />
   <string src="Entpacken" id="msg_opt_extract" />
+  <string src="Hier entpacken" id="msg_extract_here" />
+  <string src="Möchten Sie dieses Archiv hier entpacken?" id="msg_extract_question" />
   <string src="Als ZIP komprimieren" id="msg_opt_compress_zip" />
   <string src="Medien exportieren" id="msg_opt_export_media" />
   <string src="App-Ordner installieren" id="msg_opt_install_folder" />

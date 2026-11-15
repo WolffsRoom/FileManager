@@ -131,6 +131,7 @@ public:
 	const paf::string &InstalledTitle() const { return m_installedTitle; }
 	void DoActionPublic(Action action);
 	void OnInstallAnswer(bool accepted);
+	void OnArchiveAnswer(bool accepted);
 	void OnBackgroundInstallChoice(int32_t choice);
 	void OnSearch();
 	void FilterSearch(bool finishEditing);

@@ -21,6 +21,8 @@
   <string src="Nova Pasta" id="msg_opt_new_folder" />
   <string src="Detalhes" id="msg_opt_info" />
   <string src="Descompactar" id="msg_opt_extract" />
+  <string src="Extrair aqui" id="msg_extract_here" />
+  <string src="Deseja extrair este arquivo aqui?" id="msg_extract_question" />
   <string src="Compactar em ZIP" id="msg_opt_compress_zip" />
   <string src="Exportar mídia" id="msg_opt_export_media" />
   <string src="Instalar app da pasta" id="msg_opt_install_folder" />

@@ -18,6 +18,7 @@ public:
 	{
 		Mode_Info,
 		Mode_Install,  // asks "Install this content?", Install / Cancel
+		Mode_Archive,  // asks whether the archive should be extracted here
 		Mode_Installed // "Installation complete", OK / Run
 	};
 

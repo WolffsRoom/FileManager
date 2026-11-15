@@ -124,6 +124,7 @@ namespace {
 		if (!fs::IsRootStyle(parent) && shortcuts::Contains(fs::Join(parent, entry->name)))
 			return entry->isDir ? tex_ui_favorite_folder : tex_ui_favorite_file;
 		const char *ext = strrchr(entry->name.c_str(), '.');
+		if (!entry->isDir && ext && strcasecmp(ext, ".zip") == 0) return tex_ui_archive;
 		if (!entry->isDir && ext && strcasecmp(ext, ".bin") == 0) return tex_ui_root;
 		if (!entry->isDir && ext && strcasecmp(ext, ".suprx") == 0) return tex_ui_suprx;
 		if (!entry->isDir && entry->kind != fs::Kind_Image && entry->kind != fs::Kind_Vpk &&
@@ -138,8 +139,8 @@ namespace {
 		case fs::Kind_Music:   return tex_ui_musical;
 		case fs::Kind_Video:   return tex_file_icon_video;
 		case fs::Kind_Text:    return tex_ui_text;
-		case fs::Kind_Package: return tex_ui_archive;
-		case fs::Kind_Vpk:     return tex_ui_vpk;
+		case fs::Kind_Package: return tex_ui_vpk;
+		case fs::Kind_Vpk:     return tex_ui_vpk_package;
 		case fs::Kind_Game:    return tex_ui_game_iso;
 		case fs::Kind_Sfo:     return tex_ui_sfo;
 		default:               return tex_ui_file;
@@ -211,6 +212,7 @@ namespace {
 	}
 
 	void OnInstallAnswerCb(bool accepted, void *userdata);
+	void OnArchiveAnswerCb(bool accepted, void *userdata);
 
 	const float k_rowFile = 80.0f;
 	const float k_rowRoot = 96.0f;
@@ -1625,6 +1627,16 @@ void BrowserMenu::ApplyItemDecide(int32_t index)
 		else
 			dialog::OpenError(g_appPlugin, result);
 	}
+	else if (IsArchive(entry))
+	{
+		m_opSources.clear();
+		m_opSources.push_back(fs::Join(page->path, entry->name));
+		paf::string stem = entry->name;
+		const char *dot = strrchr(stem.c_str(), '.');
+		if (dot) stem = paf::string(stem.c_str(), dot - stem.c_str());
+		m_opTargetDir = fs::Join(page->path, fs::UniqueName(page->path, stem));
+		new InfoMenu(m_root, InfoMenu::Mode_Archive, m_opSources.at(0), entry, OnArchiveAnswerCb, this);
+	}
 	else if (Previewable(entry))
 	{
 		OpenPreview(index);
@@ -2002,6 +2014,11 @@ namespace {
 		reinterpret_cast<BrowserMenu *>(userdata)->OnInstallAnswer(accepted);
 	}
 
+	void OnArchiveAnswerCb(bool accepted, void *userdata)
+	{
+		reinterpret_cast<BrowserMenu *>(userdata)->OnArchiveAnswer(accepted);
+	}
+
 	void OnBackgroundInstallChoiceCb(int32_t choice, void *userdata)
 	{
 		reinterpret_cast<BrowserMenu *>(userdata)->OnBackgroundInstallChoice(choice);
@@ -2022,6 +2039,11 @@ void BrowserMenu::OnInstallAnswer(bool accepted)
 		return;
 	}
 	StartOperation(Op_Install);
+}
+
+void BrowserMenu::OnArchiveAnswer(bool accepted)
+{
+	if (accepted && !m_opSources.empty()) StartOperation(Op_Extract);
 }
 
 void BrowserMenu::OnBackgroundInstallChoice(int32_t choice)

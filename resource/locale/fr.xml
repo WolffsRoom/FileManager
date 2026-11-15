@@ -20,6 +20,8 @@
   <string src="Nouveau dossier" id="msg_opt_new_folder" />
   <string src="Propri&#xE9;t&#xE9;s" id="msg_opt_info" />
   <string src="Extraire" id="msg_opt_extract" />
+  <string src="Extraire ici" id="msg_extract_here" />
+  <string src="Voulez-vous extraire cette archive ici ?" id="msg_extract_question" />
   <string src="Compresser en ZIP" id="msg_opt_compress_zip" />
   <string src="Exporter le média" id="msg_opt_export_media" />
   <string src="Installer le dossier app" id="msg_opt_install_folder" />

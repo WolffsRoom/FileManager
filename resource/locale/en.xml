@@ -21,6 +21,8 @@
   <string src="New Folder" id="msg_opt_new_folder" />
   <string src="Details" id="msg_opt_info" />
   <string src="Extract" id="msg_opt_extract" />
+  <string src="Extract here" id="msg_extract_here" />
+  <string src="Do you want to extract this archive here?" id="msg_extract_question" />
   <string src="Compress to ZIP" id="msg_opt_compress_zip" />
   <string src="Export media" id="msg_opt_export_media" />
   <string src="Install app folder" id="msg_opt_install_folder" />

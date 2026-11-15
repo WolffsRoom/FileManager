@@ -121,7 +121,14 @@ InfoMenu::InfoMenu(ui::Widget *parentRoot, Mode mode, const paf::string &path, c
 	if (!havePicture)
 	{
 		// the file's own icon from the list
-		m_picture->SetTexture(g_appPlugin->GetTexture(entry->kind == fs::Kind_Vpk ? tex_ui_vpk : tex_ui_file), 0, 0);
+		uint32_t icon = tex_ui_file;
+		if (entry->kind == fs::Kind_Vpk) icon = tex_ui_vpk_package;
+		else if (entry->kind == fs::Kind_Package)
+		{
+			const char *dot = strrchr(entry->name.c_str(), '.');
+			icon = dot && strcasecmp(dot, ".zip") == 0 ? tex_ui_archive : tex_ui_vpk;
+		}
+		m_picture->SetTexture(g_appPlugin->GetTexture(icon), 0, 0);
 	}
 
 	if (mode == Mode_Installed)
@@ -157,6 +164,13 @@ InfoMenu::InfoMenu(ui::Widget *parentRoot, Mode mode, const paf::string &path, c
 			ok->Hide(common::transition::Type_Reset);
 			cancel->SetPos(0.0f, -160.0f, 0.0f);
 		}
+	}
+	else if (mode == Mode_Archive)
+	{
+		SetText(question, Utf8(msg_extract_question).c_str());
+		SetText(ok, Utf8(msg_extract_here).c_str());
+		SetText(cancel, Utf8(msg_cancel).c_str());
+		cancel->SetKeycode(inputdevice::pad::Data::PAD_ESCAPE);
 	}
 	else
 	{
