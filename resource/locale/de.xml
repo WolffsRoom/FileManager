@@ -195,6 +195,7 @@
   <string src="Title ID" id="msg_info_titleid" />
   <string src="Dimensions" id="msg_info_dimensions" />
   <string src="Client connected: %s" id="msg_ftp_client" />
+  <string src="Client verbunden (Name nicht verf&#xFC;gbar)" id="msg_ftp_client_private" />
   <string src="Trash" id="msg_shortcut_trash" />
   <string src="About" id="msg_set_about" />
   <string src="File Manager 0.9&#10;&#10;Made by Wolff, File Manager is a file explorer for the PS Vita that brings together what VitaShell and FileManager Vita (FMVita, a fork of VitaShell) can do, in the system&#x27;s own interface: the same menus, sounds and transitions as Sony&#x27;s apps.&#10;&#10;Built with: ScePaf, the system UI framework (reverse engineering by GrapheneCt); NetStream and BetterHomebrewBrowser as references; VitaShell by TheFloW; ftpvita by xerpi; libarchive, libpng, zlib and libmad. Icons: Icons8.&#10;&#10;Licensed under GPLv3." id="msg_about_text" />

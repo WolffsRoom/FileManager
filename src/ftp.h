@@ -32,7 +32,7 @@ namespace ftp {
 		char name[256];       // file or folder the activity is about
 		uint64_t done;        // bytes moved by the current transfer
 		uint64_t total;       // file size when known (downloads), 0 otherwise
-		char client[16];      // IP of the last client that connected
+		char client[256];     // reverse-DNS hostname only; never expose client IP
 		int32_t clients;
 	};
 

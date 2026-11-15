@@ -133,7 +133,8 @@ void FtpMenu::Update()
 	}
 	else
 	{
-		SetText(m_connection, Format(msg_ftp_client, st.client[0] ? st.client : "?"));
+		if (st.client[0]) SetText(m_connection, Format(msg_ftp_client, st.client));
+		else SetText(m_connection, g_appPlugin->GetString(msg_ftp_client_private));
 	}
 
 	static const uint32_t k_activity[] = {

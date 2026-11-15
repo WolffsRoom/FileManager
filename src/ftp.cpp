@@ -7,6 +7,7 @@
 #include <psp2/net/netctl.h>
 #include <psp2/sysmodule.h>
 #include <psp2/io/fcntl.h>
+#include <psp2/kernel/threadmgr.h>
 extern "C" {
 #include <ftpvita.h>
 }
@@ -30,6 +31,49 @@ namespace {
 	volatile bool s_watching = false;   // a RETR/STOR is waiting for its file to open
 	volatile SceUID s_fd = -1;          // the file of the current transfer
 	char s_deletePath[512];             // full path of the file being deleted
+	volatile uint32_t s_clientGeneration = 0;
+
+	struct ResolveRequest { char ip[16]; uint32_t generation; };
+
+	int ResolveClientThread(SceSize, void *argp)
+	{
+		ResolveRequest *request = argp ? *(ResolveRequest **)argp : NULL;
+		if (!request) return sceKernelExitDeleteThread(0);
+		SceNetInAddr address;
+		char hostname[256] = { 0 };
+		char resolverMemory[1024];
+		int result = sceNetInetPton(SCE_NET_AF_INET, request->ip, &address);
+		int resolver = result < 0 ? result : sceNetResolverCreate("FM::FtpReverseDns", resolverMemory, sizeof(resolverMemory));
+		if (resolver >= 0)
+		{
+			// Two seconds, one attempt: a missing PTR record must never stall FTP.
+			result = sceNetResolverStartAton(resolver, &address, hostname, sizeof(hostname), 2000000, 1, 0);
+			sceNetResolverDestroy(resolver);
+		}
+		if (result >= 0 && hostname[0] && request->generation == s_clientGeneration && s_status.clients > 0)
+		{
+			strncpy(s_status.client, hostname, sizeof(s_status.client) - 1);
+			s_status.client[sizeof(s_status.client) - 1] = 0;
+		}
+		free(request);
+		return sceKernelExitDeleteThread(0);
+	}
+
+	void ResolveClient(const char *ip)
+	{
+		ResolveRequest *request = (ResolveRequest *)malloc(sizeof(*request));
+		if (!request) return;
+		strncpy(request->ip, ip, sizeof(request->ip) - 1);
+		request->ip[sizeof(request->ip) - 1] = 0;
+		request->generation = ++s_clientGeneration;
+		s_status.client[0] = 0;
+		SceUID thread = sceKernelCreateThread("FM::FtpReverseDns", ResolveClientThread, 0x10000120, 0x4000, 0, 0, NULL);
+		if (thread < 0 || sceKernelStartThread(thread, sizeof(request), &request) < 0)
+		{
+			if (thread >= 0) sceKernelDeleteThread(thread);
+			free(request);
+		}
+	}
 
 	void KeepAwake(void *)
 	{
@@ -75,14 +119,12 @@ namespace {
 		if (ip)
 		{
 			ip += 15;
+			char address[16];
 			size_t n = 0;
-			while (ip[n] && ip[n] != ' ' && n < sizeof(s_status.client) - 1)
-			{
-				s_status.client[n] = ip[n];
-				n++;
-			}
-			s_status.client[n] = 0;
+			while (ip[n] && ip[n] != ' ' && n < sizeof(address) - 1) { address[n] = ip[n]; n++; }
+			address[n] = 0;
 			s_status.clients++;
+			ResolveClient(address);
 			Set(ftp::Activity_Connected, NULL);
 			return;
 		}
@@ -94,6 +136,8 @@ namespace {
 			}
 			if (s_status.clients == 0)
 			{
+				++s_clientGeneration;
+				s_status.client[0] = 0;
 				Set(ftp::Activity_Waiting, NULL);
 			}
 			return;
