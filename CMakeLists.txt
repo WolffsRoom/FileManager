@@ -182,6 +182,9 @@ target_link_libraries(FileManager
   lzma
   bz2
   crypto
+  ssl
+  curl
+  pthread
   expat
   z
   ScePromoterUtil_stub

@@ -2837,14 +2837,7 @@ void BrowserMenu::RunQrInspect()
 {
 	m_qrInspectResult = ftp::EnsureNetwork();
 	if (m_qrInspectResult >= 0)
-	{
-		sceSysmoduleLoadModule(SCE_SYSMODULE_HTTPS);
-		int ssl = sceSslInit(300 * 1024);
-		int http = ssl < 0 ? ssl : sceHttpInit(40 * 1024);
-		m_qrInspectResult = http < 0 ? http : inspectDownloadUrl(m_scratch.c_str(), &m_qrInfo);
-		if (http >= 0) sceHttpTerm();
-		if (ssl >= 0) sceSslTerm();
-	}
+		m_qrInspectResult = inspectDownloadUrl(m_scratch.c_str(), &m_qrInfo);
 	DeferCall([](void *userdata)
 	{
 		reinterpret_cast<BrowserMenu *>(userdata)->FinishQrInspect();
@@ -2893,18 +2886,12 @@ void BrowserMenu::RunQrDownload()
 	paf::string part = destination + ".part";
 	sceIoRemove(part.c_str());
 	int result = ftp::EnsureNetwork();
-	int ssl = -1, http = -1;
 	if (result >= 0)
 	{
-		sceSysmoduleLoadModule(SCE_SYSMODULE_HTTPS);
-		ssl = sceSslInit(300 * 1024);
-		http = ssl < 0 ? ssl : sceHttpInit(40 * 1024);
 		s_cancel = false;
 		s_lastPercent = 0;
-		result = http < 0 ? http : downloadUrlEx(url, part.c_str(), OnProgress, IsCancelled);
+		result = downloadUrlEx(url, part.c_str(), OnProgress, IsCancelled);
 		if (result == 0) result = sceIoRename(part.c_str(), destination.c_str());
-		if (http >= 0) sceHttpTerm();
-		if (ssl >= 0) sceSslTerm();
 	}
 	if (result != 0) sceIoRemove(part.c_str());
 	m_qrInspectResult = result;

@@ -6,6 +6,8 @@
 #include <psp2/camera.h>
 
 struct quirc;
+typedef struct quirc_code quirc_code;
+typedef struct quirc_data quirc_data;
 
 /** Native ScePaf QR scanner using the rear camera and quirc decoder. */
 class QrMenu
@@ -27,6 +29,8 @@ private:
 	paf::intrusive_ptr<paf::graph::Surface> m_surface;
 	uint32_t *m_pixels;
 	quirc *m_decoder;
+	quirc_code *m_code;
+	quirc_data *m_data;
 	SceCameraInfo m_info;
 	SceCameraRead m_read;
 	uint32_t m_frame;

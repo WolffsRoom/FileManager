@@ -8,12 +8,12 @@ if ($downloadH -notmatch 'typedef struct DownloadInfo' -or
     $downloadH -notmatch 'inspectDownloadUrl') {
     throw 'HTTP download metadata interface is missing'
 }
-if ($downloadC -notmatch 'sceHttpGetAllResponseHeaders' -or
+if ($downloadC -notmatch 'CURLOPT_HEADERFUNCTION' -or
     $downloadC -notmatch 'Content-Disposition' -or
     $downloadC -notmatch 'Content-Type') {
     throw 'QR download does not classify server response metadata'
 }
-if ($downloadC -notmatch 'sceHttpSetAutoRedirect\(tmpl, SCE_TRUE\)') {
+if ($downloadC -notmatch 'CURLOPT_FOLLOWLOCATION') {
     throw 'HTTP redirects are not enabled'
 }
 if ($browser -notmatch 'ux0:Downloads' -or $browser -notmatch '\.part') {

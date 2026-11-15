@@ -22,7 +22,7 @@ namespace {
 	}
 }
 
-QrMenu::QrMenu(ui::Widget *parentRoot, ResultCallback cb, void *userdata) : m_parentRoot(parentRoot), m_pixels(NULL), m_decoder(NULL),
+QrMenu::QrMenu(ui::Widget *parentRoot, ResultCallback cb, void *userdata) : m_parentRoot(parentRoot), m_pixels(NULL), m_decoder(NULL), m_code(NULL), m_data(NULL),
 	m_frame(0), m_open(false), m_closing(false), m_cb(cb), m_userdata(userdata)
 {
 	Plugin::PageOpenParam param;
@@ -36,7 +36,9 @@ QrMenu::QrMenu(ui::Widget *parentRoot, ResultCallback cb, void *userdata) : m_pa
 
 	m_pixels = (uint32_t *)memalign(64, kWidth * kHeight * 4);
 	m_decoder = quirc_new();
-	if (!m_pixels || !m_decoder || quirc_resize(m_decoder, kWidth, kHeight) < 0)
+	m_code = (quirc_code *)calloc(1, sizeof(quirc_code));
+	m_data = (quirc_data *)calloc(1, sizeof(quirc_data));
+	if (!m_pixels || !m_decoder || !m_code || !m_data || quirc_resize(m_decoder, kWidth, kHeight) < 0)
 	{
 		m_status->SetString(g_appPlugin->GetString(msg_qr_camera_error));
 		return;
@@ -85,6 +87,8 @@ QrMenu::~QrMenu()
 		sceCameraClose(SCE_CAMERA_DEVICE_BACK);
 	}
 	if (m_decoder) quirc_destroy(m_decoder);
+	free(m_code);
+	free(m_data);
 	free(m_pixels);
 	Plugin::PageCloseParam param;
 	param.fade = true;
@@ -107,15 +111,17 @@ void QrMenu::Update()
 		gray[i] = (uint8_t)(((pixel & 0xff) + ((pixel >> 8) & 0xff) + ((pixel >> 16) & 0xff)) / 3);
 	}
 	quirc_end(m_decoder);
-	if (quirc_count(m_decoder) <= 0) return;
-	quirc_code code;
-	quirc_data data;
-	quirc_extract(m_decoder, 0, &code);
-	if (quirc_decode(&code, &data) == QUIRC_SUCCESS && data.payload_len)
+	const int count = quirc_count(m_decoder);
+	if (count <= 0 || count > 64 || !m_code || !m_data) return;
+	memset(m_code, 0, sizeof(*m_code));
+	memset(m_data, 0, sizeof(*m_data));
+	quirc_extract(m_decoder, 0, m_code);
+	if (m_code->size <= 0 || m_code->size > QUIRC_MAX_GRID_SIZE) return;
+	if (quirc_decode(m_code, m_data) == QUIRC_SUCCESS && m_data->payload_len > 0 && m_data->payload_len <= QUIRC_MAX_PAYLOAD)
 	{
-		int length = data.payload_len < 2047 ? data.payload_len : 2047;
+		int length = m_data->payload_len < 2047 ? m_data->payload_len : 2047;
 		char payload[2048];
-		memcpy(payload, data.payload, length);
+		memcpy(payload, m_data->payload, length);
 		payload[length] = 0;
 		Finish(payload);
 	}
@@ -127,6 +133,12 @@ void QrMenu::Finish(const char *payload)
 	m_closing = true;
 	m_result = payload;
 	common::MainThreadCallList::Unregister(QrTask, this);
+	if (m_open)
+	{
+		sceCameraStop(SCE_CAMERA_DEVICE_BACK);
+		sceCameraClose(SCE_CAMERA_DEVICE_BACK);
+		m_open = false;
+	}
 	DeferCall([](void *ptr)
 	{
 		QrMenu *menu = static_cast<QrMenu *>(ptr);
@@ -143,5 +155,11 @@ void QrMenu::Close()
 	if (m_closing) return;
 	m_closing = true;
 	common::MainThreadCallList::Unregister(QrTask, this);
+	if (m_open)
+	{
+		sceCameraStop(SCE_CAMERA_DEVICE_BACK);
+		sceCameraClose(SCE_CAMERA_DEVICE_BACK);
+		m_open = false;
+	}
 	DeferDelete(this);
 }
