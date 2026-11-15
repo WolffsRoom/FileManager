@@ -1137,6 +1137,20 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 	if (choiceCheck) choiceCheck->Hide(common::transition::Type_Reset);
 }
 
+void BrowserMenu::RepaintVisibleRows(BrowserPage *page, ui::Widget *root)
+{
+	if (!page || !root) return;
+	const int32_t index = (int32_t)root->GetName().GetIDHash();
+	if (index >= 0 && index < (int32_t)page->entries.size() &&
+		root->FindChild(text_list_item_name) && root->FindChild(text_list_item_info))
+	{
+		ApplyRowHighlight(page, index, root);
+		return;
+	}
+	for (int32_t i = 0; i < root->GetChildrenNum(); ++i)
+		RepaintVisibleRows(page, root->GetChild(i));
+}
+
 void BrowserMenu::FillFileItem(BrowserPage *page, ui::Widget *button, fs::Entry *entry)
 {
 	paf::wstring label = ToWide(entry->name);
@@ -1751,20 +1765,7 @@ void BrowserMenu::ApplyMarkToggle(int32_t index, ui::Widget *button)
 	{
 		anyMarked = page->entries.at(i)->marked;
 	}
-	for (uint32_t i = 0; i < page->entries.size(); i++)
-	{
-		ui::ListItem *item = page->list->GetListItem(0, i);
-		if (!item)
-		{
-			continue;
-		}
-		// PAF GetListItem can return a recycled/incomplete placeholder rather
-		// than an actual file row. The latest PSP2 core crashed in SetColor
-		// with r0 == NULL immediately after FindChild(image_button_list_item).
-		ui::Widget *button = item->FindChild(image_button_list_item);
-		if (!button) continue;
-		ApplyRowHighlight(page, i, button);
-	}
+	RepaintVisibleRows(page, page->list);
 	if (anyMarked)
 		m_selectionBar->Show(common::transition::Type_SlideFromBottom1);
 	else
@@ -1812,14 +1813,7 @@ void BrowserMenu::ApplySelectAll()
 		page->entries.at(i)->marked = select;
 	// Update instantiated rows in place. Rebuilding every cell on Select All
 	// produces heavy PAF allocations for Music-sized directories.
-	for (uint32_t i = 0; i < page->entries.size(); ++i)
-	{
-		ui::ListItem *item = page->list->GetListItem(0, i);
-		if (!item) continue;
-		ui::Widget *button = item->FindChild(image_button_list_item);
-		if (!button) continue; // recycled placeholder
-		ApplyRowHighlight(page, i, button);
-	}
+	RepaintVisibleRows(page, page->list);
 	if (select) m_selectionBar->Show(common::transition::Type_Reset);
 	else m_selectionBar->Hide(common::transition::Type_Reset);
 	UpdateSelectionToolbar(page);
@@ -2155,13 +2149,7 @@ void BrowserMenu::DoAction(Action action)
 				return;
 			for (uint32_t i = 0; i < page->entries.size(); ++i)
 				page->entries.at(i)->marked = false;
-			for (uint32_t i = 0; i < page->entries.size(); ++i)
-			{
-				ui::ListItem *item = page->list->GetListItem(0, i);
-				if (!item) continue;
-				ui::Widget *button = item->FindChild(image_button_list_item);
-				if (button) menu->ApplyRowHighlight(page, i, button);
-			}
+			menu->RepaintVisibleRows(page, page->list);
 			menu->m_selectionBar->Hide(common::transition::Type_Reset);
 			menu->UpdateSelectionToolbar(page);
 		}, this);
@@ -2208,6 +2196,7 @@ void BrowserMenu::DoAction(Action action)
 			common::Utf16ToUtf8(paf::wstring(g_appPlugin->GetString(msg_confirm_delete_item)), &pattern);
 			paf::wstring question = ToWide(common::FormatString(pattern.c_str(), m_scratch.c_str()));
 			dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_confirm_delete_title), question.c_str());
+			dialog::SetProgressIcon(g_appPlugin->GetTexture(tex_new_trash));
 		}
 		break;
 
@@ -2932,7 +2921,18 @@ void BrowserMenu::RunQrDownload()
 		if (menu->m_qrInspectResult < 0)
 			dialog::OpenError(g_appPlugin, menu->m_qrInspectResult);
 		else if (!s_cancel)
-			dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_qr_result), ToWide(menu->m_inputTarget).c_str());
+		{
+			const char *dot = strrchr(menu->m_inputTarget.c_str(), '.');
+			if (dot && strcasecmp(dot, ".vpk") == 0)
+			{
+				menu->m_opSources.clear();
+				menu->m_opSources.push_back(menu->m_inputTarget);
+				menu->m_pending = Pending_QrInstall;
+				dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_install_title),
+					g_appPlugin->GetString(msg_install_confirm));
+			}
+			else dialog::OpenOk(g_appPlugin, g_appPlugin->GetString(msg_qr_result), ToWide(menu->m_inputTarget).c_str());
+		}
 	}, this);
 }
 
@@ -2979,6 +2979,11 @@ void BrowserMenu::OnDialog(int32_t buttonCode)
 			}
 			else sceAppMgrLaunchAppByUri(0xFFFFF, m_scratch.c_str());
 		}
+		break;
+
+	case Pending_QrInstall:
+		m_pending = Pending_None;
+		if (buttonCode == dialog::ButtonCode_Yes && !m_opSources.empty()) OnInstallAnswer(true);
 		break;
 
 	case Pending_Operation:

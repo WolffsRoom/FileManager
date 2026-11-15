@@ -4,18 +4,7 @@
 #include <psp2/appmgr.h>
 #include <stdio.h>
 #include "settings.h"
-// The project's PAF compatibility layer has a minimal taihen.h shim.
-// Use the official user-mode taiHEN syscall ABI for kernel USB modules.
-#include <psp2kern/types.h>
-struct UsbTaiModuleArgs {
-	size_t size;
-	SceUID pid;
-	size_t args;
-	void *argp;
-	int flags;
-};
-extern "C" SceUID taiLoadStartKernelModuleForUser(const char *path, UsbTaiModuleArgs *args);
-extern "C" int taiStopUnloadKernelModuleForUser(SceUID modid, UsbTaiModuleArgs *args, void *opt, int *res);
+#include <taihen.h>
 
 #include "usb.h"
 
@@ -95,8 +84,7 @@ int32_t usb::Stop()
 		if (rc < 0 && result >= 0) result = rc;
 		s_mtpStopped = false;
 	}
-	UsbTaiModuleArgs args = { sizeof(UsbTaiModuleArgs), 0, 0, NULL, 0 };
-	int32_t rc = taiStopUnloadKernelModuleForUser(s_module, &args, NULL, NULL);
+	int32_t rc = taiStopUnloadKernelModule(s_module, 0, NULL, 0, NULL, NULL);
 	UsbLog("UnloadKernelModule", rc);
 	if (rc < 0 && result >= 0) result = rc;
 	s_module = -1;
@@ -119,8 +107,7 @@ int32_t usb::Toggle(Device device)
 	// Mirror VitaShell's preparation before exposing a filesystem to the PC.
 	int32_t otherApps = sceAppMgrDestroyOtherApp();
 	UsbLog("DestroyOtherApps", otherApps);
-	UsbTaiModuleArgs args = { sizeof(UsbTaiModuleArgs), 0, 0, NULL, 0 };
-	int32_t res = taiLoadStartKernelModuleForUser("app0:module/usbdevice.skprx", &args);
+	int32_t res = taiLoadStartKernelModule("app0:module/usbdevice.skprx", 0, NULL, 0);
 	UsbLog("LoadKernelModule", res);
 	if (res < 0) return res;
 	s_module = res;

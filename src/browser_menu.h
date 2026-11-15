@@ -52,6 +52,7 @@ public:
 		Pending_ConfirmDelete,
 		Pending_ConfirmInstall,
 		Pending_QrOpen,
+		Pending_QrInstall,
 		Pending_Operation,
 		Pending_Message,
 		Pending_Ftp
@@ -167,6 +168,7 @@ private:
 	void FillFileItem(BrowserPage *page, paf::ui::Widget *button, fs::Entry *entry);
 	void FillRootItem(BrowserPage *page, paf::ui::Widget *button, fs::Entry *entry);
 	void ApplyRowHighlight(BrowserPage *page, int32_t index, paf::ui::Widget *button);
+	void RepaintVisibleRows(BrowserPage *page, paf::ui::Widget *root);
 	paf::intrusive_ptr<paf::graph::Surface> Icon(uint32_t hash);
 	paf::intrusive_ptr<paf::graph::Surface> VpkIcon(const paf::string &path);
 

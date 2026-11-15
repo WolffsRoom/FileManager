@@ -21,6 +21,7 @@ public:
 
 	/** Worker-thread side of loading an image. */
 	void LoadImageJob();
+	void FinishImageJob();
 
 	/** Runs on the main thread, once per frame, while a video is open. */
 	void OnVideoFrame();
@@ -73,6 +74,8 @@ private:
 	paf::vector<paf::string> m_paths;
 	int32_t m_index;
 	volatile int32_t m_loadId;
+	volatile int32_t m_imageJobs;
+	volatile bool m_closePending;
 	int32_t m_jobId;
 	paf::string m_jobPath;
 

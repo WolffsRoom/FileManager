@@ -276,7 +276,7 @@ void SettingsMenu::ShowLevel(Level level)
 	if (level == Level_FontSize)
 	{
 		m_list->SetSize(960.0f, 160.0f, 0.0f);
-		m_list->SetPos(0.0f, 92.0f, 0.0f);
+		m_list->SetPos(0.0f, 120.0f, 0.0f);
 		m_fontPreview->Show(common::transition::Type_Reset);
 		m_fontPreviewLead->Show(common::transition::Type_Reset);
 		m_fontPreviewBody->Show(common::transition::Type_Reset);

@@ -72,6 +72,8 @@ namespace {
 		request->ip[sizeof(request->ip) - 1] = 0;
 		request->generation = ++s_clientGeneration;
 		s_status.client[0] = 0;
+		strncpy(s_status.clientIp, ip, sizeof(s_status.clientIp) - 1);
+		s_status.clientIp[sizeof(s_status.clientIp) - 1] = 0;
 		SceUID thread = sceKernelCreateThread("FM::FtpReverseDns", ResolveClientThread, 0x10000120, 0x4000, 0, 0, NULL);
 		if (thread < 0 || sceKernelStartThread(thread, sizeof(request), &request) < 0)
 		{
@@ -143,6 +145,7 @@ namespace {
 			{
 				++s_clientGeneration;
 				s_status.client[0] = 0;
+				s_status.clientIp[0] = 0;
 				Set(ftp::Activity_Waiting, NULL);
 			}
 			return;

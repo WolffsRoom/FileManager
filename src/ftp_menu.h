@@ -23,6 +23,7 @@ public:
 private:
 
 	void Close(bool stop);
+	void ToggleClientAddress();
 
 	paf::ui::Widget *m_parentRoot;
 	paf::ui::Scene *m_root;
@@ -35,9 +36,12 @@ private:
 	CloseCallback m_cb;
 	void *m_userdata;
 	bool m_stopped;
+	bool m_revealClient;
 	uint32_t m_frame;
 	int32_t m_lastActivity;
 	uint64_t m_lastDone;
+	char m_lastClient[256];
+	char m_lastClientIp[16];
 };
 
 #endif

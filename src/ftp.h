@@ -33,6 +33,7 @@ namespace ftp {
 		uint64_t done;        // bytes moved by the current transfer
 		uint64_t total;       // file size when known (downloads), 0 otherwise
 		char client[256];     // reverse-DNS hostname only; never expose client IP
+		char clientIp[16];    // kept for the masked/reveal status-page fallback
 		int32_t clients;
 	};
 

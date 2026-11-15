@@ -1,5 +1,7 @@
 #include <sdk_compat.h>
 #include <paf.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "common.h"
 #include "format.h"
@@ -40,8 +42,10 @@ namespace {
 }
 
 FtpMenu::FtpMenu(ui::Widget *parentRoot, CloseCallback cb, void *userdata) :
-	m_parentRoot(parentRoot), m_cb(cb), m_userdata(userdata), m_stopped(false), m_frame(0), m_lastActivity(-1), m_lastDone((uint64_t)-1)
+	m_parentRoot(parentRoot), m_cb(cb), m_userdata(userdata), m_stopped(false), m_revealClient(false), m_frame(0), m_lastActivity(-1), m_lastDone((uint64_t)-1)
 {
+	m_lastClient[0] = 0;
+	m_lastClientIp[0] = 0;
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
 	openParam.overwrite_draw_priority = 8;
@@ -51,6 +55,11 @@ FtpMenu::FtpMenu(ui::Widget *parentRoot, CloseCallback cb, void *userdata) :
 	SetText(m_root->FindChild(text_title_page_ftp), g_appPlugin->GetString(msg_ftp_server));
 	m_address = m_root->FindChild(text_address_page_ftp);
 	m_connection = m_root->FindChild(text_connection_page_ftp);
+	m_connection->AddEventCallback(ui::Handler::CB_TOUCH_OUT,
+	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
+	{
+		static_cast<FtpMenu *>(userdata)->ToggleClientAddress();
+	}, this);
 	m_activity = m_root->FindChild(text_activity_page_ftp);
 	m_progressText = m_root->FindChild(text_progress_page_ftp);
 	m_bar = m_root->FindChild(plane_bar_page_ftp);
@@ -79,6 +88,13 @@ FtpMenu::FtpMenu(ui::Widget *parentRoot, CloseCallback cb, void *userdata) :
 
 	Update();
 	common::MainThreadCallList::Register(UpdateTask, this);
+}
+
+void FtpMenu::ToggleClientAddress()
+{
+	m_revealClient = !m_revealClient;
+	m_lastActivity = -1;
+	Update();
 }
 
 FtpMenu::~FtpMenu()
@@ -120,12 +136,17 @@ void FtpMenu::Update()
 
 	ftp::Status st;
 	ftp::GetStatus(&st);
-	if (st.activity == m_lastActivity && st.done == m_lastDone)
+	if (st.activity == m_lastActivity && st.done == m_lastDone &&
+		strcmp(st.client, m_lastClient) == 0 && strcmp(st.clientIp, m_lastClientIp) == 0)
 	{
 		return;
 	}
 	m_lastActivity = st.activity;
 	m_lastDone = st.done;
+	strncpy(m_lastClient, st.client, sizeof(m_lastClient) - 1);
+	m_lastClient[sizeof(m_lastClient) - 1] = 0;
+	strncpy(m_lastClientIp, st.clientIp, sizeof(m_lastClientIp) - 1);
+	m_lastClientIp[sizeof(m_lastClientIp) - 1] = 0;
 
 	if (st.activity == ftp::Activity_Waiting)
 	{
@@ -134,6 +155,19 @@ void FtpMenu::Update()
 	else
 	{
 		if (st.client[0]) SetText(m_connection, Format(msg_ftp_client, st.client));
+		else if (st.clientIp[0])
+		{
+			char shown[32];
+			if (m_revealClient) strncpy(shown, st.clientIp, sizeof(shown) - 1);
+			else
+			{
+				int a=0,b=0,c=0,d=0;
+				sscanf(st.clientIp, "%d.%d.%d.%d", &a, &b, &c, &d);
+				snprintf(shown, sizeof(shown), "***.***.%s.%s", c < 10 ? "*" : "**", d < 10 ? "*" : (d < 100 ? "**" : "***"));
+			}
+			shown[sizeof(shown) - 1] = 0;
+			SetText(m_connection, Format(msg_ftp_client, shown));
+		}
 		else SetText(m_connection, g_appPlugin->GetString(msg_ftp_client_private));
 	}
 

@@ -108,7 +108,7 @@ namespace {
 PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> &paths,
 	int32_t index, ChangeCallback onChanged, void *userdata) :
 	m_parentRoot(parentRoot), m_onChanged(onChanged), m_userdata(userdata), m_filesChanged(false),
-	m_paths(paths), m_index(index), m_loadId(0), m_jobId(0),
+	m_paths(paths), m_index(index), m_loadId(0), m_imageJobs(0), m_closePending(false), m_jobId(0),
 	m_videoActive(false), m_imageActive(false), m_gifActive(false), m_gifIndex(0), m_gifTick(0), m_paused(false), m_frameShown(false),
 	m_touchActive(false), m_pinchActive(false), m_touchStartX(0), m_touchStartY(0), m_touchLastX(0), m_touchLastY(0),
 	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false), m_viewMode(0), m_deletePending(false), m_animateNextImage(false), m_musicWasPlaying(false)
@@ -385,11 +385,14 @@ void PreviewMenu::SetViewMode(int32_t mode)
 
 void PreviewMenu::Close()
 {
+	if (m_closePending) return;
+	m_closePending = true;
 	m_loadId++;
 	StopGif();
 	StopVideo();
+	m_imageActive = false;
 	m_root->SetActivate(false);
-	DeferDelete(this);
+	if (m_imageJobs == 0) DeferDelete(this);
 }
 
 void PreviewMenu::ShowError()
@@ -447,8 +450,15 @@ void PreviewMenu::Open(int32_t index)
 
 	m_jobId = m_loadId;
 	m_jobPath = path;
+	__sync_add_and_fetch(&m_imageJobs, 1);
 	common::SharedPtr<job::JobItem> param(new ImageJob(this));
 	g_jobQueue->Enqueue(param);
+}
+
+void PreviewMenu::FinishImageJob()
+{
+	const int32_t remaining = __sync_sub_and_fetch(&m_imageJobs, 1);
+	if (remaining == 0 && m_closePending) DeferDelete(this);
 }
 
 void PreviewMenu::LoadImageJob()
@@ -539,6 +549,7 @@ void PreviewMenu::LoadImageJob()
 		}
 	}
 	thread::RMutex::MainThreadMutex()->Unlock();
+	FinishImageJob();
 }
 
 void PreviewMenu::StopGif()
@@ -578,11 +589,10 @@ void PreviewMenu::OnOptions()
 	{
 		paf::vector<OptionMenu::Button> buttons;
 		OptionMenu::Button speed, exportVideo;
-		const int32_t values[] = { 100, 150, 200 };
+		const int32_t values[] = { 100, 200 };
 		int32_t current = m_videoPlayer.Speed(), next = values[0];
-		for (uint32_t i = 0; i < 3; ++i) if (values[i] == current) next = values[(i + 1) % 3];
-		if (next == 150) speed.label = g_appPlugin->GetString(msg_video_speed_15);
-		else if (next == 200) speed.label = g_appPlugin->GetString(msg_video_speed_2);
+		for (uint32_t i = 0; i < 2; ++i) if (values[i] == current) next = values[(i + 1) % 2];
+		if (next == 200) speed.label = g_appPlugin->GetString(msg_video_speed_2);
 		else speed.label = g_appPlugin->GetString(msg_video_speed_1);
 		exportVideo.label = g_appPlugin->GetString(msg_music_export);
 		buttons.push_back(speed);
@@ -610,9 +620,9 @@ void PreviewMenu::OnOption(int32_t index)
 	{
 		if (index == 0)
 		{
-			const int32_t values[] = { 100, 150, 200 };
+			const int32_t values[] = { 100, 200 };
 			int32_t next = 100;
-			for (uint32_t i = 0; i < 3; ++i) if (values[i] == m_videoPlayer.Speed()) next = values[(i + 1) % 3];
+			for (uint32_t i = 0; i < 2; ++i) if (values[i] == m_videoPlayer.Speed()) next = values[(i + 1) % 2];
 			int32_t result = m_videoPlayer.SetSpeed(next);
 			if (result < 0) dialog::OpenError(g_appPlugin, result);
 		}
@@ -647,6 +657,7 @@ void PreviewMenu::OnOption(int32_t index)
 		paf::wstring name;
 		common::Utf8ToUtf16(slash ? slash + 1 : path.c_str(), &name);
 		dialog::OpenYesNo(g_appPlugin, g_appPlugin->GetString(msg_confirm_delete_title), name.c_str());
+		dialog::SetProgressIcon(g_appPlugin->GetTexture(tex_new_trash));
 		return;
 	}
 	ApplyImageTransform();
