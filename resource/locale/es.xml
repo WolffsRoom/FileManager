@@ -96,7 +96,8 @@
   <string src="%s received" id="msg_ftp_received" />
   <string src="Aceptar" id="msg_ok" />
   <string src="Cancelar" id="msg_cancel" />
-  <string src="Seleccionar todo" id="msg_select_all" />
+  <string src="Selec. Todo" id="msg_select_all" />
+  <string src="Deselec. Todo" id="msg_deselect_all" />
   <string src="Instalando..." id="msg_install_title" />
   <string src="&#xBF;Quieres instalar este paquete?" id="msg_install_confirm" />
   <string src="Instalando..." id="msg_installing" />

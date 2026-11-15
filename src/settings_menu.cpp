@@ -44,10 +44,10 @@ namespace {
 	const uint32_t k_commands[][3] = {
 		{ msg_btn_cross, msg_cmd_open, tex_control_cross },
 		{ msg_btn_circle, msg_cmd_back, tex_control_circle },
-		{ msg_btn_triangle, msg_cmd_settings, tex_control_triangle },
+		{ msg_btn_triangle, msg_cmd_options, tex_control_triangle },
 		{ msg_btn_square, msg_cmd_mark, tex_control_square },
 		{ msg_btn_select, msg_cmd_select, tex_control_select },
-		{ msg_btn_start, msg_cmd_options, tex_button_start },
+		{ msg_btn_start, msg_cmd_search, tex_button_start },
 		{ msg_btn_l, msg_cmd_first, tex_control_l },
 		{ msg_btn_r, msg_cmd_last, tex_control_r },
 		{ msg_btn_left, msg_cmd_parent, tex_control_left },

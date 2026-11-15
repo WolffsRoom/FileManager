@@ -23,12 +23,12 @@ if ($browser -notmatch 'current->list->Show\(common::transition::Type_3D_SlideTo
 if ($browser -notmatch 'Type_FadeinFast') {
     throw 'Simple navigation setting must retain lightweight fade'
 }
-if ($browser -notmatch 'm_optionsButton->SetKeycode\(inputdevice::pad::Data::PAD_START\)' -or
-    $browser -notmatch 'startButton->SetKeycode\(inputdevice::pad::Data::PAD_MENU\)') {
-    throw 'Expected Start = options and Triangle = search'
+if ($browser -notmatch 'm_optionsButton->SetKeycode\(inputdevice::pad::Data::PAD_MENU\)' -or
+    $browser -notmatch 'startButton->SetKeycode\(inputdevice::pad::Data::PAD_START\)') {
+    throw 'Expected Start = search and Triangle = options'
 }
-if ($menu -notmatch 'msg_btn_triangle, msg_cmd_settings' -or
-    $menu -notmatch 'msg_btn_start, msg_cmd_options') {
+if ($menu -notmatch 'msg_btn_triangle, msg_cmd_options' -or
+    $menu -notmatch 'msg_btn_start, msg_cmd_search') {
     throw 'Settings command help does not match the new mapping'
 }
 $startLoad=$browser.IndexOf('void BrowserMenu::LoadPage(')

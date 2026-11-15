@@ -287,7 +287,7 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 	}, this);
 
 	m_optionsButton = m_root->FindChild(button_options_page_browser);
-	m_optionsButton->SetKeycode(inputdevice::pad::Data::PAD_START);
+	m_optionsButton->SetKeycode(inputdevice::pad::Data::PAD_MENU);
 	m_optionsButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
@@ -329,9 +329,9 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 		reinterpret_cast<BrowserMenu *>(userdata)->OnSelectButton();
 	}, this);
 
-	// Triangle opens search; L and R jump to the first and last item.
+	// Start opens search; L and R jump to the first and last item.
 	ui::Widget *startButton = m_root->FindChild(button_start_page_browser);
-	startButton->SetKeycode(inputdevice::pad::Data::PAD_MENU);
+	startButton->SetKeycode(inputdevice::pad::Data::PAD_START);
 	startButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
 	{
@@ -352,7 +352,7 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 		reinterpret_cast<BrowserMenu *>(userdata)->JumpTo(true);
 	}, this);
 
-	// Lower-right corner and Start open Options; Triangle searches.
+	// Lower-right corner and Triangle open Options; Start searches.
 	m_searchButton = m_root->FindChild(button_search_page_browser);
 	m_searchButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t type, ui::Handler *self, ui::Event *e, void *userdata)
@@ -383,15 +383,15 @@ BrowserMenu::BrowserMenu() : m_clipboardIsMove(false), m_pending(Pending_None), 
 	m_alphaButton->Hide(common::transition::Type_Reset);
 	m_selectionBar = m_root->FindChild(plane_selection_bar_page_browser);
 	m_selectionBar->Hide(common::transition::Type_Reset);
-	ui::Widget *selectionAll = m_root->FindChild(button_all_selection_page_browser);
+	m_selectionAllButton = m_root->FindChild(button_all_selection_page_browser);
 	ui::Widget *selectionCopy = m_root->FindChild(button_copy_selection_page_browser);
 	ui::Widget *selectionMove = m_root->FindChild(button_move_selection_page_browser);
 	ui::Widget *selectionDelete = m_root->FindChild(button_delete_selection_page_browser);
-	selectionAll->SetString(g_appPlugin->GetString(msg_select_all));
+	m_selectionAllButton->SetString(g_appPlugin->GetString(msg_select_all));
 	selectionCopy->SetString(g_appPlugin->GetString(msg_opt_copy));
 	selectionMove->SetString(g_appPlugin->GetString(msg_opt_move));
 	selectionDelete->SetString(g_appPlugin->GetString(msg_opt_delete));
-	selectionAll->AddEventCallback(ui::Button::CB_BTN_DECIDE,
+	m_selectionAllButton->AddEventCallback(ui::Button::CB_BTN_DECIDE,
 	[](int32_t, ui::Handler *, ui::Event *, void *userdata)
 	{
 		if (userdata) reinterpret_cast<BrowserMenu *>(userdata)->SelectAll();
@@ -714,11 +714,17 @@ void BrowserMenu::ToggleSearch()
 
 void BrowserMenu::CloseSearchForNavigation()
 {
-	if (!m_searchVisible) return;
+	CloseSearch();
+}
+
+bool BrowserMenu::CloseSearch()
+{
+	if (!m_searchVisible) return false;
 	paf::wstring empty;
 	m_search->SetString(empty);
 	FilterSearch(true);
 	SetSearchVisible(false);
+	return true;
 }
 
 void BrowserMenu::SetRowIcon(BrowserPage *page, int32_t index)
@@ -1119,12 +1125,13 @@ void BrowserMenu::ApplyRowHighlight(BrowserPage *page, int32_t index, ui::Widget
 	}
 	if (name) name->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 	if (info) info->SetColor(0.75f, 0.78f, 0.82f, 1.0f);
-	button->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 	ui::Widget *selection = button->GetParent() ? button->GetParent()->FindChild(plane_list_item_selection) : NULL;
 	if (selection)
 	{
-		if (marked) selection->Show(common::transition::Type_Reset);
-		else selection->Hide(common::transition::Type_Reset);
+		// Alpha changes invalidate the already-instantiated PAF cell immediately;
+		// Show/Hide alone was only becoming visible after ListView recycling.
+		selection->Show(common::transition::Type_Reset);
+		selection->SetColor(0.20f, 0.58f, 1.0f, marked ? 0.78f : 0.0f);
 	}
 	ui::Widget *choiceCheck = button->GetParent() ? button->GetParent()->FindChild(plane_list_item_check) : NULL;
 	if (choiceCheck) choiceCheck->Hide(common::transition::Type_Reset);
@@ -1348,6 +1355,8 @@ ui::ListItem *BrowserMenu::CreateListItem(ui::listview::ItemFactory::CreateParam
 
 void BrowserMenu::OnBack()
 {
+	// Circle dismisses the keyboard/search layer and must not also pop a page.
+	if (CloseSearch()) return;
 	if (!m_pages.empty() && Top()->loaded)
 	{
 		bool marked = false;
@@ -1760,6 +1769,21 @@ void BrowserMenu::ApplyMarkToggle(int32_t index, ui::Widget *button)
 		m_selectionBar->Show(common::transition::Type_SlideFromBottom1);
 	else
 		m_selectionBar->Hide(common::transition::Type_SlideFromBottom1);
+	UpdateSelectionToolbar(page);
+}
+
+bool BrowserMenu::AllSelected(const BrowserPage *page) const
+{
+	if (!page || page->entries.empty()) return false;
+	for (uint32_t i = 0; i < page->entries.size(); ++i)
+		if (!page->entries.at(i)->marked) return false;
+	return true;
+}
+
+void BrowserMenu::UpdateSelectionToolbar(BrowserPage *page)
+{
+	if (!m_selectionAllButton) return;
+	m_selectionAllButton->SetString(g_appPlugin->GetString(AllSelected(page) ? msg_deselect_all : msg_select_all));
 }
 
 void BrowserMenu::SelectAll()
@@ -1783,8 +1807,9 @@ void BrowserMenu::ApplySelectAll()
 	if (m_pages.empty() || !Top()->loaded) return;
 	BrowserPage *page = Top();
 	if (fs::IsRootStyle(page->path)) return;
+	const bool select = !AllSelected(page);
 	for (uint32_t i = 0; i < page->entries.size(); i++)
-		page->entries.at(i)->marked = true;
+		page->entries.at(i)->marked = select;
 	// Update instantiated rows in place. Rebuilding every cell on Select All
 	// produces heavy PAF allocations for Music-sized directories.
 	for (uint32_t i = 0; i < page->entries.size(); ++i)
@@ -1795,7 +1820,9 @@ void BrowserMenu::ApplySelectAll()
 		if (!button) continue; // recycled placeholder
 		ApplyRowHighlight(page, i, button);
 	}
-	m_selectionBar->Show(common::transition::Type_Reset);
+	if (select) m_selectionBar->Show(common::transition::Type_Reset);
+	else m_selectionBar->Hide(common::transition::Type_Reset);
+	UpdateSelectionToolbar(page);
 }
 
 void BrowserMenu::OnOptions()
@@ -2136,6 +2163,7 @@ void BrowserMenu::DoAction(Action action)
 				if (button) menu->ApplyRowHighlight(page, i, button);
 			}
 			menu->m_selectionBar->Hide(common::transition::Type_Reset);
+			menu->UpdateSelectionToolbar(page);
 		}, this);
 		break;
 
@@ -2153,6 +2181,7 @@ void BrowserMenu::DoAction(Action action)
 			if (button) ApplyRowHighlight(page, i, button);
 		}
 		m_selectionBar->Hide(common::transition::Type_Reset);
+		UpdateSelectionToolbar(page);
 		break;
 
 	case Action_Paste:

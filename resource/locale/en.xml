@@ -99,6 +99,7 @@
   <string src="OK" id="msg_ok" />
   <string src="Cancel" id="msg_cancel" />
   <string src="Select All" id="msg_select_all" />
+  <string src="Deselect All" id="msg_deselect_all" />
   <string src="Install" id="msg_install_title" />
   <string src="Install this package?" id="msg_install_confirm" />
   <string src="Installing..." id="msg_installing" />

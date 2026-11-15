@@ -142,6 +142,7 @@ public:
 	void SelectAll();
 	void ToggleSearch();
 	void SetSearchVisible(bool visible);
+	bool CloseSearch();
 	void CloseSearchForNavigation();
 	void SetRowIcon(BrowserPage *page, int32_t index);
 	void UpdateFtpIndicator();
@@ -183,6 +184,8 @@ private:
 	void OnMarkToggle(int32_t index, paf::ui::Widget *button = NULL);
 	void ApplyMarkToggle(int32_t index, paf::ui::Widget *button);
 	void ApplySelectAll();
+	bool AllSelected(const BrowserPage *page) const;
+	void UpdateSelectionToolbar(BrowserPage *page);
 	void OnOption(int32_t index);
 	void OnDialog(int32_t buttonCode);
 
@@ -254,6 +257,7 @@ private:
 	paf::ui::Widget *m_alphaLetter;
 	paf::ui::Widget *m_alphaButton;
 	paf::ui::Widget *m_selectionBar;
+	paf::ui::Widget *m_selectionAllButton;
 	bool m_searchVisible;
 	paf::string m_lastSearchQuery;
 	bool m_alphaTouch;

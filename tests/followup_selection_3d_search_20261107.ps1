@@ -6,7 +6,7 @@ $settings = Get-Content -Raw (Join-Path $root 'src/settings_menu.cpp')
 function Assert([bool]$ok, [string]$reason) {
     if (-not $ok) { throw $reason }
 }
-$begin = $browser.IndexOf('void BrowserMenu::ApplyMarkToggle(int32_t index)')
+$begin = $browser.IndexOf('void BrowserMenu::ApplyMarkToggle(int32_t index, ui::Widget *button)')
 $end = $browser.IndexOf('void BrowserMenu::SelectAll()', $begin)
 Assert ($begin -ge 0 -and $end -gt $begin) 'Cannot inspect mark toggle'
 $mark = $browser.Substring($begin,$end-$begin)
@@ -25,7 +25,7 @@ Assert ($clearBegin -ge 0 -and $clearEnd -gt $clearBegin) 'Cannot inspect Cancel
 $clear = $browser.Substring($clearBegin, $clearEnd-$clearBegin)
 Assert (-not $clear.Contains('OnMarkToggle(i)')) 'Cancel toggles only first selected file'
 Assert ($clear.Contains('page->entries.at(i)->marked = false;')) 'Cancel did not clear every marked item'
-Assert ($clear.Contains('if (check)') -and $clear.Contains('if (button)')) 'Cancel still touches nonexistent child buttons'
+Assert ($clear.Contains('if (button)') -and $clear.Contains('ApplyRowHighlight')) 'Cancel still touches nonexistent child buttons'
 
 Assert (-not $mark.Contains('item->FindChild(image_button_list_item)->SetColor(')) 'Unguarded SetColor returned'
 $start = $browser.IndexOf('bool BrowserMenu::PopPage()')

@@ -48,18 +48,18 @@
         </text>
       </plane>
       <plane style="style_plane_selection_bar" id="plane_selection_bar_page_browser">
-        <layout_hint size="840, 68" pos="0, -238" />
+        <layout_hint size="960, 68" pos="0, -238" />
         <button style="style_button_selection_action" id="button_all_selection_page_browser">
-          <layout_hint size="168, 48" pos="-267, 0" />
+          <layout_hint size="210, 48" pos="-330, 0" />
         </button>
         <button style="style_button_selection_action" id="button_copy_selection_page_browser">
-          <layout_hint size="168, 48" pos="-89, 0" />
+          <layout_hint size="210, 48" pos="-110, 0" />
         </button>
         <button style="style_button_selection_action" id="button_move_selection_page_browser">
-          <layout_hint size="168, 48" pos="89, 0" />
+          <layout_hint size="210, 48" pos="110, 0" />
         </button>
         <button style="style_button_selection_action" id="button_delete_selection_page_browser">
-          <layout_hint size="168, 48" pos="267, 0" />
+          <layout_hint size="210, 48" pos="330, 0" />
         </button>
       </plane>
       <!-- Declared after the selection bar so the native options corner remains in front. -->
