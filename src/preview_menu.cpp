@@ -2,58 +2,11 @@
 #include <kernel.h>
 #include <paf.h>
 #include <stdlib.h>
-#include <malloc.h>
 #include <string.h>
 #include <strings.h>
-#include <psp2/avplayer.h>
-#include <psp2/sysmodule.h>
-#include <psp2/kernel/sysmem.h>
-#include <psp2/kernel/threadmgr.h>
-#include <psp2/audioout.h>
 #include <psp2/touch.h>
 #include <math.h>
 #include <stdio.h>
-
-// In the stub (NID 0x2CD86FD6) but not in the VitaSDK header.
-extern "C" int sceAvPlayerStreamCount(SceAvPlayerHandle handle);
-extern "C" int sceAvPlayerStart(SceAvPlayerHandle handle);
-extern "C" int sceAvPlayerPostInit(SceAvPlayerHandle handle, void *postInit);
-
-// WebMAF's extended frame descriptor.  NetStream's RGBA AvPlayer returns a
-// GPU-ready RGBA8888 buffer and, critically, its real pitch.  Treating that
-// buffer as tightly packed YUV (the old path) produced a permanent loader or a
-// black frame on 1080p MP4 files.
-typedef struct FmAvPlayerVideoEx {
-	uint32_t width;
-	uint32_t height;
-	float aspectRatio;
-	uint8_t languageCode[4];
-	uint32_t framerate;
-	uint32_t cropLeftOffset;
-	uint32_t cropRightOffset;
-	uint32_t cropTopOffset;
-	uint32_t cropBottomOffset;
-	uint16_t cropLeftPixels;
-	uint16_t cropRightPixels;
-	uint16_t cropTopPixels;
-	uint16_t cropBottomPixels;
-	uint32_t pitch;
-	uint8_t reserved[32];
-} FmAvPlayerVideoEx;
-
-typedef union FmAvPlayerStreamDetailsEx {
-	FmAvPlayerVideoEx video;
-	uint8_t reserved[80];
-} FmAvPlayerStreamDetailsEx;
-
-typedef struct FmAvPlayerFrameInfoEx {
-	void *pData;
-	uint8_t reserved[4];
-	uint64_t timeStamp;
-	FmAvPlayerStreamDetailsEx details;
-} FmAvPlayerFrameInfoEx;
-
-extern "C" int sceAvPlayerGetVideoDataEx(SceAvPlayerHandle handle, FmAvPlayerFrameInfoEx *frame);
 
 #include "common.h"
 #include "dialog.h"
@@ -63,6 +16,7 @@ extern "C" int sceAvPlayerGetVideoDataEx(SceAvPlayerHandle handle, FmAvPlayerFra
 #include "text_input.h"
 #include "core/fs.h"
 #include "core/gif.h"
+#include "video_player.h"
 
 using namespace paf;
 
@@ -70,158 +24,6 @@ namespace {
 
 	// Larger files are almost certainly larger images than the surface pool can hold.
 	const int64_t k_maxImageFile = 24 * 1024 * 1024;
-
-	// Video memory and file callbacks follow FMVita's videoplayer.c. SceAvPlayer's C
-	// API carries no state we need, and only one preview is ever open.
-	SceUID s_videoFd = -1;
-	SceOff s_videoSize = 0;
-	SceUID s_rgbaPlayerModule = -1;
-	volatile SceAvPlayerHandle s_startPlayer = 0;
-	volatile bool s_startIssued = false;
-	volatile uint32_t s_startWaitFrames = 0;
-	volatile int32_t s_playerState = 0;
-
-	void *VideoAlloc(void *arg, uint32_t alignment, uint32_t size)
-	{
-		return memalign(alignment, size);
-	}
-
-	void VideoFree(void *arg, void *ptr)
-	{
-		free(ptr);
-	}
-
-	void *VideoAllocFrame(void *arg, uint32_t alignment, uint32_t size)
-	{
-		// WebMAF hands these buffers straight to PAF/GXM. Allocate them through
-		// GraphMem with the same 256 KiB alignment used by NetStream, so decoded
-		// RGBA frames are actually GPU-readable on retail hardware.
-		if (alignment < SCE_KERNEL_256KiB) alignment = SCE_KERNEL_256KiB;
-		const uint32_t rounded = (size + alignment - 1) & ~(alignment - 1);
-		SceKernelAllocMemBlockOpt blockOpt;
-		sce_paf_memset(&blockOpt, 0, sizeof(blockOpt));
-		blockOpt.size = sizeof(blockOpt);
-		blockOpt.attr = SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT;
-		blockOpt.alignment = alignment;
-		GraphMem::Option option;
-		option.memblock_option = &blockOpt;
-		return GraphMem::AllocOSMemory(GraphMem::DeviceType_VideoMemory,
-			rounded, "FM::AvPlayerFrame", &option);
-	}
-
-	void VideoFreeFrame(void *arg, void *ptr)
-	{
-		if (ptr) GraphMem::FreeOSMemory(GraphMem::DeviceType_VideoMemory, ptr);
-	}
-
-	int VideoOpenFile(void *p, const char *filename)
-	{
-		const char *localPath = strncmp(filename, "localfile:", 10) == 0 ? filename + 10 : filename;
-		s_videoFd = sceIoOpen(localPath, SCE_O_RDONLY, 0);
-		if (s_videoFd < 0)
-		{
-			return -1;
-		}
-		s_videoSize = sceIoLseek(s_videoFd, 0, SCE_SEEK_END);
-		sceIoLseek(s_videoFd, 0, SCE_SEEK_SET);
-		return 0;
-	}
-
-	int VideoCloseFile(void *p)
-	{
-		if (s_videoFd >= 0)
-		{
-			sceIoClose(s_videoFd);
-			s_videoFd = -1;
-		}
-		return 0;
-	}
-
-	int VideoReadOffset(void *p, uint8_t *buffer, uint64_t position, uint32_t length)
-	{
-		if (s_videoFd < 0)
-		{
-			return -1;
-		}
-		sceIoLseek(s_videoFd, position, SCE_SEEK_SET);
-		return sceIoRead(s_videoFd, buffer, length);
-	}
-
-	uint64_t VideoSizeFile(void *p)
-	{
-		return s_videoSize;
-	}
-
-	// What the player returned at each step: why a video does not open on the console.
-	void VideoLog(const char *fmt, int32_t value)
-	{
-		SceUID fd = sceIoOpen("ux0:data/FileManager/video.log", SCE_O_WRONLY | SCE_O_CREAT | SCE_O_APPEND, 0777);
-		if (fd >= 0)
-		{
-			char line[160];
-			int n = snprintf(line, sizeof(line), fmt, value);
-			sceIoWrite(fd, line, n);
-			sceIoWrite(fd, "\n", 1);
-			sceIoClose(fd);
-		}
-	}
-
-	void VideoEvent(void *object, int32_t eventId, int32_t sourceId, void *eventData)
-	{
-		(void)object;
-		(void)sourceId;
-		(void)eventData;
-		VideoLog("event: 0x%08X", eventId);
-		// Do not call back into AvPlayer from its own event thread. NetStream only
-		// records READY here, then starts playback from its worker/main context.
-		s_playerState = eventId;
-	}
-
-	// Audio: SceAvPlayer decodes it, this thread feeds the speaker.
-	volatile bool s_audioRun = false;
-	volatile int32_t s_audioPlayer = 0;
-	SceUID s_audioThread = -1;
-
-	int AudioThread(SceSize args, void *argp)
-	{
-		int port = -1;
-		int portRate = 0, portChannels = 0;
-		while (s_audioRun)
-		{
-			SceAvPlayerFrameInfo frame;
-			sce_paf_memset(&frame, 0, sizeof(frame));
-			if (s_audioPlayer && sceAvPlayerIsActive(s_audioPlayer) && sceAvPlayerGetAudioData(s_audioPlayer, &frame) && frame.pData)
-			{
-				int rate = frame.details.audio.sampleRate ? frame.details.audio.sampleRate : 48000;
-				int channels = frame.details.audio.channelCount ? frame.details.audio.channelCount : 2;
-				if (port < 0 || rate != portRate || channels != portChannels)
-				{
-					if (port >= 0)
-					{
-						sceAudioOutReleasePort(port);
-					}
-					port = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_MAIN, 1024, rate,
-						channels == 1 ? SCE_AUDIO_OUT_MODE_MONO : SCE_AUDIO_OUT_MODE_STEREO);
-					portRate = rate;
-					portChannels = channels;
-				}
-				if (port >= 0)
-				{
-					sceAudioOutOutput(port, frame.pData);
-				}
-			}
-			else
-			{
-				sceKernelDelayThread(5000);
-			}
-		}
-		if (port >= 0)
-		{
-			sceAudioOutOutput(port, NULL);
-			sceAudioOutReleasePort(port);
-		}
-		return sceKernelExitDeleteThread(0);
-	}
 
 	void FormatTime(char *out, size_t size, uint64_t ms)
 	{
@@ -305,7 +107,7 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	int32_t index, ChangeCallback onChanged, void *userdata) :
 	m_parentRoot(parentRoot), m_onChanged(onChanged), m_userdata(userdata), m_filesChanged(false),
 	m_paths(paths), m_index(index), m_loadId(0), m_jobId(0),
-	m_player(0), m_videoActive(false), m_imageActive(false), m_gifActive(false), m_gifIndex(0), m_gifTick(0), m_paused(false), m_frameShown(false), m_videoW(0), m_videoH(0),
+	m_videoActive(false), m_imageActive(false), m_gifActive(false), m_gifIndex(0), m_gifTick(0), m_paused(false), m_frameShown(false),
 	m_touchActive(false), m_pinchActive(false), m_touchStartX(0), m_touchStartY(0), m_touchLastX(0), m_touchLastY(0),
 	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false), m_viewMode(0), m_deletePending(false), m_animateNextImage(false)
 {
@@ -449,15 +251,8 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 		PreviewMenu *menu = reinterpret_cast<PreviewMenu *>(userdata);
 		if (menu->m_videoActive)
 		{
-			menu->m_paused = !menu->m_paused;
-			if (menu->m_paused)
-			{
-				sceAvPlayerPause(menu->m_player);
-			}
-			else
-			{
-				sceAvPlayerResume(menu->m_player);
-			}
+			menu->m_videoPlayer.PauseResume();
+			menu->m_paused = menu->m_videoPlayer.IsPaused();
 		}
 	}, this);
 	m_root->AddEventCallback(dialog::DialogEvent,
@@ -493,16 +288,7 @@ void PreviewMenu::SeekVideo(int32_t deltaMs)
 	{
 		return;
 	}
-	int64_t target = (int64_t)sceAvPlayerCurrentTime(m_player) + deltaMs;
-	if (target < 0)
-	{
-		target = 0;
-	}
-	if (m_duration && (uint64_t)target > m_duration)
-	{
-		target = m_duration > 1000 ? m_duration - 1000 : 0;
-	}
-	sceAvPlayerJumpToTime(m_player, (uint64_t)target);
+	m_videoPlayer.Seek(deltaMs);
 }
 
 void PreviewMenu::OnVideoSeek()
@@ -511,7 +297,7 @@ void PreviewMenu::OnVideoSeek()
 	float percent = m_videoSlider->GetValue();
 	if (percent < 0.0f) percent = 0.0f;
 	if (percent > 100.0f) percent = 100.0f;
-	sceAvPlayerJumpToTime(m_player, (uint64_t)((double)m_duration * percent / 100.0));
+	m_videoPlayer.SeekTo((uint64_t)((double)m_duration * percent / 100.0));
 }
 
 void PreviewMenu::StepImage(int32_t delta)
@@ -935,101 +721,8 @@ void PreviewMenu::OnImageTouch()
 
 bool PreviewMenu::StartVideo(const char *path)
 {
-	sceIoRemove("ux0:data/FileManager/video.log");
-	if (s_rgbaPlayerModule < 0)
-		s_rgbaPlayerModule = sceKernelLoadStartModule(
-			"app0:module/libSceAvPlayerPSVitaRGBA8888.suprx", 0, NULL, 0, NULL, NULL);
-	VideoLog("load RGBA AVPLAYER: 0x%08X", s_rgbaPlayerModule);
-	if (s_rgbaPlayerModule < 0)
-	{
-		return false;
-	}
-
-	SceAvPlayerInitData init;
-	sce_paf_memset(&init, 0, sizeof(init));
-	init.memoryReplacement.allocate = VideoAlloc;
-	init.memoryReplacement.deallocate = VideoFree;
-	init.memoryReplacement.allocateTexture = VideoAllocFrame;
-	init.memoryReplacement.deallocateTexture = VideoFreeFrame;
-	init.fileReplacement.open = VideoOpenFile;
-	init.fileReplacement.close = VideoCloseFile;
-	init.fileReplacement.readOffset = VideoReadOffset;
-	init.fileReplacement.size = VideoSizeFile;
-	init.eventReplacement.objectPointer = this;
-	init.eventReplacement.eventCallback = VideoEvent;
-	init.debugLevel = 2;
-	init.autoStart = SCE_FALSE;
-
-	m_player = sceAvPlayerInit(&init);
-	VideoLog("sceAvPlayerInit: 0x%08X", m_player);
-	// Handles are opaque and valid retail values can have the high bit set.
-	// NetStream checks only for zero; signed comparison rejected 0x81600020.
-	if (!m_player)
-	{
-		m_player = 0;
-		return false;
-	}
-	// The RGBA WebMAF module expects its post-init stage even for local files.
-	// All optional HTTP fields remain zero.
-	// SceAvPlayerPostInitDataNew is 0x80 bytes on Vita. Local playback does not
-	// need HTTP callbacks, but WebMAF still requires the correctly sized block.
-	uint8_t postInit[128];
-	sce_paf_memset(postInit, 0, sizeof(postInit));
-	int32_t post = sceAvPlayerPostInit(m_player, postInit);
-	VideoLog("sceAvPlayerPostInit: 0x%08X", post);
-	if (post < 0)
-	{
-		sceAvPlayerClose(m_player);
-		m_player = 0;
-		return false;
-	}
-	s_startPlayer = m_player;
-	s_startIssued = false;
-	s_startWaitFrames = 0;
-	s_playerState = 0;
-	paf::string sourcePath("localfile:");
-	sourcePath += path;
-	int32_t added = sceAvPlayerAddSource(m_player, sourcePath.c_str());
-	VideoLog("sceAvPlayerAddSource: 0x%08X", added);
-	if (added < 0)
-	{
-		s_startPlayer = 0;
-		sceAvPlayerClose(m_player);
-		VideoCloseFile(NULL);
-		// Some firmware revisions reject custom file callbacks for MP4 sources.
-		// Retry once with AvPlayer's native filesystem path handling.
-		sce_paf_memset(&init.fileReplacement, 0, sizeof(init.fileReplacement));
-		m_player = sceAvPlayerInit(&init);
-		VideoLog("native sceAvPlayerInit: 0x%08X", m_player);
-		if (!m_player) { m_player = 0; return false; }
-		post = sceAvPlayerPostInit(m_player, postInit);
-		VideoLog("native sceAvPlayerPostInit: 0x%08X", post);
-		if (post < 0)
-		{
-			sceAvPlayerClose(m_player);
-			m_player = 0;
-			return false;
-		}
-		s_startPlayer = m_player;
-		paf::string nativePath("localfile:");
-		nativePath += path;
-		added = sceAvPlayerAddSource(m_player, nativePath.c_str());
-		VideoLog("native sceAvPlayerAddSource: 0x%08X", added);
-		if (added < 0)
-		{
-			s_startPlayer = 0;
-			sceAvPlayerClose(m_player);
-			m_player = 0;
-			return false;
-		}
-	}
 	m_duration = 0;
-
-	s_audioPlayer = m_player;
-	s_audioRun = false;
-	s_audioThread = -1;
-
-	sceAvPlayerSetLooping(m_player, SCE_TRUE);
+	if (!m_videoPlayer.Open(path)) return false;
 	m_controls->Show(common::transition::Type_Reset);
 	m_frameCounter = 0;
 	m_videoActive = true;
@@ -1046,26 +739,10 @@ void PreviewMenu::StopVideo()
 		return;
 	}
 	common::MainThreadCallList::Unregister(VideoTask, this);
-	s_audioRun = false;
-	if (s_audioThread >= 0)
-	{
-		sceKernelWaitThreadEnd(s_audioThread, NULL, NULL);
-		s_audioThread = -1;
-	}
-	s_audioPlayer = 0;
-	s_startPlayer = 0;
-	s_startIssued = false;
-	s_startWaitFrames = 0;
-	s_playerState = 0;
 	m_plane->Hide(common::transition::Type_Reset);
-	m_videoSurfaces.clear();
-	sceAvPlayerStop(m_player);
-	sceAvPlayerClose(m_player);
-	VideoCloseFile(NULL);
-	m_player = 0;
+	m_videoPlayer.Close();
 	m_videoActive = false;
 	m_controls->Hide(common::transition::Type_Reset);
-	m_videoW = m_videoH = 0;
 }
 
 void PreviewMenu::OnVideoFrame()
@@ -1074,81 +751,23 @@ void PreviewMenu::OnVideoFrame()
 	{
 		return;
 	}
-	if (!s_startIssued && s_startPlayer)
-	{
-		++s_startWaitFrames;
-		// READY is state 1 in SceAvPlayer. The bounded fallback covers firmware
-		// builds that omit the callback but already expose an active source.
-		if (s_playerState == 1 || s_startWaitFrames >= 180)
-		{
-			int32_t started = sceAvPlayerStart(s_startPlayer);
-			VideoLog("main sceAvPlayerStart: 0x%08X", started);
-			if (started >= 0)
-			{
-				s_startIssued = true;
-				s_audioRun = true;
-				s_audioThread = sceKernelCreateThread("FM::VideoAudio", AudioThread,
-					0x10000100, 0x4000, 0, 0, NULL);
-				if (s_audioThread >= 0) sceKernelStartThread(s_audioThread, 0, NULL);
-			}
-		}
-	}
-	if (!sceAvPlayerIsActive(m_player))
-	{
-		return;
-	}
-
 	sceKernelPowerTick(SCE_KERNEL_POWER_TICK_DISABLE_AUTO_SUSPEND);
-
-	FmAvPlayerFrameInfoEx frame;
-	sce_paf_memset(&frame, 0, sizeof(frame));
-	if (sceAvPlayerGetVideoDataEx(m_player, &frame) != SCE_TRUE || !frame.pData)
+	m_videoPlayer.Update();
+	if (m_videoPlayer.Failed())
 	{
+		ShowError();
+		StopVideo();
 		return;
 	}
-
-	const int w = frame.details.video.width;
-	const int h = frame.details.video.height;
-	if (w <= 0 || h <= 0)
-	{
-		return;
-	}
-
-	if (w != m_videoW || h != m_videoH)
-	{
-		m_videoW = w;
-		m_videoH = h;
-		m_videoSurfaces.clear();
-	}
-
-	intrusive_ptr<graph::Surface> surface;
-	for (uint32_t i = 0; i < m_videoSurfaces.size(); ++i)
-	{
-		if (m_videoSurfaces.at(i).data == frame.pData)
-		{
-			surface = m_videoSurfaces.at(i).surface;
-			break;
-		}
-	}
-	if (!surface.get())
-	{
-		VideoSurfaceEntry entry;
-		entry.data = frame.pData;
-		const uint32_t pitch = frame.details.video.pitch ? frame.details.video.pitch : w;
-		entry.surface = new graph::Surface(w, h, ImageMode_RGBA8888, ImageOrder_Linear,
-			1, frame.pData, pitch * 4, 1, 0);
-		surface = entry.surface;
-		m_videoSurfaces.push_back(entry);
-	}
-	if (!surface.get())
-	{
-		return;
-	}
-	m_plane->SetTexture(surface, 0, 0);
+	intrusive_ptr<graph::Surface> surface = m_videoPlayer.Frame();
+	if (surface.get()) m_plane->SetTexture(surface, 0, 0);
+	else if (!m_videoPlayer.HasFirstFrame()) m_plane->Hide(common::transition::Type_Reset);
+	m_duration = m_videoPlayer.Duration();
+	m_paused = m_videoPlayer.IsPaused();
 
 	if (m_frameCounter++ % 15 == 0)
 	{
-		uint64_t now = sceAvPlayerCurrentTime(m_player);
+		uint64_t now = m_videoPlayer.CurrentTime();
 		char a[16], b[16], line[40];
 		FormatTime(a, sizeof(a), now);
 		FormatTime(b, sizeof(b), m_duration);
@@ -1163,16 +782,8 @@ void PreviewMenu::OnVideoFrame()
 		}
 	}
 
-	if (!m_frameShown)
+	if (!m_frameShown && m_videoPlayer.HasFirstFrame())
 	{
-		const int32_t streams = sceAvPlayerStreamCount(m_player);
-		for (int32_t i = 0; i < streams && i < 16; ++i)
-		{
-			SceAvPlayerStreamInfo info;
-			sce_paf_memset(&info, 0, sizeof(info));
-			if (sceAvPlayerGetStreamInfo(m_player, i, &info) >= 0 && info.duration > m_duration)
-				m_duration = info.duration;
-		}
 		m_frameShown = true;
 		m_busy->Stop();
 		m_plane->Show(common::transition::Type_Reset);

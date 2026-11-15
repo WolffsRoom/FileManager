@@ -76,6 +76,7 @@ add_executable(FileManager
   src/settings.cpp
   src/settings_menu.cpp
   src/preview_menu.cpp
+  src/video_player.cpp
   src/ftp.cpp
   src/ftp_menu.cpp
   src/text_view.cpp
@@ -203,7 +204,6 @@ vita_create_vpk(FileManager.vpk ${VITA_TITLEID} eboot.bin
 	${CMAKE_BINARY_DIR}/modules/user/user.suprx module/user.suprx
 	${CMAKE_BINARY_DIR}/modules/usbdevice/usbdevice.skprx module/usbdevice.skprx
 	${CMAKE_BINARY_DIR}/modules/bginstaller/bginstaller.suprx module/bginstaller.suprx
-	resources/libSceAvPlayerPSVitaRGBA8888.suprx module/libSceAvPlayerPSVitaRGBA8888.suprx
 	resources/umass.skprx module/umass.skprx
     legacy/resources/head.bin resource/head.bin
     resource/sce_sys/icon0.png sce_sys/icon0.png

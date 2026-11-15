@@ -3,6 +3,7 @@
 
 #include <sdk_compat.h>
 #include <paf.h>
+#include "video_player.h"
 
 /**
  * Full-screen preview of images and MP4 videos. L/R go to the previous and next
@@ -41,13 +42,6 @@ public:
 	void StepImage(int32_t delta);
 
 private:
-	struct VideoSurfaceEntry
-	{
-		VideoSurfaceEntry() : data(NULL) {}
-		void *data;
-		paf::intrusive_ptr<paf::graph::Surface> surface;
-	};
-
 	void Open(int32_t index);
 	void StopVideo();
 	void StopGif();
@@ -82,7 +76,7 @@ private:
 	int32_t m_jobId;
 	paf::string m_jobPath;
 
-	int32_t m_player;
+	VideoPlayer m_videoPlayer;
 	bool m_videoActive;
 	bool m_imageActive;
 	bool m_gifActive;
@@ -92,9 +86,6 @@ private:
 	paf::vector<int32_t> m_gifDelays;
 	bool m_paused;
 	bool m_frameShown;
-	int32_t m_videoW;
-	int32_t m_videoH;
-	paf::vector<VideoSurfaceEntry> m_videoSurfaces;
 	paf::intrusive_ptr<paf::graph::Surface> m_currentSurf;
 	paf::intrusive_ptr<paf::graph::Surface> m_leftSurf;
 	paf::intrusive_ptr<paf::graph::Surface> m_rightSurf;
