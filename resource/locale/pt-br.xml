@@ -30,7 +30,10 @@
   <string src="Descriptografar" id="msg_decrypt" />
   <string src="Desfazer" id="msg_undo" />
 
-  <string src="Excluir" id="msg_confirm_delete_title" />
+  <string src="Excluir arquivos" id="msg_confirm_delete_title" />
+  <string src="Nome já existente" id="msg_rename_conflict_title" />
+  <string src="Já existe um arquivo ou pasta com esse nome. Deseja manter ambos?" id="msg_rename_conflict_text" />
+  <string src="Manter ambos" id="msg_keep_both" />
   <string src="Excluir os itens selecionados? Não é possível desfazer." id="msg_confirm_delete" />
   <string src="Excluir:&#10;%s&#10;&#10;Não é possível desfazer." id="msg_confirm_delete_item" />
   <string src="Aguarde..." id="msg_wait" />

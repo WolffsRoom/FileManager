@@ -99,6 +99,9 @@
   <string src="Selec. Todo" id="msg_select_all" />
   <string src="Deselec. Todo" id="msg_deselect_all" />
   <string src="Instalando..." id="msg_install_title" />
+  <string src="Name already exists" id="msg_rename_conflict_title" />
+  <string src="A file or folder with this name already exists. Keep both?" id="msg_rename_conflict_text" />
+  <string src="Keep both" id="msg_keep_both" />
   <string src="&#xBF;Quieres instalar este paquete?" id="msg_install_confirm" />
   <string src="Instalando..." id="msg_installing" />
   <string src="Instalación en segundo plano" id="msg_bg_install_title" />

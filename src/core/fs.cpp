@@ -557,7 +557,7 @@ paf::string fs::UniqueName(const paf::string &dir, const paf::string &name)
 {
 	paf::string candidate = name;
 	SceIoStat stat;
-	for (int32_t i = 2; i < 1000; i++)
+	for (int32_t i = 1; i < 1000; i++)
 	{
 		if (sceIoGetstat(Join(dir, candidate).c_str(), &stat) < 0)
 		{

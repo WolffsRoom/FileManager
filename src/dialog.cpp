@@ -22,10 +22,11 @@ static uint32_t s_threeButtonContTable[16];
 namespace dialog {
 	void CommonGuiEventHandler(int32_t instanceSlot, CommonGuiDialog::DIALOG_CB buttonCode, void *pUserArg)
 	{
-		CommonGuiDialog::Dialog::Close(instanceSlot);
+		Plugin *plugin = s_currentPlugin;
 		s_currentDialog = CURRENT_DIALOG_NONE;
-		event::BroadcastGlobalEvent(s_currentPlugin, DialogEvent, buttonCode);
 		s_currentPlugin = NULL;
+		CommonGuiDialog::Dialog::Close(instanceSlot);
+		if (plugin) event::BroadcastGlobalEvent(plugin, DialogEvent, buttonCode);
 	}
 }
 
@@ -218,6 +219,12 @@ void dialog::OpenTwoButtonIcon(
 		&dparam, CommonGuiEventHandler, NULL);
 	s_currentPlugin = workPlugin;
 	SetProgressIcon(texture);
+	ui::Widget *icon = CommonGuiDialog::Dialog::GetWidget(s_currentDialog, CommonGuiDialog::REGISTER_ID_PLANE_ICON);
+	if (icon)
+	{
+		icon->SetSize(96.0f, 96.0f, 0.0f);
+		icon->SetPos(-205.0f, -8.0f, 0.0f);
+	}
 	if (!isMainThread) thread::RMutex::MainThreadMutex()->Unlock();
 }
 

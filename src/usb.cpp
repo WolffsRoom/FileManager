@@ -50,14 +50,13 @@ const char *usb::DevicePath(Device device)
 	switch (device)
 	{
 	case Device_MemoryCard:
-		if (Exists("sdstor0:xmc-lp-ign-userext")) return "sdstor0:xmc-lp-ign-userext";
-		if (Exists("sdstor0:int-lp-ign-userext")) return "sdstor0:int-lp-ign-userext";
+		if (Exists("xmc0:")) return "sdstor0:xmc-lp-ign-userext";
+		return "sdstor0:int-lp-ign-userext";
 		break;
-	case Device_GameCard: if (Exists("sdstor0:gcd-lp-ign-gamero")) return "sdstor0:gcd-lp-ign-gamero"; break;
-	case Device_SD2Vita: if (Exists("sdstor0:gcd-lp-ign-entire")) return "sdstor0:gcd-lp-ign-entire"; break;
+	case Device_GameCard: return "sdstor0:gcd-lp-ign-gamero";
+	case Device_SD2Vita: return "sdstor0:gcd-lp-ign-entire";
 	case Device_PSVSD:
-		if (Exists("sdstor0:uma-pp-act-a")) return "sdstor0:uma-pp-act-a";
-		if (Exists("sdstor0:uma-lp-act-entire")) return "sdstor0:uma-lp-act-entire";
+		return "sdstor0:uma-pp-act-a";
 		break;
 	default: break;
 	}

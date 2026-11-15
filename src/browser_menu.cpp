@@ -2390,18 +2390,18 @@ void BrowserMenu::OnNameEntered(const paf::wstring &text)
 	}
 	if (m_inputAction == Action_Rename)
 	{
-		paf::string oldPath = fs::Join(page->path, m_inputTarget);
-		paf::string newPath = fs::Join(page->path, name);
-		ret = sceIoRename(oldPath.c_str(), newPath.c_str());
-		if (ret >= 0)
+		if (name == m_inputTarget) return;
+		SceIoStat existing;
+		if (sceIoGetstat(fs::Join(page->path, name).c_str(), &existing) >= 0)
 		{
-			m_undoType = Undo_Rename;
-			m_undoFrom.clear(); m_undoTo.clear();
-			m_undoFrom.push_back(oldPath); m_undoTo.push_back(newPath);
-			m_focusAfterRefresh = name;
-			shortcuts::RenamePath(oldPath, newPath);
-			if (m_pages.size() > 1) ReloadRoot();
+			m_pendingRenameName = name;
+			m_pending = Pending_RenameConflict;
+			dialog::OpenTwoButton(g_appPlugin, g_appPlugin->GetString(msg_rename_conflict_title),
+				g_appPlugin->GetString(msg_rename_conflict_text), msg_keep_both, msg_cancel);
+			return;
 		}
+		RenameTo(name);
+		return;
 	}
 	else
 	{
@@ -2413,6 +2413,24 @@ void BrowserMenu::OnNameEntered(const paf::wstring &text)
 		dialog::OpenError(g_appPlugin, ret);
 		return;
 	}
+	Refresh();
+}
+
+void BrowserMenu::RenameTo(const paf::string &requestedName)
+{
+	if (m_pages.empty() || !Top()->loaded) return;
+	BrowserPage *page = Top();
+	const paf::string name = fs::UniqueName(page->path, requestedName);
+	const paf::string oldPath = fs::Join(page->path, m_inputTarget);
+	const paf::string newPath = fs::Join(page->path, name);
+	const int32_t ret = sceIoRename(oldPath.c_str(), newPath.c_str());
+	if (ret < 0) { dialog::OpenError(g_appPlugin, ret); return; }
+	m_undoType = Undo_Rename;
+	m_undoFrom.clear(); m_undoTo.clear();
+	m_undoFrom.push_back(oldPath); m_undoTo.push_back(newPath);
+	m_focusAfterRefresh = name;
+	shortcuts::RenamePath(oldPath, newPath);
+	if (m_pages.size() > 1) ReloadRoot();
 	Refresh();
 }
 
@@ -2999,6 +3017,13 @@ void BrowserMenu::OnDialog(int32_t buttonCode)
 	case Pending_QrInstall:
 		m_pending = Pending_None;
 		if (buttonCode == dialog::ButtonCode_Yes && !m_opSources.empty()) OnInstallAnswer(true);
+		break;
+
+	case Pending_RenameConflict:
+		m_pending = Pending_None;
+		if (buttonCode == dialog::ButtonCode_Yes && !m_pendingRenameName.empty())
+			RenameTo(m_pendingRenameName);
+		m_pendingRenameName.clear();
 		break;
 
 	case Pending_Operation:

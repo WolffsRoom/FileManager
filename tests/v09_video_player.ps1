@@ -21,9 +21,10 @@ if ($source -notmatch 'basePriority\s*=\s*0xA0' -or
     $source -notmatch 'numOutputVideoFrameBuffers\s*=.+5') {
     throw 'proven AvPlayer priority/five-buffer configuration is missing'
 }
-if ($source -notmatch 'sceAvPlayerGetVideoDataEx' -or
-    $source -notmatch 'ImageMode_RGBA8888') {
-    throw 'RGBA WebMAF frame path is missing'
+if ($source -notmatch 'sceAvPlayerGetVideoData\(' -or
+    $source -notmatch 'ImageMode_RGBA8888' -or
+    $source -notmatch 'm_rgba') {
+    throw 'native YUV decode and RGBA presentation path is missing'
 }
 if ($source -notmatch 'sceAvPlayerGetAudioData' -or
     $source -notmatch 'video_diagnostic\.txt') {
@@ -34,4 +35,4 @@ if ($preview -notmatch 'm_videoPlayer\.Open' -or $preview -notmatch 'm_videoPlay
 }
 if ($cmake -notmatch 'src/video_player\.cpp') { throw 'VideoPlayer is not compiled' }
 
-Write-Output 'v0.9 native RGBA MP4 player passed'
+Write-Output 'v0.9 native MP4 player passed'

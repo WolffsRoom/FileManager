@@ -30,7 +30,10 @@
   <string src="Decrypt" id="msg_decrypt" />
   <string src="Undo" id="msg_undo" />
 
-  <string src="Delete" id="msg_confirm_delete_title" />
+  <string src="Delete files" id="msg_confirm_delete_title" />
+  <string src="Name already exists" id="msg_rename_conflict_title" />
+  <string src="A file or folder with this name already exists. Keep both?" id="msg_rename_conflict_text" />
+  <string src="Keep both" id="msg_keep_both" />
   <string src="Delete the selected items? This cannot be undone." id="msg_confirm_delete" />
   <string src="Delete:&#10;%s&#10;&#10;This cannot be undone." id="msg_confirm_delete_item" />
   <string src="Please wait..." id="msg_wait" />

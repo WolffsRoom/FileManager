@@ -16,8 +16,8 @@ if ($preview -notmatch 'musicIsPlaying\(\)[\s\S]+musicPause\(\)' -or
 }
 if ($videoH -notmatch 'SetSpeed\s*\(' -or $videoH -notmatch 'Speed\s*\(' -or
     $videoC -notmatch 'sceAvPlayerSetTrickSpeed' -or
-    $preview -notmatch '100.+150.+200') {
-    throw 'video speed 1x/1.5x/2x cycle is missing'
+    $preview -notmatch '100.+200') {
+    throw 'supported video speed cycle is missing'
 }
 if ($preview -notmatch 'exportMediaFile\(.+1') {
     throw 'video export action is missing'

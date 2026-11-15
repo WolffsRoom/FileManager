@@ -26,6 +26,7 @@ private:
 	paf::string m_path; SceAvPlayerHandle m_player; uint64_t m_startedUs, m_duration;
 	bool m_haveFrame, m_paused, m_failed; int32_t m_speed; volatile bool m_ready, m_started, m_eos;
 	paf::vector<SurfaceEntry> m_surfaces; paf::intrusive_ptr<paf::graph::Surface> m_frame;
+	uint32_t *m_rgba; uint32_t m_rgbaWidth, m_rgbaHeight;
 	SceUID m_audioThread; volatile bool m_audioRun; SceUID m_fileFd; uint64_t m_fileSize;
 	static VideoPlayer *s_active;
 };

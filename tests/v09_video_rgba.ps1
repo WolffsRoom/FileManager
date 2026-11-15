@@ -23,13 +23,14 @@ if ($source -notmatch 'SCE_AVPLAYER_STATE_READY' -or
     $source -notmatch 'sceAvPlayerStart\(') {
     throw 'READY does not explicitly start playback'
 }
-if ($source -notmatch 'sceAvPlayerGetVideoDataEx' -or
+if ($source -notmatch 'sceAvPlayerGetVideoData\(' -or
     $source -notmatch 'ImageMode_RGBA8888' -or
-    $source -notmatch 'details\.video\.pitch\s*\*\s*4') {
-    throw 'Decoded RGBA frames are not wrapped with their real pitch'
+    $source -notmatch 'm_rgba' -or
+    $source -match 'sceAvPlayerPostInit\(') {
+    throw 'Native YUV frames are not converted to the RGBA presentation surface'
 }
 if ($source -match 'ImageMode_YUV420P2') {
     throw 'Black-frame PAF YUV wrapper is still active'
 }
 
-Write-Output 'v0.9 RGBA video lifecycle contract passed'
+Write-Output 'v0.9 native YUV/RGBA video lifecycle contract passed'

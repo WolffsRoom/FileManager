@@ -53,6 +53,7 @@ public:
 		Pending_ConfirmInstall,
 		Pending_QrOpen,
 		Pending_QrInstall,
+		Pending_RenameConflict,
 		Pending_Operation,
 		Pending_Message,
 		Pending_Ftp
@@ -190,6 +191,7 @@ private:
 	void UpdateSelectionToolbar(BrowserPage *page);
 	void OnOption(int32_t index);
 	void OnDialog(int32_t buttonCode);
+	void RenameTo(const paf::string &name);
 
 	void DoAction(Action action);
 	void SetClipboard(bool isMove);
@@ -301,6 +303,7 @@ private:
 	paf::string m_opTargetDir;
 	Action m_inputAction;
 	paf::string m_inputTarget;
+	paf::string m_pendingRenameName;
 	paf::string m_installedTitle;
 	paf::string m_scratch;
 	paf::string m_focusAfterRefresh;
