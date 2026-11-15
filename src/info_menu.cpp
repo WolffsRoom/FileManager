@@ -42,7 +42,7 @@ namespace {
 }
 
 InfoMenu::InfoMenu(ui::Widget *parentRoot, Mode mode, const paf::string &path, const fs::Entry *entry, ResultCallback cb, void *userdata) :
-	m_parentRoot(parentRoot), m_cb(cb), m_userdata(userdata), m_accepted(false)
+	m_parentRoot(parentRoot), m_cb(cb), m_userdata(userdata), m_accepted(false), m_installBlocked(false)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -84,6 +84,13 @@ InfoMenu::InfoMenu(ui::Widget *parentRoot, Mode mode, const paf::string &path, c
 					havePicture = true;
 				}
 				free(info.icon);
+			}
+			if (!entry->isDir && info.assets.fixable)
+				AddLine(common::FormatString(Utf8(msg_vpk_assets_fixable).c_str(), info.assets.fixable).c_str());
+			if (!entry->isDir && info.assets.invalid)
+			{
+				m_installBlocked = true;
+				AddLine(common::FormatString(Utf8(msg_vpk_assets_invalid).c_str(), info.assets.firstInvalid).c_str());
 			}
 		}
 		AddLine(common::FormatString("%s: %s", Utf8(msg_info_size).c_str(), sizeText.c_str()).c_str());
@@ -141,10 +148,15 @@ InfoMenu::InfoMenu(ui::Widget *parentRoot, Mode mode, const paf::string &path, c
 	}
 	else if (mode == Mode_Install)
 	{
-		SetText(question, Utf8(msg_install_question).c_str());
+		SetText(question, Utf8(m_installBlocked ? msg_vpk_assets_blocked : msg_install_question).c_str());
 		SetText(ok, Utf8(msg_install_button).c_str());
 		SetText(cancel, Utf8(msg_cancel).c_str());
 		cancel->SetKeycode(inputdevice::pad::Data::PAD_ESCAPE);
+		if (m_installBlocked)
+		{
+			ok->Hide(common::transition::Type_Reset);
+			cancel->SetPos(0.0f, -160.0f, 0.0f);
+		}
 	}
 	else
 	{

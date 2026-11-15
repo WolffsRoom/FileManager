@@ -39,6 +39,7 @@ private:
 	ResultCallback m_cb;
 	void *m_userdata;
 	bool m_accepted;
+	bool m_installBlocked;
 };
 
 #endif

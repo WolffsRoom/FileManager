@@ -2,6 +2,7 @@
 #define _FM_INSTALL_H_
 
 #include "core/fileops.h"
+#include "core/vpk_assets.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,6 +39,7 @@ typedef struct {
   char titleid[12];
   void *icon;          /* icon0.png, malloc'ed, or NULL */
   uint32_t iconSize;
+  VpkAssetReport assets;
 } VpkInfo;
 
 /** Reads sce_sys/param.sfo and sce_sys/icon0.png out of a VPK without extracting it. */

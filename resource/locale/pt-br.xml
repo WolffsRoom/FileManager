@@ -160,6 +160,9 @@
   <string src="Analisando link..." id="msg_qr_checking" />
   <string src="Baixar este arquivo?" id="msg_qr_download_title" />
   <string src="Baixando arquivo..." id="msg_qr_downloading" />
+  <string src="%u asset(s) da LiveArea serão convertidos automaticamente para PNG indexado de 8 bits." id="msg_vpk_assets_fixable" />
+  <string src="Asset incompatível ou corrompido: %s" id="msg_vpk_assets_invalid" />
+  <string src="A instalação foi bloqueada para evitar erro ou crash na LiveArea." id="msg_vpk_assets_blocked" />
   <string src="Cruz" id="msg_btn_cross" />
   <string src="Círculo" id="msg_btn_circle" />
   <string src="Triângulo" id="msg_btn_triangle" />

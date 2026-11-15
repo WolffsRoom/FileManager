@@ -110,6 +110,7 @@ add_executable(FileManager
   legacy/libmad/synth.c
   legacy/libmad/timer.c
   src/core/bubble.c
+  src/core/vpk_assets.c
   src/core/install.c
   legacy/sha1.c
   src/text_input.cpp

@@ -258,6 +258,7 @@ int readVpkInfo(const char *vpk, VpkInfo *info) {
     }
   }
   archive_read_free(a);
+  inspectVpkAssets(vpk, &info->assets);
   return found ? 0 : VITASHELL_ERROR_NOT_FOUND;
 }
 
@@ -374,6 +375,13 @@ int prepareVpk(const char *vpk, FileProcessParam *param, char *titleid) {
   if (res <= 0) {
     removePath(FM_PACKAGE_DIR, NULL);
     return res;
+  }
+
+  VpkAssetReport assets;
+  res = normalizeExtractedVpkAssets(FM_PACKAGE_DIR, &assets);
+  if (res < 0 || assets.invalid) {
+    removePath(FM_PACKAGE_DIR, NULL);
+    return VITASHELL_ERROR_INVALID_MAGIC;
   }
 
   res = makeHeadBin(titleid);
