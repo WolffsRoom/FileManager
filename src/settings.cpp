@@ -12,7 +12,7 @@ using namespace paf;
 
 namespace {
 
-	settings::Config s_config = { 0, settings::View_List, 0, 0, -1, 1, 1, 0, 1, 70, 1, 1, 0 };
+	settings::Config s_config = { 0, settings::View_List, 0, 0, -1, 0, 1, 0, 1, 70, 1, 1, 0 };
 
 	const theme::Info k_themes[] = {
 		{ msg_theme_default,  { 0.34f, 0.36f, 0.40f }, { 0.85f, 0.88f, 0.92f } },
@@ -129,7 +129,7 @@ void settings::Load()
 		int32_t v = atoi(p + 5);
 		if (v >= 0 && v <= 2)
 		{
-			s_config.fontSize = v;
+			s_config.fontSize = v == 2 ? 1 : v;
 		}
 	}
 	p = strstr(buf, "auto_decrypt=");
@@ -222,9 +222,9 @@ settings::Config &settings::Get()
 
 float settings::FileFontSize()
 {
-	static const float k_sizes[] = { 22.0f, 28.0f, 34.0f };
+	static const float k_sizes[] = { 22.0f, 28.0f };
 	int32_t index = s_config.fontSize;
-	return k_sizes[index >= 0 && index <= 2 ? index : 1];
+	return k_sizes[index >= 0 && index <= 1 ? index : 0];
 }
 
 float settings::PreviewOpacity()

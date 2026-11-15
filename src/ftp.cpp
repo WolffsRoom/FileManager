@@ -34,6 +34,8 @@ namespace {
 	volatile uint32_t s_clientGeneration = 0;
 
 	struct ResolveRequest { char ip[16]; uint32_t generation; };
+	void *ResolverAlloc(unsigned int size, int, const char *, void *) { return malloc(size); }
+	void ResolverFree(void *ptr, int, const char *, void *) { free(ptr); }
 
 	int ResolveClientThread(SceSize, void *argp)
 	{
@@ -41,9 +43,12 @@ namespace {
 		if (!request) return sceKernelExitDeleteThread(0);
 		SceNetInAddr address;
 		char hostname[256] = { 0 };
-		char resolverMemory[1024];
 		int result = sceNetInetPton(SCE_NET_AF_INET, request->ip, &address);
-		int resolver = result < 0 ? result : sceNetResolverCreate("FM::FtpReverseDns", resolverMemory, sizeof(resolverMemory));
+		SceNetResolverParam resolverParam;
+		memset(&resolverParam, 0, sizeof(resolverParam));
+		resolverParam.allocate = ResolverAlloc;
+		resolverParam.free = ResolverFree;
+		int resolver = result < 0 ? result : sceNetResolverCreate("FM::FtpReverseDns", &resolverParam, 0);
 		if (resolver >= 0)
 		{
 			// Two seconds, one attempt: a missing PTR record must never stall FTP.

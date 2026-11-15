@@ -24,7 +24,7 @@ namespace settings {
 		int32_t language;        // system, Português (Brasil), English, Español, Français, Deutsch
 		int32_t selectFunction;  // 0 FTP server, 1 QR code, 2 USB
 		int32_t usbDevice;       // -1 asks first; 0 memory, 1 game card, 2 SD2Vita, 3 PSVSD
-		int32_t fontSize;        // 0 small, 1 normal (original), 2 large
+		int32_t fontSize;        // 0 Pequeno (22 px), 1 Maior (old Normal, 28 px)
 		int32_t autoDecrypt;     // mount protected application data automatically
 		int32_t sortMode;        // 0 name, 1 date, 2 type
 		int32_t navigation3D;    // 1 original Vita 3D, 0 simple fade

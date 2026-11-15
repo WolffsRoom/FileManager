@@ -12,6 +12,12 @@ extern "C" {
 #define SCE_AV_PLAYER_PCM_BUFFER_SIZE 2048
 
 #define SCE_AVPLAYER_STATE_EOS 0x6
+#ifndef SCE_AVPLAYER_STATE_READY
+#define SCE_AVPLAYER_STATE_READY 0x2
+#endif
+#ifndef SCE_AVPLAYER_STATE_PLAY
+#define SCE_AVPLAYER_STATE_PLAY 0x3
+#endif
 
 typedef enum SceAvPlayerRepresentationType {
 	SCE_AVPLAYER_REPRESENTATION_UNKNOWN,		///< An unknown stream type.

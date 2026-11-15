@@ -181,9 +181,9 @@ target_link_libraries(FileManager
   zstd
   lzma
   bz2
-  crypto
-  ssl
   curl
+  ssl
+  crypto
   pthread
   expat
   z

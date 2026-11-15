@@ -127,7 +127,13 @@
         <layout_hint align="0, 1" size="960, 328" pos="0, -242" />
       </list_view>
       <text style="style_text_empty" id="text_font_preview_page_settings">
-        <layout_hint size="860, 54" pos="0, -160" />
+        <layout_hint size="860, 54" pos="0, -45" />
+      </text>
+      <text style="style_text_settings_preview" id="text_font_preview_lead_page_settings">
+        <layout_hint size="150, 40" pos="-330, -105" />
+      </text>
+      <text style="style_text_settings_preview_body" id="text_font_preview_body_page_settings">
+        <layout_hint size="700, 92" pos="70, -132" />
       </text>
       <text style="style_text_shortcuts_empty" id="text_shortcuts_empty_page_settings">
         <layout_hint size="850, 148" pos="0, -8" />
@@ -601,6 +607,12 @@
     </style_text>
     <style_text textobj="text_obj1" id="style_text_empty">
       <textobj font_size="28" align_y="1" align_x="1" font_color="0.75, 0.78, 0.82, 1" id="text_obj1" />
+    </style_text>
+    <style_text textobj="text_obj1" id="style_text_settings_preview">
+      <textobj font_size="22" bold="1" align_y="1" align_x="1" font_color="0.92, 0.94, 1, 1" id="text_obj1" />
+    </style_text>
+    <style_text textobj="text_obj1" id="style_text_settings_preview_body">
+      <textobj font_size="22" align_y="1" align_x="1" word_wrap="1" max_line_count="4" line_pitch="28" font_color="0.82, 0.85, 0.9, 1" id="text_obj1" />
     </style_text>
     <style_text textobj="text_obj1" id="style_text_input_title">
       <textobj font_size="28" bold="1" align_y="1" align_x="1" font_color="1, 1, 1, 1" id="text_obj1" />

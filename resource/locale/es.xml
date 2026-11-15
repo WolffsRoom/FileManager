@@ -110,14 +110,15 @@
   <string src="Installed (%s). It is now on the home screen." id="msg_install_done" />
   <string src="Themes" id="msg_set_themes" />
   <string src="Tamaño de fuente" id="msg_set_font_size" />
-  <string src="Transparencia de vista previa" id="msg_set_preview_opacity" />
+  <string src="Opacidad de los menús" id="msg_set_preview_opacity" />
   <string src="Mostrar detalles" id="msg_set_show_details" />
   <string src="Iconos VPK" id="msg_set_vpk_icons" />
   <string src="Opacidad: %d%%" id="msg_preview_opacity_hint" />
   <string src="The quick brown fox jumps over the lazy dog." id="msg_font_preview" />
+  <string src="Lorem Ipsum" id="msg_font_preview_lorem" />
+  <string src="is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since 1966..." id="msg_font_preview_body" />
   <string src="Small" id="msg_font_small" />
-  <string src="Normal" id="msg_font_normal" />
-  <string src="Large" id="msg_font_large" />
+  <string src="Mayor" id="msg_font_normal" />
   <string src="Decrypt automatically" id="msg_set_auto_decrypt" />
   <string src="Animación de navegación" id="msg_set_navigation" />
   <string src="Predeterminado" id="msg_navigation_native" />
@@ -178,6 +179,7 @@
   <string src="Open" id="msg_cmd_open" />
   <string src="Back" id="msg_cmd_back" />
   <string src="M&#xE1;s" id="msg_cmd_options" />
+  <string src="Buscar" id="msg_cmd_search" />
   <string src="Seleccionar todo" id="msg_cmd_mark" />
   <string src="FTP, QR o USB" id="msg_cmd_select" />
   <string src="Buscar" id="msg_cmd_settings" />

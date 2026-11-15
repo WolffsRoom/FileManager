@@ -33,7 +33,7 @@ namespace {
 	const uint32_t k_languages[] = { msg_lang_system, msg_lang_ptbr, msg_lang_en, msg_lang_es, msg_lang_fr, msg_lang_de };
 	const uint32_t k_selectFunctions[] = { msg_ftp_server, msg_qr_code, msg_usb };
 	const uint32_t k_usbDevices[] = { msg_usb_memory_card, msg_usb_game_card, msg_usb_sd2vita, msg_usb_psvsd };
-	const uint32_t k_fontSizes[] = { msg_font_small, msg_font_normal, msg_font_large };
+	const uint32_t k_fontSizes[] = { msg_font_small, msg_font_normal };
 	const uint32_t k_enabled[] = { msg_disabled, msg_enabled };
 	const uint32_t k_navigation[] = { msg_navigation_simple, msg_navigation_native };
 	const uint32_t k_themeIcons[] = { tex_theme_graphite, tex_theme_midnight, tex_theme_graphite,
@@ -130,6 +130,12 @@ SettingsMenu::SettingsMenu(ui::Widget *parentRoot, ChangeCallback cb, void *user
 	m_fontPreview = m_root->FindChild(text_font_preview_page_settings);
 	m_fontPreview->SetString(Str(msg_font_preview));
 	m_fontPreview->Hide(common::transition::Type_Reset);
+	m_fontPreviewLead = m_root->FindChild(text_font_preview_lead_page_settings);
+	m_fontPreviewLead->SetString(Str(msg_font_preview_lorem));
+	m_fontPreviewLead->Hide(common::transition::Type_Reset);
+	m_fontPreviewBody = m_root->FindChild(text_font_preview_body_page_settings);
+	m_fontPreviewBody->SetString(Str(msg_font_preview_body));
+	m_fontPreviewBody->Hide(common::transition::Type_Reset);
 	m_opacitySlider = static_cast<ui::ProgressBarTouch *>(m_root->FindChild(progressbar_preview_opacity_page_settings));
 	m_opacityLabel = static_cast<ui::Text *>(m_root->FindChild(text_preview_opacity_page_settings));
 	m_opacitySlider->SetMinValue(25);
@@ -222,7 +228,7 @@ int32_t SettingsMenu::RowCount(Level level)
 	{
 	case Level_Main: return Main_Count;
 	case Level_Themes: return theme::Count();
-	case Level_FontSize: return 3;
+	case Level_FontSize: return 2;
 	case Level_PreviewOpacity: return 0;
 	case Level_ShowDetails: return 2;
 	case Level_ShowVpkIcons: return 2;
@@ -269,12 +275,19 @@ void SettingsMenu::ShowLevel(Level level)
 	}
 	if (level == Level_FontSize)
 	{
-		m_list->SetSize(960.0f, 240.0f, 0.0f);
-		m_list->SetPos(0.0f, -148.0f, 0.0f);
+		m_list->SetSize(960.0f, 160.0f, 0.0f);
+		m_list->SetPos(0.0f, 92.0f, 0.0f);
 		m_fontPreview->Show(common::transition::Type_Reset);
+		m_fontPreviewLead->Show(common::transition::Type_Reset);
+		m_fontPreviewBody->Show(common::transition::Type_Reset);
 		UpdateFontPreview();
 	}
-	else m_fontPreview->Hide(common::transition::Type_Reset);
+	else
+	{
+		m_fontPreview->Hide(common::transition::Type_Reset);
+		m_fontPreviewLead->Hide(common::transition::Type_Reset);
+		m_fontPreviewBody->Hide(common::transition::Type_Reset);
+	}
 	if (level == Level_PreviewOpacity)
 	{
 		m_list->Hide(common::transition::Type_Reset);
@@ -355,6 +368,8 @@ ui::ListItem *SettingsMenu::CreateItem(ui::listview::ItemFactory::CreateParam &p
 	ui::Widget *item = targetRoot->GetChild(targetRoot->GetChildrenNum() - 1);
 
 	ui::Widget *button = item->FindChild(image_button_list_item);
+	ui::Widget *selection = item->FindChild(plane_list_item_selection);
+	if (selection) selection->Hide(common::transition::Type_Reset);
 	button->SetName(row);
 	// The switch sits at x=401 with a 72 px hit area. Settings rows extend the
 	// touch target over it while browser rows retain their original width.
@@ -551,6 +566,8 @@ void SettingsMenu::UpdateFontPreview()
 	if (!m_fontPreview) return;
 	const float scale = settings::FileFontSize() / 28.0f;
 	m_fontPreview->SetScale(scale, scale, 1.0f);
+	if (m_fontPreviewLead) m_fontPreviewLead->SetScale(scale, scale, 1.0f);
+	if (m_fontPreviewBody) m_fontPreviewBody->SetScale(scale, scale, 1.0f);
 }
 
 void SettingsMenu::UpdateOpacityLabel()

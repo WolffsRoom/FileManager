@@ -88,6 +88,8 @@ private:
 	paf::ui::Widget *m_emptyShortcuts;
 	paf::ui::Widget *m_powerBar;
 	paf::ui::Widget *m_fontPreview;
+	paf::ui::Widget *m_fontPreviewLead;
+	paf::ui::Widget *m_fontPreviewBody;
 	paf::ui::ProgressBarTouch *m_opacitySlider;
 	paf::ui::Text *m_opacityLabel;
 	bool m_levelQueued;
