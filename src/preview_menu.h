@@ -111,6 +111,7 @@ private:
 	int32_t m_viewMode;
 	bool m_deletePending;
 	bool m_animateNextImage;
+	bool m_musicWasPlaying;
 };
 
 #endif

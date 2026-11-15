@@ -232,6 +232,9 @@
   <string src="Inverter" id="msg_preview_invert" />
   <string src="Minimizar" id="msg_music_background" />
   <string src="Exportar" id="msg_music_export" />
+  <string src="Velocidade: 1x" id="msg_video_speed_1" />
+  <string src="Velocidade: 1,5x" id="msg_video_speed_15" />
+  <string src="Velocidade: 2x" id="msg_video_speed_2" />
   <string src="Exibir onda sonora" id="msg_music_waveform" />
   <string src="Tela apagada" id="msg_music_screen_off" />
   <string src="Música exportada com sucesso." id="msg_music_export_done" />

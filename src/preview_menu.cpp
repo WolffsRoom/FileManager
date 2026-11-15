@@ -16,6 +16,8 @@
 #include "text_input.h"
 #include "core/fs.h"
 #include "core/gif.h"
+#include "core/music.h"
+#include "core/media_export.h"
 #include "video_player.h"
 
 using namespace paf;
@@ -109,7 +111,7 @@ PreviewMenu::PreviewMenu(ui::Widget *parentRoot, const paf::vector<paf::string> 
 	m_paths(paths), m_index(index), m_loadId(0), m_jobId(0),
 	m_videoActive(false), m_imageActive(false), m_gifActive(false), m_gifIndex(0), m_gifTick(0), m_paused(false), m_frameShown(false),
 	m_touchActive(false), m_pinchActive(false), m_touchStartX(0), m_touchStartY(0), m_touchLastX(0), m_touchLastY(0),
-	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false), m_viewMode(0), m_deletePending(false), m_animateNextImage(false)
+	m_pinchStart(0), m_pinchScale(1), m_imageScale(1), m_imageInitialScale(1), m_imageX(0), m_imageY(0), m_flipX(false), m_flipY(false), m_viewMode(0), m_deletePending(false), m_animateNextImage(false), m_musicWasPlaying(false)
 {
 	Plugin::PageOpenParam openParam;
 	openParam.graphics_flag = 0x80;
@@ -572,7 +574,23 @@ void PreviewMenu::ApplyImageTransform()
 
 void PreviewMenu::OnOptions()
 {
-	if (!m_imageActive || m_videoActive) return;
+	if (m_videoActive)
+	{
+		paf::vector<OptionMenu::Button> buttons;
+		OptionMenu::Button speed, exportVideo;
+		const int32_t values[] = { 100, 150, 200 };
+		int32_t current = m_videoPlayer.Speed(), next = values[0];
+		for (uint32_t i = 0; i < 3; ++i) if (values[i] == current) next = values[(i + 1) % 3];
+		if (next == 150) speed.label = g_appPlugin->GetString(msg_video_speed_15);
+		else if (next == 200) speed.label = g_appPlugin->GetString(msg_video_speed_2);
+		else speed.label = g_appPlugin->GetString(msg_video_speed_1);
+		exportVideo.label = g_appPlugin->GetString(msg_music_export);
+		buttons.push_back(speed);
+		buttons.push_back(exportVideo);
+		OptionMenu::Create(g_appPlugin, m_root, &buttons, 0xd098335eu, OptionTag);
+		return;
+	}
+	if (!m_imageActive) return;
 	paf::vector<OptionMenu::Button> buttons;
 	OptionMenu::Button mirror, invert, rename, remove;
 	mirror.label = g_appPlugin->GetString(msg_preview_mirror);
@@ -588,6 +606,27 @@ void PreviewMenu::OnOptions()
 
 void PreviewMenu::OnOption(int32_t index)
 {
+	if (m_videoActive)
+	{
+		if (index == 0)
+		{
+			const int32_t values[] = { 100, 150, 200 };
+			int32_t next = 100;
+			for (uint32_t i = 0; i < 3; ++i) if (values[i] == m_videoPlayer.Speed()) next = values[(i + 1) % 3];
+			int32_t result = m_videoPlayer.SetSpeed(next);
+			if (result < 0) dialog::OpenError(g_appPlugin, result);
+		}
+		else if (index == 1)
+		{
+			uint64_t value = 0;
+			SceIoStat stat; memset(&stat, 0, sizeof(stat));
+			sceIoGetstat(m_paths.at(m_index).c_str(), &stat);
+			FileProcessParam param = { &value, stat.st_size ? (uint64_t)stat.st_size : 1, NULL, NULL };
+			int32_t result = exportMediaFile(m_paths.at(m_index).c_str(), 1, &param);
+			if (result < 0) dialog::OpenError(g_appPlugin, result);
+		}
+		return;
+	}
 	if (index == 0) m_flipX = !m_flipX;
 	else if (index == 1) m_flipY = !m_flipY;
 	else if (index == 2)
@@ -722,7 +761,14 @@ void PreviewMenu::OnImageTouch()
 bool PreviewMenu::StartVideo(const char *path)
 {
 	m_duration = 0;
-	if (!m_videoPlayer.Open(path)) return false;
+	m_musicWasPlaying = musicIsPlaying();
+	if (m_musicWasPlaying) musicPause();
+	if (!m_videoPlayer.Open(path))
+	{
+		if (m_musicWasPlaying && musicIsOpen()) musicResume();
+		m_musicWasPlaying = false;
+		return false;
+	}
 	m_controls->Show(common::transition::Type_Reset);
 	m_frameCounter = 0;
 	m_videoActive = true;
@@ -745,6 +791,8 @@ void PreviewMenu::StopVideo()
 	m_videoPlayer.Close();
 	m_videoActive = false;
 	m_controls->Hide(common::transition::Type_Reset);
+	if (m_musicWasPlaying && musicIsOpen()) musicResume();
+	m_musicWasPlaying = false;
 }
 
 void PreviewMenu::OnVideoFrame()

@@ -24,6 +24,10 @@ typedef struct {
 int musicOpen(const char *path, MusicInfo *info);
 void musicClose(void);
 void musicTogglePause(void);
+int musicIsOpen(void);
+int musicIsPaused(void);
+void musicPause(void);
+void musicResume(void);
 int musicIsPlaying(void);
 int musicEnded(void);
 float musicPercent(void);

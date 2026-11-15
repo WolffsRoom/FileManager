@@ -230,6 +230,9 @@
   <string src="Flip vertically" id="msg_preview_invert" />
   <string src="Listen in background" id="msg_music_background" />
   <string src="Exportar multimedia" id="msg_music_export" />
+  <string src="Velocidad: 1x" id="msg_video_speed_1" />
+  <string src="Velocidad: 1,5x" id="msg_video_speed_15" />
+  <string src="Velocidad: 2x" id="msg_video_speed_2" />
   <string src="Mostrar onda sonora" id="msg_music_waveform" />
   <string src="Pantalla apagada" id="msg_music_screen_off" />
   <string src="Music exported successfully." id="msg_music_export_done" />

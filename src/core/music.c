@@ -120,6 +120,28 @@ void musicTogglePause(void) {
   }
 }
 
+int musicIsOpen(void) {
+  return s_open;
+}
+
+int musicIsPaused(void) {
+  return s_open && s_paused;
+}
+
+void musicPause(void) {
+  if (!s_open || s_paused)
+    return;
+  pauseFunct();
+  s_paused = 1;
+}
+
+void musicResume(void) {
+  if (!s_open || !s_paused)
+    return;
+  playFunct();
+  s_paused = 0;
+}
+
 int musicIsPlaying(void) {
   return s_open && isPlayingFunct();
 }
